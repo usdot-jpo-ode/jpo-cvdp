@@ -1,0 +1,42 @@
+/** 
+ * @file 
+ * @author   Jason M. Carter (carterjm@ornl.gov)
+ * @author   Aaron E. Ferber (ferberae@ornl.gov)
+ * @date     April 2017
+ * @version  0.1
+ *
+ * @copyright Copyright 2017 US DOT - Joint Program Office
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors:
+ *    Oak Ridge National Laboratory, Center for Trustworthy Embedded Systems, UT Battelle.
+ */
+
+#ifndef CVDP_CVLIB_HPP
+#define CVDP_CVLIB_HPP
+
+#include "names.hpp"
+#include "entity.hpp"
+#include "quad.hpp"
+#include "osm.hpp"
+#include "shapes.hpp"
+#include "string_utilities.hpp"
+
+namespace CVLib {
+const int CVLIB_MAJOR_VERSION = @CVLIB_VERSION_MAJOR@;
+const int CVLIB_MINOR_VERSION = @CVLIB_VERSION_MINOR@;
+const std::string CVLIB_VERSION_STR = "@CVLIB_VERSION@";
+}
+
+#endif

@@ -1,0 +1,116 @@
+# Code Standards / Style
+
+- Use [Google's C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
+- Use [Doxygen Style](http://www.stack.nl/~dimitri/doxygen/manual/docblocks.html) comments.
+    - Set `JAVADOC_AUTOBRIEF` configuration parameter to YES.
+    - Prefer `@` style Doxygen commands.
+    - All files must have `/** @file <name>` near the top of the file; generally `<name>` can be excluded.
+    - Use JavaDoc style for comment blocks. Start with `/**` and end with `*/`.
+    - Use `///<` to comment member variables.
+    - Put your comments immediately before or after the commented element as much as possible.
+    - Use Markdown format for descriptions instead of HTML.
+    - Classes
+        - If placed in front of the function it doesn't need a Doxygen command.
+    - Functions
+        - If placed in front of the function it doesn't need a Doxygen command.
+    - Parameters
+        - `@param <param name> <description>`
+    - Exceptions
+        - `@exception <name> <description>`
+    - Return Values
+        - `@return <name> <description>`
+
+## Basic Style Guidance
+
+- Formatting
+    - Line length: TBD characters long...
+    - Use spaces and not tabs for indentation.
+    - Indentation should be consistent (i.e., 4 spaces)
+    - Prefer no spaces inside `()` for conditionals.
+    - Short conditional can be written on one line.
+    - Use blocks for conditionals on multiple lines.
+    - Use blocks for switch statement cases if needed.
+    - Use blocks for loops.
+    - Wrap returned values in `()` only when you would if it were used in an assignement statement, e.g., `x = ( value )` is not normal.
+    - Do not add an extra level of indentation for namespaces.
+- Comments
+    - Start each file with a license boilerplate.
+    - Use Doxygen style comments for C++.
+    - Do not duplicate comments in `.hpp` files and `.cpp` files.
+    - Classes, variables, and functions should be commented if there function/purpose is not obvious through their name.
+    - Comment tricky, non-obvious code.
+    - Do not describe **what** the code does (unless it will not be obvious to a developer), but describe **why** it does it.
+- Includes
+    - Use `#define` header guards
+    - Order of includes: related headers, C library headers, C++ headers, other library's includes, your project includes.
+    - Exception: with `cmake` it is not necessary to make header files be in direct decendant directories from the `src` directory.
+- Naming
+    - Be descriptive, and avoid abbreviations that are unfamiliar to almost all users.
+    - Code file names
+        - All lower case and include `_` or `-`.
+        - Use `.cpp` for code files and `.hpp` for header files.
+    - Type names, e.g., `MyType`
+        - Classes, structs, aliases, enums, and type template parameters begin with a capital letter.
+    - Variable names, e.g., `a_local_variable`
+        - All lower case with underscores between words.
+        - Classes with private member variables use a trailing underscore at the **end** or the name.
+    - Constants
+        - Start with the letter `k` and then are in camel case.
+    - Function Names
+        - Start with a capital and are camel case.
+        - Accessors and mutators can use variable naming schemes.
+    - Macro Names
+        - All caps with underscores between words.
+    - Enumeration Names
+        - Like macros or like constants, i.e., start with `k`.
+- Use namespaces to the extent practicable.
+    - Do **not** use the `using` directive, e.g., `using namespace std`
+    - Namespace names should be all lower case; top-level names should be based on the project name.
+    - No need to repeat a namespace name, or a derivative, for a name within that namespace.
+- Static Variables and Unnamed Namespaces
+    - Place variables that do not need to be referenced outside of a file in an unnamed namespace or make them `static`.
+- Classes
+    - Constructors should not call virtual functions to avoid unforseen dispatch problems.
+    - Avoid implicit conversions; use the `explicit` keyword. This avoids unanticipated type conversions. Copy and Move constructors do not need to be `explicit`.
+    - If needed, support copying and moving; otherwise, disable these methods.
+    - Use `struct` for data carrying objects (all elements are public by default); prefer `class` (all elements are private by default).
+    - Prefer composition over inheritance. When inheritance is used make it public.
+    - Make members private, unless they are `static const`.
+    - Place public members first and group types of members. Prefer the order: `public`, `protected`, `private`.
+- Non-member and Global Functions
+    - Put non-member functions in a namespace.
+    - Global functions should be used rarely.
+    - Do not use a class as a surrogate for a namespace.
+- Functions
+    - Parameter order should be inputs and then outputs.
+    - All input parameters passed by reference should be labeled `const`.
+- Pointers
+    - Prefer single, fixed owners of dynamically allocated objects; transfer ownership using smart pointers.
+        - `std::unique_ptr` can be moved but not copied; it is destroyed when it goes out of scope.
+        - `std::shared_ptr` can be moved and copied; it is destroyed when the last copy
+- Local Variables
+    - Place in narrowest scope possible.
+    - Initialize variables where declared.
+    - Declare variables as close as possible to where they are used first.
+    - If possible, avoid instantiations within a loop.
+- Casting
+    - Use C++-style casts, e.g., `static_cast<float>( dbl_value )`. Avoid using C-style casts.
+- Preincrement and Predecrement
+    - Use the prefix for, e.g., `++i` with iterators.
+- Const Correctness
+    - Use `const` where appropriate.
+    - Use `constexpr` where appropriate; for true constants or to ensure constant initialization.
+    - Put `const` before the value it describes.
+- Integer Types
+    - use `<stdint.h>` and the explict integer types it describes, e.g., `int16_t` as much as possible.
+    - For loop counters, etc., this does not matter as much.
+- Macros
+    - Avoid them and prefer inline functions.
+- 0 and `nullptr`
+    - Use 0 for integers, 0.0 for reals, `nullptr` for pointers, and '\0' for chars.
+- `sizeof`
+    - Prefer `sizeof(varname)` over `sizeof(type)`.
+- Braced Initializer Lists
+    - May be used, e.g., `Point p{1, 2};`
+
+
