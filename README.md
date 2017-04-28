@@ -448,7 +448,7 @@ Filtering BSM [geoposition] : Pos: (42.2458, -83.6234), Spd: -1 Id: FFFFFFFF
 
 ## Docker
 
-To run the stand alone PPM test using Docker containers, from the root directory run:
+To run the stand alone PPM test using Docker containers, from the jpo-cvdp root directory run:
     
     $ ./start_kafka.sh
 
