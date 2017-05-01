@@ -448,21 +448,29 @@ Filtering BSM [geoposition] : Pos: (42.2458, -83.6234), Spd: -1 Id: FFFFFFFF
 
 ## Docker
 
-To run the stand alone PPM test using Docker containers, from the jpo-cvdp root directory run:
+To run a series of configuration tests:
+
+    # ./do_test.sh
+
+**Running this command for the first time can take awhile, as the dependencies need to be built for the PPM image.** 
+To run the standalone PPM test using Docker containers, from the jpo-cvdp root directory:
     
     $ ./start_kafka.sh
 
-This will build and start the required kafka containers, including the PPM image. **Running this step for the first time can take awhile, as the dependencies need to be built.** 
+This will build and start the required kafka containers, including the PPM image. 
 Next run:
 
-    $ ./standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE]
+    $ ./test-scripts/standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [OFFSET]
 
-Where MAP_FILE is a [map file](#map-files), CONFIG is [PPM Configuration file](#ppm-configuration) and TEST_FILE is a [JSON BSM test file](#test-files). This will start the PPM Kafka container and use the supplied files to test the BSM filtering. For example, running:
+Where MAP_FILE is a [map file](#map-files), CONFIG is [PPM Configuration file](#ppm-configuration) and TEST_FILE is a [JSON BSM test file](#test-files). Offset refers to the offset in the filtered BSM topic; this is where the consumer will look for new output. The default offset is zero (the beginning of the topic), which should for the first time running the test. This will start the PPM Kafka container and use the supplied files to test the BSM filtering. For example, running:
 
-    $ ./standalone.sh data/I_80.edges config/test/I_80_vel_filter.properties data/I_80_test.json
+    $ ./test-scripts/standalone.sh data/I_80.edges config/test/I_80_vel_filter.properties data/I_80_test.json
 
 yields:
 
+    **************************
+    Running standalone test with data/I_80.edges config/test/I_80_vel_filter.properties data/I_80_test.json
+    **************************
     **************************
     Producing Raw BSMs...
     **************************
@@ -477,7 +485,7 @@ yields:
     Producing BSM with ID=BEA10000, speed=6.84, position=42.24576, -83.62337
     Producing BSM with ID=BEA10000, speed=6.74, position=42.24576, -83.62338
     **************************
-    Consuming Filtered BSMs...
+    Consuming Filtered BSMs at offset 0 ...
     **************************
     Consuming BSM with ID=BEA10000, speed=7.02, position=41.738136, -106.587029
     Consuming BSM with ID=BEA10000, speed=7.12, position=41.608656, -109.226824

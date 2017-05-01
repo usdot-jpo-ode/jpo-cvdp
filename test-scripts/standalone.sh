@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # There are three input files: ROAD_FILE, CONFIG, TEST_DATA.
+# Offset is the offset in the topic that will be consumed and displayed in the
+# output
 
-USAGE="standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE]"
+USAGE="standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [OFFSET]"
 
 if [ -z $1 ] || [ ! -f $1 ]; then
     echo "Map file: "$1" not found!"
@@ -22,6 +24,12 @@ if [ -z $1 ] || [ ! -f $3 ]; then
     exit 1
 fi
 
+if [ -z $4 ]; then
+    OFFSET=0
+else
+    OFFSET=$4
+fi
+
 mkdir -p /tmp/docker-test/data
 
 # Copy the road file to the docker test data.
@@ -34,26 +42,16 @@ cp $2 /tmp/docker-test/data/config.properties
 # Copy the data.
 cp $3 /tmp/docker-test/data/test.json
 
-# Run the ppm module.
-docker run --name ppm_kafka -v /tmp/docker-test/data:/ppm_data -it --rm -p '8080:8080' -d cvdigeofence_ppm:latest /cvdi-stream/docker-test/ppm.sh > /dev/null
+echo "**************************"
+echo "Running standalone test with "$1 $2 $3
+echo "**************************"
 
-# Give the server a chance to update.
-sleep 2
+# Start the PPM in a new container.
+docker run --name ppm_kafka -v /tmp/docker-test/data:/ppm_data -it --rm -p '8080:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm.sh > /dev/null
+
+sleep 10
 
 # Produce the test data.
-echo "**************************"
-echo "Producing Raw BSMs..."
-echo "**************************"
-docker exec ppm_kafka /cvdi-stream/docker-test/producer.sh
+docker exec ppm_kafka /cvdi-stream/docker-test/do_test.sh $OFFSET
 
-# Give the server a chance to update.
-sleep 2
-
-# Consume the DI data.
-echo "**************************"
-echo "Consuming Filtered BSMs..."
-echo "**************************"
-docker exec ppm_kafka /cvdi-stream/docker-test/consumer.sh
-
-# Stop the containter.
 docker stop ppm_kafka > /dev/null
