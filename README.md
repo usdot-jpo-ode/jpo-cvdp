@@ -39,15 +39,26 @@ disposition of each BSM processed. The PPM also redacts other BSM fields.
 
 The following documents will help practitioners build, test, deploy, and understand the PPM's functions:
 
-- [Privacy Protection Module User Guild](docs/ppm_user_manual.docx)
+- [Privacy Protection Module User Guide](docs/ppm_user_manual.docx)
 - [Coding Standards](docs/coding-standards.md)
 
-All stakeholders are invited to provide input to these documents. Stakeholders
-should direct all input on this document to the JPO Product Owner at DOT, FHWA,
-or JPO. To provide feedback, we recommend that you create an "issue" in this
-repository (https://github.com/usdot-jpo-ode/jpo-cvdp/issues). You will need a
-GitHub account to create an issue. If you don’t have an account, a dialog will
-be presented to you to create one at no cost.
+All stakeholders are invited to provide input to these documents. Stakeholders should direct all input on this document
+to the JPO Product Owner at DOT, FHWA, or JPO. To provide feedback, we recommend that you create an "issue" in this
+repository (https://github.com/usdot-jpo-ode/jpo-cvdp/issues). You will need a GitHub account to create an issue. If you
+don’t have an account, a dialog will be presented to you to create one at no cost.
+
+## Code Documentation
+
+Code documentation can be generated using [Doxygen](https://www.doxygen.org) by following the commands below:
+
+```bash
+$ sudo apt install doxygen
+$ cd <install root>/jpo-cvdp
+$ doxygen
+```
+
+The documentation is in HTML and is written to the `<install root>/jpo-cvdp/docs/html` directory. Open `index.html` in a
+browser.
 
 # Collaboration Tools
 
@@ -196,7 +207,7 @@ $ docker-compose down
 ```
 
 - Download and install the Kafka **binary** for the particular version of scala you are using.
-    -  The Kafka binary provides a producer and consumer tool that can act as surrogates for the ODE (amoung other items).
+    -  The Kafka binary provides a producer and consumer tool that can act as surrogates for the ODE (among other items).
     -  [Kafka Binary](https://kafka.apache.org/downloads)
     -  [Kafka Quickstart](https://kafka.apache.org/quickstart) is a very useful reference.
     -  Move and unpack the Kafka code as follows:
@@ -249,7 +260,7 @@ The following is an example of a portion of a configuration file:
     privacy.redaction.id.inclusions=ON
     privacy.redaction.id.included=BEA10000,BEA10001
 
-Example configuration files can be found in the [jpo-cvdp/config](config) directory, e.g., [example.properties](config/example.properties) is an example of a compelete configuration file.
+Example configuration files can be found in the [jpo-cvdp/config](config) directory, e.g., [example.properties](config/example.properties) is an example of a complete configuration file.
 
 The details of the settings and how they affect the function of the PPM follow:
 
@@ -272,7 +283,7 @@ The details of the settings and how they affect the function of the PPM follow:
       enclosed in quotes or be preceded by 0x.
 
 - `privacy.redaction.id.inclusions` : *If redaction is enabled*, this parameter enables or disables the ability to specify 
-   **which** identifier values should be redaacted.
+   **which** identifier values should be redacted.
     - `ON` : enables use of a redaction *inclusion* set. The values in the set are defined in
       the `privacy.redaction.id.included` configuration parameter.
     - Any other value : **causes all identifiers to be redacted.** Ignores the inclusion set.
@@ -280,7 +291,7 @@ The details of the settings and how they affect the function of the PPM follow:
 - `privacy.redaction.id.included` : *If redaction and redaction inclusions are enabled*, the parameter is the list of BSM 
    identifiers (right now TemporaryID) that **will be redacted**; BSMs having identifiers that are not in this set will remain in 
    the BSM output by the PPM if retained.
-    - Similar to the `privacy.redaction.id.value`, these are 4 hexidecimal-encoded bytes.
+    - Similar to the `privacy.redaction.id.value`, these are 4 hexadecimal-encoded bytes.
     - More than one id can be specified by separating them by commas.
 
 - `privacy.filter.geofence` : enables or disables geofence-based filtering.
