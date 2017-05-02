@@ -124,15 +124,9 @@ $ sudo apt install git
 
 ```bash
 $ sudo add-apt-repository -y ppa:webupd8team/java
-$ sudo apt-get update
-$ sudo apt-get install oracle-java8-installer -y
+$ sudo apt update
+$ sudo apt install oracle-java8-installer -y
 $ sudo java -version
-```
-
-- Install Scala
-
-```bash
-$ sudo apt-get install scala
 ```
 
 - Install [CMake](https://cmake.org) to build the PPM
@@ -143,8 +137,9 @@ $ sudo apt install cmake
 
 - Install [Docker](https://www.docker.com)
 
-    - Comprehensive instructions can be found on the [Docker website](https://docs.docker.com/engine/installation/linux/ubuntu/#install-using-the-repository)
-    - We installed the CE version.
+    - When following the website instructions, setup the Docker repos and follow the Linux post-install instructions.
+    - The CE version seems to work fine.
+    - [Docker installation instructions](https://docs.docker.com/engine/installation/linux/ubuntu/#install-using-the-repository)
     - *ORNL specific, but may apply to others with organizational security*
         - Correct for internal Google DNS blocking
         - As root (`$ sudo su`), create a `daemon.json` file in the `/etc/docker` directory with the following information:
@@ -164,22 +159,21 @@ $ sudo apt install cmake
           }
 ```
 
-- Install Docker Compose
-    - Comprehensive instructions can be found on this [website](https://www.digitalocean.com/community/tutorials/how-to-install-docker-compose-on-ubuntu-16-04)
-    - Follow steps 1 and 2.
-
-- Restart the docker daemon to consume the new configuration file.
+        - Restart the docker daemon to consume the new configuration file.
 
 ```bash
 $ service docker stop
 $ service docker start
 ```
 
-- Check the configuration using the command below to confirm the updates above are taken if needed:
-
+        - Check the configuration using the command below to confirm the updates above are taken if needed:
 ```bash
 $ docker info
 ```
+
+- Install Docker Compose
+    - Comprehensive instructions can be found on this [website](https://www.digitalocean.com/community/tutorials/how-to-install-docker-compose-on-ubuntu-16-04)
+    - Follow steps 1 and 2.
 
 - Create a base directory from which to install all the necessary components to test the PPM.
 
@@ -192,14 +186,15 @@ $ export BASE_PPM_DIR=~/some/dir/you/want/to/put/this/stuff
 ```bash
 $ cd $BASE_PPM_DIR
 $ git clone https://github.com/wurstmeister/kafka-docker.git
-$ ifconfig                                              // to get the host ip address
+$ ifconfig                                              // to get the host ip address (device ens33 maybe)
 $ export DOCKER_HOST_IP=<HOST IP>
 $ cd kafka-docker
-$ docker-compose up --no-recreate -d                    // to startup kafka and zookeeper containers
+$ vim docker-compose.yml	                        // Set karka: ports: to 9092:9092
+$ docker-compose up --no-recreate -d                    // to startup kafka and zookeeper containers and not recreate
 $ docker-compose ps                                     // to check that they are running.
 ```
     
-    - When you want to stop kafka and zookeeper
+- When you want to stop kafka and zookeeper
 
 ```bash
 $ cd $BASE_PPM_DIR/kafka-docker
@@ -213,11 +208,10 @@ $ docker-compose down
     -  Move and unpack the Kafka code as follows:
 
 ```bash
-$ cd <download directory>
 $ cd $BASE_PPM_DIR
-$ mkdir kafka && cd kafka
-$ cp <download directory>/kafka_2.11-0.10.2.0.tgz .     // the kafka version may be different.
-$ tar -xzf kafka_2.11-0.10.2.0.tgz			    // the kafka version may be different.
+$ wget http://apache.claz.org/kafka/0.10.2.1/kafka_2.12-0.10.2.1.tgz   // mirror and kafka version may change; check website.
+$ tar -xzf kafka_2.12-0.10.2.1.tgz			               // the kafka version may be different.
+$ mv kafka_2.12-0.10.2.1 kafka
 ```
    
 - Download and install [`librdkafka`](https://github.com/edenhill/librdkafka), the C++ Kafka library we use to build the PPM.
@@ -234,9 +228,8 @@ $ sudo make install
 - Download, build, and install the Privacy Protection Module (PPM)
 
 ```bash
-$ export LD_LIBRARY_PATH=/usr/local/lib		    // this is where librdkafka puts the library.
 $ cd $BASE_PPM_DIR
-$ git clone https://<github repo>jpo-cvdp.git
+$ git clone https://github.com/usdot-jpo-ode/jpo-cvdp.git
 $ cd jpo-cvdp
 $ mkdir build && cd build
 $ cmake ..
