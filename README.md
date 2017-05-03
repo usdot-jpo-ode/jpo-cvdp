@@ -24,6 +24,19 @@ information in that BSM and auxiliary map information used to define a geofence.
 BSM geoposition (latitude and longitude) and speed are used to determine the
 disposition of each BSM processed. The PPM also redacts other BSM fields.
 
+## PPM Limitations
+
+Protecting against inference-based privacy attacks on spatiotemporal
+trajectories (i.e., sequences of BSMs from a single vehicle) in **general** is
+a challenging task. An example of an inference-based privacy attack is
+identifying the driver that generated a sequence of BSMs using specific
+locations they visit during their trip, or other features discernable from the
+information in the BSM sequence. **This PPM treats a specific use case: a
+geofenced area where residences do not exist, e.g., a highway corridor, with
+certain speed restrictions.** Do not assume this strategy will work in general.
+There are alternative strategies that must be employed to handle cases where
+loitering locations can aid in learning the identity of the driver.
+
 # Release Notes
 
 ## ODE Sprint 11
@@ -159,14 +172,14 @@ $ sudo apt install cmake
           }
 ```
 
-        - Restart the docker daemon to consume the new configuration file.
+- Restart the docker daemon to consume the new configuration file.
 
 ```bash
 $ service docker stop
 $ service docker start
 ```
 
-        - Check the configuration using the command below to confirm the updates above are taken if needed:
+- Check the configuration using the command below to confirm the updates above are taken if needed:
 ```bash
 $ docker info
 ```
