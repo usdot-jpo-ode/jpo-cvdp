@@ -209,6 +209,8 @@ bool configure( const std::string& config_file, std::unordered_map<std::string,s
     return true;
 }
 
+#ifndef _PPM_TESTS
+
 int main (int argc, char **argv) {
 
     std::unordered_map<std::string, std::string> pconf;
@@ -687,3 +689,5 @@ usage:
 
     return 0;
 }
+
+#endif
