@@ -35,34 +35,64 @@
 IdRedactor::IdRedactor() :
     inclusion_set_{},
     redacted_value_{"FFFFFFFF"},                    // default value.
-    inclusions_{false}
+    inclusions_{false}                              // redact everything.
 {}
 
 IdRedactor::IdRedactor( const ConfigMap& conf ) :
     IdRedactor{}
 {
-        auto search = conf.find("privacy.redaction.id.value");
-        if ( search != conf.end() ) {
-            redacted_value_ = search->second;
-        }
+    auto search = conf.find("privacy.redaction.id.value");
+    if ( search != conf.end() ) {
+        redacted_value_ = search->second;
+    }
 
-        search = conf.find("privacy.redaction.id.inclusions");
-        if ( search != conf.end() && search->second=="ON" ) {
-            inclusions_ = true;
-        }
+    search = conf.find("privacy.redaction.id.inclusions");
+    if ( search != conf.end() && search->second=="ON" ) {
+        inclusions_ = true;
+    }
 
-        search = conf.find("privacy.redaction.id.included");
-        if ( search != conf.end() ) {
-           StrVector sv = string_utilities::split( search->second, ',' );
-           for ( auto& id : sv ) {
-               inclusion_set_.insert( id );
-           }
+    search = conf.find("privacy.redaction.id.included");
+    if ( search != conf.end() ) {
+        StrVector sv = string_utilities::split( search->second, ',' );
+        for ( auto& id : sv ) {
+            inclusion_set_.insert( id );
         }
+    }
 };
+
+bool IdRedactor::HasInclusions() const
+{
+    return inclusions_;
+}
+
+int IdRedactor::NumInclusions() const
+{
+    if ( inclusions_ ) {
+        return inclusion_set_.size();
+    }
+    return -1;
+}
+
+void IdRedactor::RedactAll()
+{
+    inclusion_set_.clear();
+    inclusions_ = false;
+}
+
+bool IdRedactor::ClearInclusions()
+{
+    bool r = inclusion_set_.size() > 0;
+    inclusion_set_.clear();
+    return r;
+}
 
 bool IdRedactor::AddIdInclusion( const std::string& id )
 {
     auto result = inclusion_set_.insert( id );
+    if ( !inclusions_ && result.second ) {
+        // previously redacting everything, not we are building the inclusion list.
+        inclusions_ = true;
+    }
     return result.second;
 }
 

@@ -70,6 +70,10 @@ using ConfigMap = std::unordered_map<std::string,std::string>;            ///< A
 
 /**
  * @brief An IdRedactor encapsulates whether IdRedaction should take place and how it is performed.
+ *
+ * If inclusion_set_ is false (the default for the default constructor), ALL IDS will be redacted.
+ * If inclusion_set_ is true and the inclusion_set is empty, the NO IDS will be redacted.
+ * If inclusion_set_ is true and the inclusion_set is non-empty, then those IDS in the set will be redacted.
  */
 class IdRedactor {
 
@@ -81,7 +85,7 @@ class IdRedactor {
          * @brief Default Id Redactor constructor.
          *
          * This constructor sets the following defaults:
-         * - Treats all Ids equally; does not use the inclusions set.
+         * - Redacts all ids.
          * - Sets the default redaction value to FFFFFFFF; this is easily changed in the configuration.
          */
         IdRedactor();
@@ -96,10 +100,41 @@ class IdRedactor {
         IdRedactor( const ConfigMap& conf );
 
         /**
+         * @brief Predicate indicating whether of not all ids are redacted.
+         *
+         * @return true if this IdRedactor uses inclusions and the set is non-empty.
+         */
+        bool HasInclusions() const;
+
+        /**
+         * @brief Return the size of the inclusions sets. 
+         *
+         * @return The size of the inclusions set; -1 if inclusions are not used.
+         */
+        int NumInclusions() const;
+
+        /**
+         * @brief Reset the state of this redactor to redact all ids; this also empties the inclusion set.
+         */
+        void RedactAll();
+
+        /**
+         * @brief Empty the inclusions set; this has the effect of NO LONGER PERFORMING REDACTION.
+         *
+         * @return true if the inclusions_set had some items to clear; false if already empty.
+         */
+        bool ClearInclusions();
+
+        /** 
          * @brief Add an id to the set of Ids that require redaction.
          *
-         * @param id an id that requires redaction.
-         * @return true if it was new to the set; false otherwise.
+         * If the this redactor was previously set to including
+         * everything, i.e., NOT use a redaction list, and you add an id using
+         * this method, the previous behavior will stop and only the id you
+         * specified in this call will be redacted.
+         *
+         * @param id an id that requires redaction.  @return true if it was new
+         * to the set; false otherwise.
          */
         bool AddIdInclusion( const std::string& id );
 
