@@ -228,6 +228,9 @@ $ mv kafka_2.12-0.10.2.1 kafka
 ```
    
 - Download and install [`librdkafka`](https://github.com/edenhill/librdkafka), the C++ Kafka library we use to build the PPM.
+    - Upon completion of the instructions below, the header files for `librdkafka` should be located in `/usr/local/include/librdkafka` 
+      and the libraries (static and dynamic) should be located in `/usr/local/lib`. If you put them in another location
+      the PPM may not build.
 
 ```bash
 $ cd $BASE_PPM_DIR
