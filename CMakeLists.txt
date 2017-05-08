@@ -22,6 +22,7 @@ include_directories(${CVLIB_INCLUDE})
 # Include application and JSON parser headers.
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/rapidjson")
+include_directories("/usr/local/include")
 
 if (${APPLE})
     include_directories( "${MACPORTS_DIR}/local/include")
