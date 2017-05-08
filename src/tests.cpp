@@ -1,6 +1,118 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
+
+#include "cvlib.hpp"
+
 #include "bsmfilter.hpp"
+
+TEST_CASE("Entity", "[entity test]") {
+    SECTION("Conversions") {
+        CHECK(Geo::to_degrees(0.0) == Approx(0.0));
+        CHECK(Geo::to_degrees(.5 * Geo::kPi) == Approx(90.0));
+        CHECK(Geo::to_degrees(Geo::kPi) == Approx(180.0));
+        CHECK(Geo::to_degrees(2.0 * Geo::kPi) == Approx(360.0));
+        CHECK(Geo::to_radians(0.0) == Approx(0.0));
+        CHECK(Geo::to_radians(90.0) == Approx(.5 * Geo::kPi));
+        CHECK(Geo::to_radians(180.0) == Approx(Geo::kPi));
+        CHECK(Geo::to_radians(360.0) == Approx(2.0 * Geo::kPi));
+    }
+
+    // semi-circumference of Earth (meters)
+    const double kSemiCircM = 20037508.3427892439;
+    // Eiffel Tower to Titanic distance (meters)
+    const double tToE = 4084152.4248618507;
+    const double tToEApprox = 4167612.3240307244;
+    // Titanic to Eiffel Tower bearing (degrees)
+    const double tToEBearing = 60.5340135811;
+    // Eiffel Tower to Titanic bearing (degrees)
+    const double eToTBearing = 279.0319532512;
+
+    Geo::Location loc_a(90.0, 180.0);  
+    Geo::Location loc_b(90.0, 180.0, 1);  
+    Geo::Location loc_c(-90.0, 180.0);
+    Geo::Location loc_d(0.0, 0.0);
+    Geo::Location loc_e(0.00001, 0.0);
+    Geo::Location loc_f(0.0, 0.00001);
+    Geo::Location loc_g(0.0001, 0.0);
+    Geo::Location loc_h(0.0, 0.0001);
+    // Eiffel Tower
+    Geo::Location loc_i(48.857801, 2.295968);
+    // Titanic
+    Geo::Location loc_j(41.728342, -49.948810);
+
+    SECTION("Location") {
+        // Test the floating point comparisons.
+        CHECK(loc_a == loc_a);
+        CHECK_FALSE(loc_a == loc_b);
+        CHECK_FALSE(loc_d == loc_e); 
+        CHECK(loc_d.lat == Approx(loc_e.lat));
+        CHECK(loc_d.lon == Approx(loc_f.lon));
+        CHECK_FALSE(loc_d.lat == Approx(loc_g.lat));
+        CHECK_FALSE(loc_d.lon == Approx(loc_h.lon));
+        // Test the distance functions.
+        CHECK(Geo::Location::distance(loc_a, loc_b) == Approx(0.0));
+        CHECK(Geo::Location::distance(loc_a, loc_c) == Approx(kSemiCircM));
+        CHECK(Geo::Location::distance(loc_i, loc_j) == Approx(tToEApprox));
+        CHECK(Geo::Location::distance(90.0, 180.0, 90.0, 180.0) == Approx(0.0));
+        CHECK(Geo::Location::distance(90.0, 180.0, -90.0, 180.0) == Approx(kSemiCircM));
+        CHECK(Geo::Location::distance_haversine(loc_a, loc_a) == Approx(0.0));
+        CHECK(Geo::Location::distance_haversine(loc_a, loc_c) == Approx(kSemiCircM));
+        CHECK(Geo::Location::distance_haversine(loc_i, loc_j) == Approx(tToE));
+        CHECK(Geo::Location::distance(90.0, 180.0, 90.0, 180.0) == Approx(0.0));
+        CHECK(Geo::Location::distance(90.0, 180.0, -90.0, 180.0) == Approx(kSemiCircM));
+        CHECK(loc_a.distance_to(loc_b) == Approx(0.0));
+        CHECK(loc_a.distance_to(loc_c) == Approx(kSemiCircM));
+        CHECK(loc_i.distance_to(loc_j) == Approx(tToEApprox));
+        CHECK(loc_a.distance_to_haversine(loc_a) == Approx(0.0));
+        CHECK(loc_a.distance_to_haversine(loc_c) == Approx(kSemiCircM));
+        CHECK(loc_i.distance_to_haversine(loc_j) == Approx(tToE));
+        // Test the projection functions.
+        CHECK(Geo::Location::project_position(loc_a, 90.0, kSemiCircM).lat == Approx(-90.0));
+        CHECK(Geo::Location::project_position(loc_a, 157.0, kSemiCircM / 2.0).lat == Approx(0.0));
+        CHECK(Geo::Location::project_position(loc_a, 157.0, kSemiCircM / 2.0).lon == Approx(-157.0));
+        CHECK(Geo::Location::project_position(loc_a, -45.0, kSemiCircM / 2.0).lat == Approx(0.0));
+        CHECK(Geo::Location::project_position(loc_a, -45.0, kSemiCircM / 2.0).lon == Approx(45.0));
+        CHECK(loc_a.project_position(90.0, kSemiCircM).lat == Approx(-90.0));
+        CHECK(loc_a.project_position(157.0, kSemiCircM / 2.0).lat == Approx(0.0));
+        CHECK(loc_a.project_position(157.0, kSemiCircM / 2.0).lon == Approx(-157.0));
+        CHECK(loc_a.project_position(-45.0, kSemiCircM / 2.0).lat == Approx(0.0));
+        CHECK(loc_a.project_position(-45.0, kSemiCircM / 2.0).lon == Approx(45.0));
+        CHECK(Geo::Location::project_position(90.0, 180.0, 90.0, kSemiCircM).lat == Approx(-90.0));
+        CHECK(Geo::Location::project_position(90.0, 180.0, 157.0, kSemiCircM / 2.0).lat == Approx(0.0));
+        CHECK(Geo::Location::project_position(90.0, 180.0, 157.0, kSemiCircM / 2.0).lon == Approx(-157.0));
+        CHECK(Geo::Location::project_position(90.0, 180.0, -45.0, kSemiCircM / 2.0).lat == Approx(0.0));
+        CHECK(Geo::Location::project_position(90.0, 180.0, -45.0, kSemiCircM / 2.0).lon == Approx(45.0));
+        // Test the midpoint functions.
+        CHECK(Geo::Location::midpoint(loc_a, loc_c).lat == Approx(0.0));
+        CHECK(Geo::Location::midpoint(loc_a, loc_c).lon == Approx(-180.0));
+        CHECK(loc_a.midpoint(loc_c).lat == Approx(0.0));
+        CHECK(loc_a.midpoint(loc_c).lon == Approx(-180.0));
+        CHECK(Geo::Location::midpoint(90.0, 180.0, -90.0, 180.0).lat == Approx(0.0));
+        CHECK(Geo::Location::midpoint(90.0, 180.0, -90.0, 180.0).lon == Approx(-180.0));
+        // Test the bearing functions.
+        CHECK(Geo::Location::bearing(loc_a, loc_c) == Approx(180.0));
+        CHECK(Geo::Location::bearing(loc_a, loc_d) == Approx(0.0));
+        CHECK(Geo::Location::bearing(loc_i, loc_j) == Approx(eToTBearing));
+        CHECK(Geo::Location::bearing(loc_j, loc_i) == Approx(tToEBearing));
+        CHECK(loc_a.bearing_to(loc_c) == Approx(180.0));
+        CHECK(loc_a.bearing_to(loc_d) == Approx(0.0));
+        CHECK(loc_i.bearing_to(loc_j) == Approx(eToTBearing));
+        CHECK(loc_j.bearing_to(loc_i) == Approx(tToEBearing));
+        CHECK(Geo::Location::bearing(90.0, 180.0, -90.0, 180.0) == Approx(180.0));
+        CHECK(Geo::Location::bearing(90.0, 180.0, 0.0, 0.0) == Approx(0.0));
+    }
+    
+    /*
+    Geo::Vertex v_a(loc_a);
+    Geo::Vertex v_b(loc_b);
+
+    Geo::Edge edge_a(v_a, v_b);
+
+    SECTION("Edge") {
+        
+    }
+    */
+}
 
 TEST_CASE( "Redactor Checks", "[redactor]" ) {
 
@@ -169,6 +281,7 @@ TEST_CASE( "BSM Checks", "[bsm]" ) {
     }
 }
 
+/*
 TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
 
     // Edge Specification:
@@ -250,6 +363,7 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         sf.make_edge( parts );
     }
 }
+*/
 /**
 TEST_CASE( "Build Quad Tree", "[quadtree]" ) {
 

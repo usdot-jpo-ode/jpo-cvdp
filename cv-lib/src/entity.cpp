@@ -67,11 +67,12 @@ double Location::distance( double lat1, double lon1, double lat2, double lon2 )
 
 double Location::distance_haversine( const Location& loc1, const Location& loc2 )
 {
-    double x = std::sin( loc2.latr - loc1.latr ) / 2.0;
-    double y = std::sin( loc2.lonr - loc1.lonr ) / 2.0;
+    double x = std::sin( to_radians(loc2.lat - loc1.lat) / 2.0);
+    double y = std::sin( to_radians(loc2.lon - loc1.lon) / 2.0);
+
     double a = x*x + std::cos( loc1.latr ) * std::cos( loc2.latr ) * y*y;
-    double c = 2.0 * std::asin( std::sqrt(a) ) * kEarthRadiusM;
-    return c;
+    double c = 2.0 * std::asin(std::sqrt(a));
+    return c * kEarthRadiusM;
 }
 
 double Location::distance_haversine( double lat1, double lon1, double lat2, double lon2 )
@@ -83,16 +84,17 @@ double Location::distance_haversine( double lat1, double lon1, double lat2, doub
 
 Location Location::project_position( const Location& loc, double bearing, double distance )
 {
-    double latr, lonr;
+    double latr, lonr, lon;
 
     distance /= kEarthRadiusM;
     bearing = to_radians(bearing);
 
     latr = std::asin( std::sin(loc.latr) * std::cos(distance) + std::cos(loc.latr) * std::sin(distance) * std::cos(bearing));
     lonr = loc.lonr + std::atan2( std::sin(bearing) * std::sin(distance) * std::cos(loc.latr), std::cos(distance) - std::sin(loc.latr) * std::sin(latr));
-    lonr = std::fmod((lonr + 3 * kPi), (2 * kPi)) - kPi;
+    lon = to_degrees(lonr);
+    lon = std::fmod(lon + 540.0, 360.0) - 180.0;
 
-    return Location(to_degrees(latr), to_degrees(lonr));
+    return Location(to_degrees(latr), lon);
 }
 
 Location Location::project_position( double lat, double lon, double bearing, double distance )
@@ -103,7 +105,7 @@ Location Location::project_position( double lat, double lon, double bearing, dou
 
 Location Location::midpoint( const Location& loc1, const Location& loc2 )
 {
-    double latr, lonr;
+    double latr, lonr, lon;
 
     double t = std::cos( loc2.latr );
     double d = loc2.lonr - loc1.lonr;
@@ -113,9 +115,10 @@ Location Location::midpoint( const Location& loc1, const Location& loc2 )
 
     latr = std::atan2( std::sin( loc1.latr ) + std::sin( loc2.latr ), std::sqrt( ( std::cos( loc1.latr ) + bx ) * ( std::cos( loc1.latr ) + bx ) + by*by ));
     lonr = loc1.lonr + std::atan2( by, std::cos( loc1.latr ) + bx );
-    lonr = std::fmod((lonr + 3 * kPi), (2 * kPi)) - kPi;
+    lon = to_degrees(lonr);
+    lon = std::fmod(lon + 540.0, 360.0) - 180.0;
 
-    return Location(to_degrees(latr), to_degrees(lonr));
+    return Location(to_degrees(latr), lon);
 }
 
 Location Location::midpoint( double lat1, double lon1, double lat2, double lon2 )
