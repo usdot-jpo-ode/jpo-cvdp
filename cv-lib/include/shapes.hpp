@@ -50,6 +50,12 @@ using StrVector = std::vector<std::string>;             ///< List of std::string
 class CSVInputFactory
 {
     public:
+
+        /**
+         * @brief Construct a CSVInputFactor for testing -- this does not consume a file.
+         */
+        CSVInputFactory();
+
         /**
          * @brief Construct a Shape Factor give a file specification.
          *

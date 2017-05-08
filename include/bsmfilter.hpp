@@ -202,13 +202,31 @@ class VelocityFilter {
         void set_max( double v );
 
         /**
-         * @brief Predicate operator that evaluates this filter given a velocity.
+         * @brief Predicate function operator indicating whether this velocity should be filtered, i.e. suppressed.
          *
-         * The data element having velocity, v, will be suppressed when v < min or v > max.
+         * The retension interval is closed: [min_, max_]
          *
-         * @return true = retain; false = suppress.
+         * @return true = filter (suppres); false = retain.
          */
         bool operator()( double v );
+
+        /**
+         * @brief Predicate function operator indicating whether this velocity should be suppressed; surrogate for filter.
+         *
+         * The retension interval is closed: [min_, max_]
+         *
+         * @return true = filter (suppres); false = retain.
+         */
+        bool suppress( double v );
+
+        /**
+         * @brief Predicate function operator indicating whether this velocity should be retained.
+         *
+         * The retension interval is closed: [min_, max_]
+         *
+         * @return true = keep this BMS; false = suppress.
+         */
+        bool retain( double v );
 
     private:
         double min_;     ///< the minimum velocity for this filter.
@@ -274,11 +292,18 @@ class BSM : public Geo::Point {
         void set_longitude( double longitude );
 
         /**
-         * @brief Set the temporary ID fields for the BSM
+         * @brief Set the temporary ID field for the BSM
          *
          * @param id the temporary id for the BSM.
          */
         void set_id( const std::string& s );
+
+        /**
+         * @brief Get the temporary ID field for the BSM
+         *
+         * @return a const reference to the temporary id for the BSM.
+         */
+        const std::string& get_id() const;
 
         /**
          * @brief Write the BSM in readable form to the provided output stream.
@@ -312,15 +337,14 @@ class BSM : public Geo::Point {
 class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHandler> { 
     public:
 
+        using Ptr = std::shared_ptr<BSMHandler>;                       ///< Handle to pass this handler around efficiently.
+
         static constexpr uint32_t kVelocityFilterFlag = 0x1 << 0;
         static constexpr uint32_t kGeofenceFilterFlag = 0x1 << 1;
         static constexpr uint32_t kIdRedactFlag       = 0x1 << 2;
 
         // must be static const to compose these flags and use in template specialization.
         static const unsigned flags = rapidjson::kParseDefaultFlags | rapidjson::kParseNumbersAsStringsFlag;
-
-        using Ptr = std::shared_ptr<BSMHandler>;                       ///< Handle to pass this handler around efficiently.
-
 
         /**
          * records the status of the parsing including what caused parsing to stop, i.e., the point to be suppressed.

@@ -35,25 +35,32 @@ namespace Shapes {
 
 using StreamPtr = std::shared_ptr<std::istream>;
 
+CSVInputFactory::CSVInputFactory() :
+    file_path_{}
+{}
+
 CSVInputFactory::CSVInputFactory(const std::string& file_path) :
     file_path_{file_path}
 {}
 
+/**
+ * Edge Specification:
+ * - line_parts[0] : "edge"
+ * - line_parts[1] : unique 64-bit integer identifier
+ * - line_parts[2] : A sequence of colon-split points; each point is semi-colon split.
+ *      - Point: <uid>;latitude;longitude
+ * - line_parts[3] : A sequence of colon-split key=value attributes.
+ *      - Attribute Pair: <attribute>=<value>
+ */
 void CSVInputFactory::make_edge(const StrVector& line_parts) {
     double lat, lon;
     uint64_t id;
+    osm::Highway way_type{osm::Highway::OTHER};         // default value.
 
-    // default value.
-    osm::Highway way_type{osm::Highway::OTHER};
-
-    // Edge Specification:
-    // - line_parts[0] : "edge"
-    // - line_parts[1] : unique 64-bit integer identifier
-    // - line_parts[2] : A sequence of colon-split points; each point is semi-colon split.
-    //      - Point: <uid>;latitude;longitude
-    // - line_parts[3] : A sequence of colon-split key=value attributes.
-    //      - Attribute Pair: <attribute>=<value>
-    //
+    if ( line_parts.size() >= 3 && line_parts.size() <= 4 ) {
+        // attributes should not be required for an edge.
+        throw std::invalid_argument("insufficient number of components to create an edge: " + line_parts.size() + "; requires 4." );
+    }
 
     if ( line_parts.size() == 4 ) {
         // parse attributes for this edge.
@@ -81,11 +88,10 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
 
         auto blacklist_item = osm::highway_blacklist.find( way_type );
         if (blacklist_item != osm::highway_blacklist.end()) {
-            // this edge type should be ignored.
+            // this edge type should be ignored since it is in the blacklist.
             throw osm::invalid_way_exception( way_type );
         }
     }
-
 
     // calling method confirms at least 3 elements in line_parts.
     uint64_t edge_id = std::stoull( line_parts[static_cast<int>(osm::Fields::ID)] );

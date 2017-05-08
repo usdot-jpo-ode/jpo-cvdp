@@ -160,7 +160,16 @@ void VelocityFilter::set_max( double v ) {
 }
 
 bool VelocityFilter::operator()( double v ) {
-    return v > min_ && v < max_;
+    // true = filter it!
+    return v < min_ || v > max_;
+}
+
+bool VelocityFilter::suppress( double v ) {
+    return (*this)(v);
+}
+
+bool VelocityFilter::retain( double v ) {
+    return !(*this)(v);
 }
 
 BSM::BSM() :
@@ -196,6 +205,10 @@ void BSM::set_id( const std::string& s ) {
     id_ = s;
 }
 
+const std::string& BSM::get_id() const {
+    return id_;
+}
+
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )
 {
     os  << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
@@ -204,7 +217,7 @@ std::ostream& operator<<( std::ostream& os, const BSM& bsm )
     return os;
 }
 
-BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const std::unordered_map<std::string,std::string>& conf) :
+BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
     reader_{},
     activated_{0},
     result_{ ResultStatus::SUCCESS },
@@ -243,25 +256,28 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     Geo::Entity::PtrSet entity_set = quad_ptr_->retrieve_elements(bsm); 
 
     for (auto& entity_ptr : entity_set) {
-        if (entity_ptr->get_type() == "circle") {
-            circle_ptr = std::static_pointer_cast<const Geo::Circle>(entity_ptr);
-
-            if (circle_ptr->contains(bsm)) {
-                return true;
-            }
-        } else if (entity_ptr->get_type() == "edge") {
+        if (entity_ptr->get_type() == "edge") {
             edge_ptr = std::static_pointer_cast<const Geo::Edge>(entity_ptr); 
             area_ptr = edge_ptr->to_area();
 
             if (area_ptr->contains(bsm)) {
                 return true;
             }
-        } else if (entity_ptr->get_type() == "grid") {
+
+        }   else    if (entity_ptr->get_type() == "circle") {
+            circle_ptr = std::static_pointer_cast<const Geo::Circle>(entity_ptr);
+
+            if (circle_ptr->contains(bsm)) {
+                return true;
+            }
+
+        } else  if (entity_ptr->get_type() == "grid") {
             grid_ptr = std::static_pointer_cast<const Geo::Grid>(entity_ptr); 
 
             if (grid_ptr->contains(bsm)) {
                 return true;
             }
+
         }
     }
     return false;
@@ -282,7 +298,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         // nothing triggered a change in status, but we still failed. Parse error.
         result_ = ResultStatus::PARSE;
     }
-
+ 
+    // successful processing is no parse errors; result carries filter/redaction results.
     return (r.Code() == rapidjson::kParseErrorNone );
 }
 
@@ -556,38 +573,3 @@ bool BSMHandler::EndArray(rapidjson::SizeType elementCount)
     return result_ == ResultStatus::SUCCESS;
 }
 
-/**
- * Testing stub.
- */
-int main_old(int argc, char **argv) {
-    if (argc < 2) {
-        std::cerr << "Missing path to region file." << std::endl;
-        exit(1);
-    }
-
-    // Setup the quad.
-    Geo::Point sw{ 42.17, -83.91 };
-    Geo::Point ne{ 42.431, -83.54 };
-
-    std::string region_file_path = std::string(argv[1]);
-
-    // Declare a quad with the given bounds.
-    Quad::Ptr quad_ptr = std::make_shared<Quad>(sw, ne);
-    // Read the file and parse the shapes.
-    Shapes::CSVInputFactory shape_factory(region_file_path);
-    shape_factory.make_shapes();
-
-    // Add all the shapes to the quad.
-    for (auto& circle_ptr : shape_factory.get_circles()) {
-        Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(circle_ptr)); 
-    }
-
-    for (auto& edge_ptr : shape_factory.get_edges()) {
-        Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(edge_ptr)); 
-    }
-
-    for (auto& grid_ptr : shape_factory.get_grids()) {
-        Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(grid_ptr)); 
-    }
-    return 0;
-}

@@ -39,21 +39,18 @@ target_link_libraries(bsmjson_privacy CVLib rdkafka++)
 
 #### BUILD TARGET FOR THE PPM UNIT TESTS ####
 
-set(PPM_TEST_SRC "src/tests.cpp")
+set(PPM_TEST_SRC "src/tests.cpp")                                      # unit tests
 
-# Catch is header only, but we treat it as a library
 set(CATCH_INCLUDE_DIR /usr/local/include/catch)                       
 add_library(Catch INTERFACE)
-target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
+target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})       # catch is header only; tell where to find header.
 
-# Need everything to build the unit tests.
-add_executable(ppm_tests ${PPM_TEST_SRC} ${PPM_SRC})
+add_executable(ppm_tests ${PPM_TEST_SRC} ${PPM_SRC})                   # need everything to build tests.
 target_link_libraries(ppm_tests CVLib rdkafka++ Catch)
-# Preprocessor directive to EXCLUDE our main() and use Catch's unit test main()
-target_compile_definitions(ppm_tests PRIVATE _PPM_TESTS)
+target_compile_definitions(ppm_tests PRIVATE _PPM_TESTS)               # flag to exclude the tool's main.
 
 #### BUILD TARGET FOR THE KAFKA TEST TOOL ####
-# Add the kafka-test tool.
+
 add_subdirectory(kafka-test)
 
 # Copy the data to the build. TODO make this part of the test or data target.
