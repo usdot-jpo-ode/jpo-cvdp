@@ -50,7 +50,6 @@ using StrVector = std::vector<std::string>;             ///< List of std::string
 class CSVInputFactory
 {
     public:
-
         /**
          * @brief Construct a CSVInputFactor for testing -- this does not consume a file.
          */
@@ -99,12 +98,6 @@ class CSVInputFactory
          */
         const std::vector<Geo::Grid::CPtr>& get_grids(void) const;
 
-    private:
-        std::string file_path_;                                 ///< The file containing the shape specifications.
-        Geo::Vertex::IdToPtrMap edge_map_;                      ///< Map from identifiers to pointers to previously constructed vertices; prevents duplicates seen in OSM.
-        std::vector<Geo::Circle::CPtr> circles_;                ///< Vector of constant pointers to Circle instances.
-        std::vector<Geo::EdgeCPtr> edges_;                      ///< Vector of constant pointers to Edge instances.
-        std::vector<Geo::Grid::CPtr> grids_;                    ///< Vector of constant pointers to Grid instances.
 
         /**
          * @brief Attempt to construct a Circle instance from the parts provided
@@ -155,6 +148,12 @@ class CSVInputFactory
          * @throws out_of_range exception for incorrect positions.
          */
         void make_grid(const StrVector& line_parts);
+
+        std::string file_path_;                                 ///< The file containing the shape specifications.
+        Geo::Vertex::IdToPtrMap edge_map_;                      ///< Map from identifiers to pointers to previously constructed vertices; prevents duplicates seen in OSM.
+        std::vector<Geo::Circle::CPtr> circles_;                ///< Vector of constant pointers to Circle instances.
+        std::vector<Geo::EdgeCPtr> edges_;                      ///< Vector of constant pointers to Edge instances.
+        std::vector<Geo::Grid::CPtr> grids_;                    ///< Vector of constant pointers to Grid instances.
 };
 
 /**
@@ -205,12 +204,6 @@ class CSVOutputFactory
          */
         void write_shapes(void) const;
 
-    private:
-        std::string file_path_;                         ///< The file to write the shape specification to.
-        std::vector<Geo::Circle::CPtr> circles_;        ///< The collection of Circle instances to write.
-        std::vector<Geo::EdgeCPtr> edges_;              ///< The collection of Edge instances to write.
-        std::vector<Geo::Grid::CPtr> grids_;            ///< The collection of Grid instance to write.
-
         /**
          * @brief Write a single Circle to the specified stream.
          *
@@ -234,6 +227,11 @@ class CSVOutputFactory
          * @param edge_ptr A shared pointer to the Grid instance.
          */
         void write_grid(std::ofstream& os, Geo::Grid::CPtr grid_ptr) const;
+
+        std::string file_path_;                         ///< The file to write the shape specification to.
+        std::vector<Geo::Circle::CPtr> circles_;        ///< The collection of Circle instances to write.
+        std::vector<Geo::EdgeCPtr> edges_;              ///< The collection of Edge instances to write.
+        std::vector<Geo::Grid::CPtr> grids_;            ///< The collection of Grid instance to write.
 };
 
 }  // end namespace Shapes

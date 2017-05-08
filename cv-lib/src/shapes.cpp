@@ -59,7 +59,7 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
 
     if ( line_parts.size() >= 3 && line_parts.size() <= 4 ) {
         // attributes should not be required for an edge.
-        throw std::invalid_argument("insufficient number of components to create an edge: " + line_parts.size() + "; requires 4." );
+        throw std::invalid_argument("insufficient number of components to create an edge: " + std::to_string(line_parts.size()) + "; requires 4." );
     }
 
     if ( line_parts.size() == 4 ) {

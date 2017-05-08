@@ -194,7 +194,7 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
     //
     
 
-type,id,geography,attributes
+//type,id,geography,attributes
 
     std::array<std::string,13> edge_tests = {
         "",
@@ -233,23 +233,22 @@ type,id,geography,attributes
 
     for ( auto& et : edge_tests ) {
         StrVector parts = string_utilities::split(et, ',');
-        sf.make_edge(parts);
-        // catch invalid_argument exceptions for fewer than 3 and more than 4 args.
-        // catch invalid_way_exception; throw out way_types in blacklist.
-        // empty key or values will do nothing, but shouldn't change atts.
-        // undefined way types will result in OTHER for way type.
-
+        
+        try {
+            sf.make_edge(parts);
+            // catch invalid_argument exceptions for fewer than 3 and more than 4 args.
+            // catch invalid_way_exception; throw out way_types in blacklist.
+            // empty key or values will do nothing, but shouldn't change atts.
+            // undefined way types will result in OTHER for way type.
         } catch (std::exception& e) {
             // Deal with all the exceptions thrown from the make_<shape> methods.
             // Skip the specification and move to the next shape.
             // TODO: need some logging here.
             std::cerr << "Failed to make shape: " << e.what() << std::endl;
         }
-    }
+
         sf.make_edge( parts );
     }
-
-
 }
 /**
 TEST_CASE( "Build Quad Tree", "[quadtree]" ) {

@@ -20,7 +20,7 @@ add_subdirectory("cv-lib")
 # Include the cvlib headers; defined in cv-lib/CMakeLists.txt
 include_directories(${CVLIB_INCLUDE})
 
-# Include application and JSON parser headers.
+# Include application, JSON parser headers.
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/rapidjson")
 
@@ -41,7 +41,7 @@ target_link_libraries(bsmjson_privacy CVLib rdkafka++)
 
 set(PPM_TEST_SRC "src/tests.cpp")                                      # unit tests
 
-set(CATCH_INCLUDE_DIR /usr/local/include/catch)                       
+set(CATCH_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/catch")
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})       # catch is header only; tell where to find header.
 
