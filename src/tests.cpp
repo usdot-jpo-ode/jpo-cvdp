@@ -153,7 +153,31 @@ TEST_CASE("Entity", "[entity test]") {
         // Assume some error here due to the implementation.
         CHECK(phss->distance_from_point(midsum) == Approx(0.03299)); 
         CHECK(phss->get_way_type() == osm::Highway::SECONDARY); 
-        CHECK(phss->get_way_type_index() == 2); 
+        CHECK(phss->get_way_type_index() == 3); 
+        CHECK(phss->get_way_width() == Approx(17.0)); 
+        CHECK(phss->dlatitude() == Approx(-0.00362));
+        CHECK(phss->dlongitude() == Approx(0.00435));
+        CHECK(phss->length() == Approx(562.537106));
+        CHECK(phss->length_haversine() == Approx(562.537106));
+        CHECK(phss->bearing() == Approx(135.78563));
+        CHECK(phss->intersects(*ahw));
+        CHECK_FALSE(phss->intersects(*utdr));
+        CHECK(phss->intersects(35.952500, -83.932434, 35.950715, -83.934971));
+        CHECK_FALSE(phss->intersects(35.949813, -83.936214, 35.948272, -83.934421));
+        CHECK(phss->is_explicit());
+        CHECK_FALSE(phss->is_implicit());
+        CHECK(phss->get_uid() == 1); 
+        CHECK(*phss == *phss);
+        CHECK_FALSE(*phss == *ahw);
+    }
+
+    Geo::AreaPtr phss_area = phss->to_area();
+    Geo::AreaPtr phss_area_long = phss->to_area(10.0);
+    Geo::AreaPtr phss_area_wide_long = phss->to_area(80.0, 10.0);
+    
+    SECTION("Area") {
+        CHECK(phss_area->contains(midsum));
+        CHECK_FALSE(phss_area->contains(loc_a));
     }
 
     SECTION("Entity") {
