@@ -1,6 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
+#include <memory>
+
 #include "cvlib.hpp"
 
 #include "bsmfilter.hpp"
@@ -18,14 +20,14 @@ TEST_CASE("Entity", "[entity test]") {
     }
 
     // semi-circumference of Earth (meters)
-    const double kSemiCircM = 20037508.3427892439;
+    const double kSemiCircM = 20037508.3427;
     // Eiffel Tower to Titanic distance (meters)
-    const double tToE = 4084152.4248618507;
-    const double tToEApprox = 4167612.3240307244;
+    const double tToE = 4084152.4248;
+    const double tToEApprox = 4167612.32403;
     // Titanic to Eiffel Tower bearing (degrees)
-    const double tToEBearing = 60.5340135811;
+    const double tToEBearing = 60.53401;
     // Eiffel Tower to Titanic bearing (degrees)
-    const double eToTBearing = 279.0319532512;
+    const double eToTBearing = 279.0319;
 
     Geo::Location loc_a(90.0, 180.0);  
     Geo::Location loc_b(90.0, 180.0, 1);  
@@ -102,16 +104,62 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK(Geo::Location::bearing(90.0, 180.0, 0.0, 0.0) == Approx(0.0));
     }
     
-    /*
-    Geo::Vertex v_a(loc_a);
-    Geo::Vertex v_b(loc_b);
+    // Build a small road network.
+    // Pat Head Summit St.
+    Geo::Vertex::Ptr v_a = std::make_shared<Geo::Vertex>(35.952500, -83.932434, 1);
+    Geo::Vertex::Ptr v_b = std::make_shared<Geo::Vertex>(35.948878, -83.928081, 2);
+    Geo::EdgePtr phss = std::make_shared<Geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
+    // Andy Hold West.
+    Geo::Vertex::Ptr v_c = std::make_shared<Geo::Vertex>(35.950715, -83.934971, 3);
+    Geo::EdgePtr ahw = std::make_shared<Geo::Edge>(v_c, v_a, osm::Highway::SECONDARY, 2);
+    // Andy Hold East.
+    Geo::Vertex::Ptr v_d = std::make_shared<Geo::Vertex>(35.953302, -83.931344, 4);
+    Geo::EdgePtr ahe = std::make_shared<Geo::Edge>(v_d, v_a, osm::Highway::SECONDARY, 3);
+    // 20th St.
+    Geo::Vertex::Ptr v_e = std::make_shared<Geo::Vertex>(35.952175, -83.936688, 5);
+    Geo::EdgePtr twth = std::make_shared<Geo::Edge>(v_e, v_c, osm::Highway::SECONDARY, 4);
+    // UT Dr.
+    Geo::Vertex::Ptr v_f = std::make_shared<Geo::Vertex>(35.949813, -83.936214, 6);
+    Geo::Vertex::Ptr v_g = std::make_shared<Geo::Vertex>(35.948272, -83.934421, 7);
+    Geo::EdgePtr utdr = std::make_shared<Geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
+    // Andy Holt West End
+    Geo::Location ahwe = Geo::Location(35.949007, -83.937359, 8);
+    // Rec batting cage.
+    Geo::Location cage = Geo::Location(35.951250, -83.931861);
+    // midpt on Summit
+    Geo::Location midsum = Geo::Location(35.950689,-83.930257);
 
-    Geo::Edge edge_a(v_a, v_b);
+    Geo::EdgePtrSet edge_set;
+    edge_set.insert(phss);
+    edge_set.insert(ahw);
+    edge_set.insert(ahe);
 
-    SECTION("Edge") {
-        
+    SECTION("VertexAndEdges") {
+        CHECK(v_a->add_edges(edge_set));
+        CHECK(v_a->degree() == 3);
+        CHECK(v_a->outdegree() == 2);
+        CHECK(v_e->add_edge(twth));        
+        CHECK(v_e->add_edge(ahw));        
+        CHECK_FALSE(v_e->add_edge(ahw));        
+        CHECK(v_e->degree() == 2);
+        CHECK(v_e->outdegree() == 0);
+        CHECK(ahw->length_haversine() == Approx(302.9046));
+        // update Andy Holt West
+        v_c->update_location(ahwe);
+        CHECK(ahw->length_haversine() == Approx(590.0603));
+        CHECK(v_a->get_incident_edges().size() == 3);
+        CHECK(phss->distance_from_point(cage) == Approx(61.3234)); 
+        CHECK(phss->distance_from_point(*v_a) == Approx(0.0)); 
+        // Assume some error here due to the implementation.
+        CHECK(phss->distance_from_point(midsum) == Approx(0.03299)); 
+        CHECK(phss->get_way_type() == osm::Highway::SECONDARY); 
+        CHECK(phss->get_way_type_index() == 2); 
     }
-    */
+
+    SECTION("Entity") {
+        CHECK(loc_a.get_type() == "location"); 
+        CHECK(phss->get_type() == "edge");
+    }
 }
 
 TEST_CASE( "Redactor Checks", "[redactor]" ) {

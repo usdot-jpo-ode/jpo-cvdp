@@ -56,14 +56,22 @@ add_subdirectory(kafka-test)
 
 # Copy the data to the build. TODO make this part of the test or data target.
 set(BSM_DATA_DIR $<TARGET_FILE_DIR:bsmjson_privacy>/data)
+set(BSM_CONFIG_DIR $<TARGET_FILE_DIR:bsmjson_privacy>/config)
 
-# Make the base chrome-app directory.
+# Make the base data directory.
 add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E make_directory ${BSM_DATA_DIR})
-# Copy the app files.
+# Copy the data files.
 add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E copy_directory ${PROJECT_SOURCE_DIR}/data 
                    ${BSM_DATA_DIR})
+# Make the base data directory.
+add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+                   -E make_directory ${BSM_CONFIG_DIR})
+# Copy the data files.
+add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+                   -E copy_directory ${PROJECT_SOURCE_DIR}/config
+                   ${BSM_CONFIG_DIR})
 
 # option(BUILD_TESTS "Determines whether to build tests." ON)
 # if(BUILD_TESTS)

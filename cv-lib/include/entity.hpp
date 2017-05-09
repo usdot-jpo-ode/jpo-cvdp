@@ -694,7 +694,9 @@ class Edge : public Entity {
         osm::Highway get_way_type() const;
 
         /**
-         *
+         * @brief Return the OSM way type as an integer.
+         * 
+         * @return the OSM way type as an integer.
          */
         int get_way_type_index() const;
 

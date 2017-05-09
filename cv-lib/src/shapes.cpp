@@ -57,12 +57,12 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
     uint64_t id;
     osm::Highway way_type{osm::Highway::OTHER};         // default value.
 
-    if ( line_parts.size() >= 3 && line_parts.size() <= 4 ) {
+    if ( line_parts.size() < 3) {
         // attributes should not be required for an edge.
-        throw std::invalid_argument("insufficient number of components to create an edge: " + std::to_string(line_parts.size()) + "; requires 4." );
+        throw std::invalid_argument("insufficient number of components to create an edge: " + std::to_string(line_parts.size()) + "; requires 3." );
     }
 
-    if ( line_parts.size() == 4 ) {
+    if ( line_parts.size() >= 4 ) {
         // parse attributes for this edge.
         StrVector att_strings = string_utilities::split( line_parts[static_cast<int>(osm::Fields::ATTRIBUTES)], ':' );
         StrStrMap atts;
