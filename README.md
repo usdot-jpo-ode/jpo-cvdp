@@ -1,3 +1,5 @@
+Master: [![Build Status](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp.svg?branch=master)](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp)
+
 # jpo-cvdp
 
 The United States Department of Transportation Joint Program Office (JPO)
