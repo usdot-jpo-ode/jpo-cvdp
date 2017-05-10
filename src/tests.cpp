@@ -106,6 +106,7 @@ TEST_CASE("Entity", "[entity test]") {
     
     // Build a small road network.
     // Pat Head Summit St.
+    const double kPHSSDist = 562.537106;
     Geo::Vertex::Ptr v_a = std::make_shared<Geo::Vertex>(35.952500, -83.932434, 1);
     Geo::Vertex::Ptr v_b = std::make_shared<Geo::Vertex>(35.948878, -83.928081, 2);
     Geo::EdgePtr phss = std::make_shared<Geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
@@ -157,8 +158,8 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK(phss->get_way_width() == Approx(17.0)); 
         CHECK(phss->dlatitude() == Approx(-0.00362));
         CHECK(phss->dlongitude() == Approx(0.00435));
-        CHECK(phss->length() == Approx(562.537106));
-        CHECK(phss->length_haversine() == Approx(562.537106));
+        CHECK(phss->length() == Approx(kPHSSDist));
+        CHECK(phss->length_haversine() == Approx(kPHSSDist));
         CHECK(phss->bearing() == Approx(135.78563));
         CHECK(phss->intersects(*ahw));
         CHECK_FALSE(phss->intersects(*utdr));
@@ -174,15 +175,123 @@ TEST_CASE("Entity", "[entity test]") {
     Geo::AreaPtr phss_area = phss->to_area();
     Geo::AreaPtr phss_area_long = phss->to_area(10.0);
     Geo::AreaPtr phss_area_wide_long = phss->to_area(80.0, 10.0);
+    // two very close points, one inside the area the other outside.
+    Geo::Location inside(35.951128, -83.930657);
+    Geo::Location outside_1(35.951130, -83.930655);
+    Geo::Location outside_2(35.952511, -83.932457);
     
     SECTION("Area") {
+        CHECK_THROWS(phss->to_area(0.0, 10));
+        CHECK_THROWS(phss->to_area(-1.0, 10));
+        CHECK_NOTHROW(phss->to_area(10.0, 5));
         CHECK(phss_area->contains(midsum));
         CHECK_FALSE(phss_area->contains(loc_a));
+        CHECK(phss_area->contains(inside));
+        CHECK_FALSE(phss_area->contains(outside_1));
+        CHECK_FALSE(phss_area->outside_edge(-1, inside));
+        CHECK_FALSE(phss_area->outside_edge(20, inside));
+        CHECK(phss_area->outside_edge(0, outside_1));
+        CHECK_FALSE(phss_area->outside_edge(1, outside_1));
+        CHECK_FALSE(phss_area->outside_edge(2, outside_1));
+        CHECK_FALSE(phss_area->outside_edge(3, outside_1));
+        CHECK_FALSE(phss_area->contains(outside_2));
+        CHECK(phss_area_long->contains(outside_2));
+        CHECK(phss_area_wide_long->contains(inside));
+        // Check the corners.
+        std::vector<Geo::Point> corners = phss_area->get_corners();
+        CHECK(corners.size() == 4);
+        CHECK(corners[0].lat == Approx(35.952553247));
+        CHECK(corners[0].lon == Approx(-83.9323663936));
+        CHECK(corners[1].lat == Approx(35.948931247));
+        CHECK(corners[1].lon == Approx(-83.9280133967));
+        CHECK(corners[2].lat == Approx(35.948824753));
+        CHECK(corners[2].lon == Approx(-83.9281486032));
+        CHECK(corners[3].lat == Approx(35.952446753));
+        CHECK(corners[3].lon == Approx(-83.9325016063));
+        CHECK(Geo::Location::distance_haversine(corners[0].lat, corners[0].lon, corners[1].lat, corners[1].lon) == Approx(kPHSSDist));
+        CHECK(Geo::Location::distance_haversine(corners[2].lat, corners[2].lon, corners[3].lat, corners[3].lon) == Approx(kPHSSDist));
+        CHECK(Geo::Location::distance_haversine(corners[0].lat, corners[0].lon, corners[3].lat, corners[3].lon) == Approx(17.0));
+        CHECK(Geo::Location::distance_haversine(corners[1].lat, corners[1].lon, corners[2].lat, corners[2].lon) == Approx(17.0));
+        CHECK(phss_area->get_poly_string() == "-83.93236639,35.95255325,0 -83.9280134,35.94893125,0 -83.9281486,35.94882475,0 -83.93250161,35.95244675,0 -83.93236639,35.95255325,0");
+        CHECK(*phss_area == *phss_area);
+        CHECK_FALSE(*phss_area == *phss_area_long);
+        CHECK_FALSE(*phss_area == *phss_area_wide_long);
     }
+
+    Geo::Circle c1(cage, 10.0);
+    // contains itself
+    Geo::Circle c2(cage, 0.0);
+    // contains nothing
+    Geo::Circle c3(cage, -1.0);
+    Geo::Location c_inside(35.951295, -83.931768);
+    Geo::Location c_outside(35.951297, -83.931765);
+
+    SECTION("Circle") {
+        CHECK_FALSE(c1.contains(loc_a));
+        CHECK(c1.contains(c_inside));
+        CHECK_FALSE(c1.contains(c_outside));
+        CHECK_FALSE(c2.contains(c_outside));    
+        CHECK_FALSE(c2.contains(c_inside));    
+        CHECK(c2.contains(c1));    
+        CHECK(c1.contains(c2));    
+        CHECK_FALSE(c3.contains(c2));    
+    }
+
+    Geo::Location sw(35.951853, -83.932832);
+    Geo::Location ne(35.953642, -83.929975);
+    Geo::Location b_inside(35.952670, -83.931534);
+    Geo::Circle c4(b_inside, 10.0);
+    Geo::Circle c5(b_inside, 120.0);
+    Geo::Circle c6(b_inside, 1200.0);
+    Geo::Bounds b1(sw, ne);
+
+    SECTION("Bounds") {
+        CHECK_FALSE(b1.contains(loc_a));
+        CHECK(b1.contains(sw));
+        CHECK(b1.contains(ne));
+        CHECK(b1.contains(b_inside));
+        CHECK(b1.intersects(b_inside, loc_a));
+        CHECK_FALSE(b1.contains(*phss));
+        CHECK(b1.intersects(*phss));
+        CHECK(b1.contains(*ahe));
+        CHECK_FALSE(b1.intersects(*ahe));
+        CHECK(b1.contains_or_intersects(*phss));
+        CHECK_FALSE(b1.contains(*utdr));    
+        CHECK(b1.contains(c4));
+        CHECK(b1.intersects(c5));
+        CHECK_FALSE(b1.intersects(c6));
+        CHECK_FALSE(b1.contains_or_intersects(c6));
+        CHECK(b1.west_midpoint().lat == Approx(35.95274));
+        CHECK(b1.west_midpoint().lon == Approx(-83.9328));
+        CHECK(b1.east_midpoint().lat == Approx(35.95274));
+        CHECK(b1.east_midpoint().lon == Approx(-83.9299));
+        CHECK(b1.north_midpoint().lat == Approx(35.9536));
+        CHECK(b1.north_midpoint().lon == Approx(-83.93140));
+        CHECK(b1.south_midpoint().lat == Approx(35.95185));
+        CHECK(b1.south_midpoint().lon == Approx(-83.931403));
+        CHECK(b1.center().lat == Approx(b1.east_midpoint().lat));
+        CHECK(b1.center().lat == Approx(b1.west_midpoint().lat));
+        CHECK(b1.center().lon == Approx(b1.south_midpoint().lon));
+        CHECK(b1.center().lon == Approx(b1.north_midpoint().lon));
+        CHECK(b1.width() == Approx(0.002857));
+        CHECK(b1.height() == Approx(0.001789));
+    }
+
+    Geo::Location nw(35.953642, -83.932832);
+    Geo::Grid g1(b1, 0, 0);
+    /*
+    Geo::Grid::GridPtrVector grids = Geo::Grid::build_grid(nw, .7, 35.951853, -83.929975);
+    
+    SECTION("Grid") {
+        CHECK(grids.size() == 1);
+    }
+    */
 
     SECTION("Entity") {
         CHECK(loc_a.get_type() == "location"); 
         CHECK(phss->get_type() == "edge");
+        CHECK(c1.get_type() == "circle");
+        CHECK(g1.get_type() == "grid");
     }
 }
 
