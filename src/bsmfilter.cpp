@@ -243,19 +243,16 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
     auto search = conf.find("privacy.filter.velocity");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kVelocityFilterFlag>();
-        //activated_ |= kVelocityFilterFlag;
     }
 
     search = conf.find("privacy.filter.geofence");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kGeofenceFilterFlag>();
-        //activated_ |= kGeofenceFilterFlag;
     }
 
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
-        //activated_ |= kIdRedactFlag;
     }
 }
 
