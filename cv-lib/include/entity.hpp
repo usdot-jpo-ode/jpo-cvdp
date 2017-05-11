@@ -1343,7 +1343,7 @@ class Grid : public Bounds, public Entity {
          * @brief Build a collection of disjoint Grids of a particular size anchored at particular point.
          *
          * @param nw_point The anchor point for the grid.
-         * @param grid_width The width of each individual grid in "degrees"
+         * @param grid_width The width of each individual grid in meters
          * @param lat_threshold The minimum latitude bounds of the collection of grids.
          * @param lon_threshold The maximum longitude bounds of the collection of grids.
          */

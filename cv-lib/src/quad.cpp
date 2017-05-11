@@ -36,16 +36,6 @@ double Quad::fuzzyheight = 0.0;
 Geo::Vertex::IdToPtrMap Quad::elementmap{};
 Geo::Entity::PtrSet Quad::emptyedgeset{};
 
-void Quad::init( int minlevels, int maxlevels, double mindegrees, int maxelements, double fuzzywidth, double fuzzyheight)
-{
-    Quad::minlevels = minlevels;
-    Quad::maxlevels = maxlevels;
-    Quad::mindegrees = mindegrees;
-    Quad::maxelements = maxelements;
-    Quad::fuzzywidth = fuzzywidth;
-    Quad::fuzzyheight = fuzzyheight;
-}
-
 Quad::Quad( const Geo::Point& swpoint, const Geo::Point& nepoint, int level, const std::string& position )
     : Geo::Bounds{ swpoint, nepoint }, 
     level_{level}, 
@@ -72,83 +62,6 @@ Quad::Quad( const Geo::Point& swpoint, const Geo::Point& nepoint, int level, con
 
     fuzzybounds_.se.lat = se.lat - fuzzyheight_;
     fuzzybounds_.se.lon = se.lon + fuzzywidth_;
-}
-
-Geo::Edge::Ptr Quad::make_edge( const std::string& fileline )
-{
-    double lat, lon;
-    uint64_t id;
-    osm::Highway way_type;
-
-    StrVector parts = string_utilities::split( fileline );
-    StrVector att_strings = string_utilities::split( parts[static_cast<int>(osm::Fields::ATTRIBUTES)], ':' );
-
-    StrStrMap atts;
-    for (auto& att_string : att_strings) {
-        StrPair att = string_utilities::split_attribute( att_string );
-        atts[att.first] = att.second;
-    }
-
-    try {
-        // TODO: hard coded string.
-        way_type = osm::highway_map[ atts["way_type"] ];
-    } catch ( std::out_of_range& ) {
-        way_type = osm::Highway::OTHER;
-    }
-    auto blacklist_item = osm::highway_blacklist.find( way_type );
-
-    if (blacklist_item != osm::highway_blacklist.end()) {
-        throw osm::invalid_way_exception( way_type );
-    }
-
-    StrVector geo_parts{ string_utilities::split( parts[static_cast<int>(osm::Fields::GEOGRAPHY)], ':' ) };
-
-    // parts[Fields::TYPE] stays a string.
-    uint64_t edge_id = std::stoull( parts[static_cast<int>(osm::Fields::ID)] );
-
-    Geo::Vertex::Ptr vp1;
-    StrVector point_parts{ string_utilities::split( geo_parts[0], ';' ) };
-    id = std::stoull( point_parts[static_cast<int>(osm::PtFields::ID)] );
-
-    auto element_item = elementmap.find( id );
-
-    if (element_item != elementmap.end()) {
-
-        vp1 = elementmap[id];
-
-    } else {
-
-        lat = std::stod( point_parts[static_cast<int>(osm::PtFields::LAT)] );
-        lon = std::stod( point_parts[static_cast<int>(osm::PtFields::LON)] );
-        vp1 = std::make_shared<Geo::Vertex>(lat,lon,id);  
-        elementmap[id] = vp1;
-
-    }    
-
-    Geo::Vertex::Ptr vp2;
-    point_parts = string_utilities::split( geo_parts[1], ';' );
-    id = std::stoull( point_parts[static_cast<int>(osm::PtFields::ID)] );
-
-    element_item = elementmap.find( id );
-
-    if (element_item != elementmap.end()) {
-
-        vp2 = elementmap[id];
-
-    } else {
-
-        lat = std::stod( point_parts[static_cast<int>(osm::PtFields::LAT)] );
-        lon = std::stod( point_parts[static_cast<int>(osm::PtFields::LON)] );
-        vp2 = std::make_shared<Geo::Vertex>(lat,lon,id);  
-        elementmap[id] = vp2;
-
-    }    
-
-    // TODO the way id does not uniquely identify the edge, as a way is sequence of edges.
-    Geo::EdgePtr edge_ptr = std::make_shared<Geo::Edge>( vp1, vp2, way_type, edge_id ); 
-    vp1->add_edge( edge_ptr );
-    vp2->add_edge( edge_ptr );
-    return edge_ptr;
 }
 
 void Quad::quadsplit()
@@ -208,66 +121,13 @@ bool Quad::full() const
     return static_cast<int>(elementset_.size()) > Quad::maxelements;
 }
 
-Quad::CPtr Quad::make_empty_tree( const Geo::Point& swpoint, const Geo::Point& nepoint ) {
-    return std::make_shared<Quad>(swpoint, nepoint);
-}
-
-Quad::CPtr Quad::make_tree( const Geo::Point& swpoint, const Geo::Point& nepoint, const std::string& filename )
+bool Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
 {
-    Quad::Ptr qptr = std::make_shared<Quad>( swpoint, nepoint );
-    Quad::build_tree( qptr, filename );
-    return qptr;
-}
-
-Quad::CPtr Quad::make_tree( const Geo::Point& swpoint, const Geo::Point& nepoint, std::istream& stream )
-{
-    Quad::Ptr qptr = std::make_shared<Quad>( swpoint, nepoint );
-    Quad::build_tree( qptr, stream );
-    return qptr;
-}
-
-void Quad::build_tree( Quad::Ptr& root, const std::string& filename )
-{
-    char buffer[BUFFER_SIZE];
-    std::ifstream file{filename};
-    file.rdbuf()->pubsetbuf( buffer, BUFFER_SIZE );
-
-    if (file.is_open()) {
-        build_tree( root, file );
-    }
-
-    file.close();
-}
-
-void Quad::build_tree( Quad::Ptr& root, std::istream& stream )
-{
-    // Reset the element map. TODO make element map non static
-    elementmap.clear();
-
-    Geo::Edge::Ptr eptr;
-    std::string line;
-
-    while ( std::getline( stream, line ) ) {
-        try {
-            eptr = Quad::make_edge( line );
-            Quad::insert( root, eptr );
-
-        } catch (const std::invalid_argument&) {
-            // header most likely.
-        } catch (const std::out_of_range&) {
-            // this could be caused by stol as well 
-        } catch (const std::runtime_error&) {
-            // Try to get the rest of the lines.
-        }
-    }
-}
-
-void Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
-{
-    if ( !entity_ptr->touches(quadptr->fuzzybounds_) ) return;
+    if ( !entity_ptr->touches(quadptr->fuzzybounds_) ) return false;
 
     PtrStack quadstack;
     quadstack.push(quadptr);
+    bool is_insert = false;
 
     while (!quadstack.empty()) {
 
@@ -318,6 +178,7 @@ void Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
 
         // level is at max or level is less than max and split request failed to produce children.
         currquad->elementset_.insert(entity_ptr);
+        is_insert = true;
 
         if (currquad->full()) {
             // quad is saturated with elements; split and redistribute.
@@ -329,6 +190,7 @@ void Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
                 for ( auto& quad : currquad->children_ ) {
                     if (e->touches(quad->fuzzybounds_)) {
                         quad->elementset_.insert(e);
+                        is_insert = true;
                     }
                 }
             }
@@ -336,6 +198,8 @@ void Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
             currquad->elementset_.clear();
         } 
     }
+
+    return is_insert;
 }
 
 std::ostream& operator<<( std::ostream& os, const Quad& quad )
@@ -394,4 +258,39 @@ Geo::Bounds::Ptr Quad::retrieve_bounds( const Geo::Point& pt, bool fuzzy ) const
     } else {
         return Geo::Bounds::Ptr{};
     }
+}
+
+std::vector<Geo::Bounds::Ptr> Quad::retrieve_all_bounds( Quad::Ptr& quadptr, bool leaf_only, bool fuzzy )
+{
+    std::vector<Geo::Bounds::Ptr> ret;
+    PtrStack quadstack;
+    quadstack.push(quadptr);
+    bool is_insert = false;
+
+    while (!quadstack.empty()) {
+        Ptr currquad = quadstack.top();
+        quadstack.pop();
+        
+        if (currquad->haschildren()) {
+            for (auto& child : currquad->children_) {
+                quadstack.push(child);
+            }
+
+            if (!leaf_only) {
+                if (fuzzy) {
+                    ret.push_back(std::make_shared<Geo::Bounds>(currquad->fuzzybounds_));
+                } else {
+                    ret.push_back(std::make_shared<Geo::Bounds>(*currquad));
+                }
+            }
+        } else {
+            if (fuzzy) {
+                ret.push_back(std::make_shared<Geo::Bounds>(currquad->fuzzybounds_));
+            } else {
+                ret.push_back(std::make_shared<Geo::Bounds>(*currquad));
+            }
+        }
+    }
+
+    return ret;
 }

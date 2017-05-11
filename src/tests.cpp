@@ -240,11 +240,11 @@ TEST_CASE("Entity", "[entity test]") {
 
     Geo::Location sw(35.951853, -83.932832);
     Geo::Location ne(35.953642, -83.929975);
+    Geo::Bounds b1(sw, ne);
     Geo::Location b_inside(35.952670, -83.931534);
     Geo::Circle c4(b_inside, 10.0);
     Geo::Circle c5(b_inside, 120.0);
     Geo::Circle c6(b_inside, 1200.0);
-    Geo::Bounds b1(sw, ne);
 
     SECTION("Bounds") {
         CHECK_FALSE(b1.contains(loc_a));
@@ -286,11 +286,153 @@ TEST_CASE("Entity", "[entity test]") {
 //        CHECK(grids.size() == 1);
 //    }
 
+    Geo::Grid::GridPtrVector grids = Geo::Grid::build_grid(nw, 10, 35.951853, -83.929975);
+
+    SECTION("Grid") {
+        CHECK(grids.size() == 520);
+
+        // Each grid should be 10 by 10 meters.
+        for (int i = 0; i < 520; ++i) {
+            CHECK(Geo::Location::distance_haversine(grids[i]->nw.lat, grids[i]->nw.lon, grids[i]->sw.lat, grids[i]->sw.lon) == Approx(10.0));
+            CHECK(Geo::Location::distance_haversine(grids[i]->nw.lat, grids[i]->nw.lon, grids[i]->ne.lat, grids[i]->ne.lon) == Approx(10.0));
+            CHECK(Geo::Location::distance_haversine(grids[i]->se.lat, grids[i]->se.lon, grids[i]->sw.lat, grids[i]->sw.lon) == Approx(10.0));
+            CHECK(Geo::Location::distance_haversine(grids[i]->se.lat, grids[i]->se.lon, grids[i]->ne.lat, grids[i]->ne.lon) == Approx(10.0));
+
+            // Check the circle is only on one grid -> the grids are disjoint.
+            if (i == 271) {
+                CHECK(grids[i]->contains(b_inside));
+            } else {
+                CHECK_FALSE(grids[i]->contains(b_inside));
+            }
+
+            // All grids should touch the bounds.
+            CHECK(grids[i]->touches(b1));
+        }
+    }
+    
+    Geo::Grid::CPtr g2_ptr = grids[271];
+    Geo::Location touch_test(35.952649, -83.933059);
+    Geo::Circle c_touch_test(touch_test, 25.0);
+
     SECTION("Entity") {
-        CHECK(loc_a.get_type() == "location"); 
+        // basic entity test
+        CHECK(b_inside.get_type() == "location"); 
         CHECK(phss->get_type() == "edge");
         CHECK(c1.get_type() == "circle");
-        CHECK(g1.get_type() == "grid");
+        CHECK(g2_ptr->get_type() == "grid");
+        CHECK(b_inside.touches(b1));
+        CHECK(phss->touches(b1));
+        CHECK(g2_ptr->touches(b1));
+        CHECK(c4.touches(b1));
+        CHECK(c5.touches(b1));
+        CHECK(c6.touches(b1));
+        CHECK(c_touch_test.touches(b1));
+    }
+}
+
+TEST_CASE("Quad Tree", "[quad]") {
+    // borrowing network from entity tests
+    Geo::Vertex::Ptr v_a = std::make_shared<Geo::Vertex>(35.952500, -83.932434, 1);
+    Geo::Vertex::Ptr v_b = std::make_shared<Geo::Vertex>(35.948878, -83.928081, 2);
+    Geo::EdgePtr phss = std::make_shared<Geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
+    // Andy Hold West.
+    Geo::Vertex::Ptr v_c = std::make_shared<Geo::Vertex>(35.950715, -83.934971, 3);
+    Geo::EdgePtr ahw = std::make_shared<Geo::Edge>(v_c, v_a, osm::Highway::SECONDARY, 2);
+    // Andy Hold East.
+    Geo::Vertex::Ptr v_d = std::make_shared<Geo::Vertex>(35.953302, -83.931344, 4);
+    Geo::EdgePtr ahe = std::make_shared<Geo::Edge>(v_d, v_a, osm::Highway::SECONDARY, 3);
+    // 20th St.
+    Geo::Vertex::Ptr v_e = std::make_shared<Geo::Vertex>(35.952175, -83.936688, 5);
+    Geo::EdgePtr twth = std::make_shared<Geo::Edge>(v_e, v_c, osm::Highway::SECONDARY, 4);
+    // UT Dr.
+    Geo::Vertex::Ptr v_f = std::make_shared<Geo::Vertex>(35.949813, -83.936214, 6);
+    Geo::Vertex::Ptr v_g = std::make_shared<Geo::Vertex>(35.948272, -83.934421, 7);
+    Geo::EdgePtr utdr = std::make_shared<Geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
+    Geo::Point sw(35.948378, -83.936072);
+    Geo::Point ne(35.953811, -83.928997);
+    Geo::Point test_point_1(35.951959, -83.931815);
+    Geo::Point test_point_2(35.949098, -83.935403);
+    Quad::Ptr quad_ptr = std::make_shared<Quad>(sw, ne);
+    
+    SECTION("Basic") {
+        // inserts
+        CHECK(Quad::insert(quad_ptr, phss));     
+        CHECK(Quad::insert(quad_ptr, ahw));     
+        CHECK(Quad::insert(quad_ptr, ahe));     
+        CHECK(Quad::insert(quad_ptr, twth));     
+        CHECK(Quad::insert(quad_ptr, utdr));
+        // retrievals 
+        Geo::Entity::PtrSet element_set = quad_ptr->retrieve_elements(test_point_1);
+        CHECK(element_set.size() == 1);
+        element_set = quad_ptr->retrieve_elements(*v_a);
+        CHECK(element_set.size() == 3);
+        element_set = quad_ptr->retrieve_elements(*v_c);
+        CHECK(element_set.size() == 2);
+        // Try to retrieve either end of UT drive.
+        // This will fail since they are outside the quad bounds.
+        element_set = quad_ptr->retrieve_elements(*v_f);
+        CHECK(element_set.size() == 0);
+        element_set = quad_ptr->retrieve_elements(*v_g);
+        CHECK(element_set.size() == 0);
+        // Try to retrieve the edge using a point on the road.
+        element_set = quad_ptr->retrieve_elements(test_point_2);
+        CHECK(element_set.size() == 1);
+    }    
+
+    SECTION("Structural") {
+        // re-insert
+        Quad::insert(quad_ptr, phss);     
+        Quad::insert(quad_ptr, ahw);     
+        Quad::insert(quad_ptr, ahe);     
+        Quad::insert(quad_ptr, twth);     
+        Quad::insert(quad_ptr, utdr);
+        std::vector<Geo::Bounds::Ptr> bounds_all = Quad::retrieve_all_bounds(quad_ptr);
+        CHECK(bounds_all.size() == 1231);
+        bounds_all = Quad::retrieve_all_bounds(quad_ptr, false, true);
+        CHECK(bounds_all.size() == 1231);
+        bounds_all = Quad::retrieve_all_bounds(quad_ptr, true, false);
+        CHECK(bounds_all.size() == 923);
+        bounds_all = Quad::retrieve_all_bounds(quad_ptr, true, true);
+        CHECK(bounds_all.size() == 923);
+
+        // test the bounds of some retreivals
+        Geo::Bounds::Ptr b_ret = quad_ptr->retrieve_bounds(test_point_1);
+        CHECK(b_ret->sw.lat == Approx(35.95194));
+        CHECK(b_ret->sw.lon == Approx(-83.93181));
+        CHECK(b_ret->ne.lat == Approx(35.95202));
+        CHECK(b_ret->ne.lon == Approx(-83.93176));
+        b_ret = quad_ptr->retrieve_bounds(test_point_1, true);
+        CHECK(b_ret->sw.lat == Approx(35.95193));
+        CHECK(b_ret->sw.lon == Approx(-83.93182));
+        CHECK(b_ret->ne.lat == Approx(35.95203));
+        CHECK(b_ret->ne.lon == Approx(-83.93175));
+        b_ret = quad_ptr->retrieve_bounds(test_point_2);
+        CHECK(b_ret->sw.lat == Approx(35.94905));
+        CHECK(b_ret->sw.lon == Approx(-83.935408));
+        CHECK(b_ret->ne.lat == Approx(35.94914));
+        CHECK(b_ret->ne.lon == Approx(-83.935353));
+        b_ret = quad_ptr->retrieve_bounds(test_point_2, true);
+        CHECK(b_ret->sw.lat == Approx(35.94904));
+        CHECK(b_ret->sw.lon == Approx(-83.935414));
+        CHECK(b_ret->ne.lat == Approx(35.94915));
+        CHECK(b_ret->ne.lon == Approx(-83.935347));
+    }
+
+    SECTION("Overflow") {
+        Geo::Location::Ptr test_loc_ptr = std::make_shared<Geo::Location>(35.951959, -83.931815);
+    
+        // Fill up a single leaf.
+        for (int i = 0; i < 32; ++i) {
+            Quad::insert(quad_ptr, test_loc_ptr);
+        }
+
+        Geo::Bounds::Ptr b_ret = quad_ptr->retrieve_bounds(*test_loc_ptr);
+        CHECK(Geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->sw.lat, b_ret->sw.lon) == Approx(9.44998));
+        // Overflow the leaf.
+        Quad::insert(quad_ptr, test_loc_ptr);
+        // TODO should be split here...
+        //b_ret = quad_ptr->retrieve_bounds(*test_loc_ptr);
+        //CHECK(Geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->sw.lat, b_ret->sw.lon) == Approx(9.44998));
     }
 }
 
