@@ -281,19 +281,47 @@ TEST_CASE("Entity", "[entity test]") {
 
     Geo::Location nw(35.953642, -83.932832);
     Geo::Grid g1(b1, 0, 0);
-    /*
-    Geo::Grid::GridPtrVector grids = Geo::Grid::build_grid(nw, .7, 35.951853, -83.929975);
-    
+    Geo::Grid::GridPtrVector grids = Geo::Grid::build_grid(nw, 10, 35.951853, -83.929975);
+
     SECTION("Grid") {
-        CHECK(grids.size() == 1);
+        CHECK(grids.size() == 520);
+
+        // Each grid should be 10 by 10 meters.
+        for (int i = 0; i < 520; ++i) {
+            CHECK(Geo::Location::distance_haversine(grids[i]->nw.lat, grids[i]->nw.lon, grids[i]->sw.lat, grids[i]->sw.lon) == Approx(10.0));
+            CHECK(Geo::Location::distance_haversine(grids[i]->nw.lat, grids[i]->nw.lon, grids[i]->ne.lat, grids[i]->ne.lon) == Approx(10.0));
+            CHECK(Geo::Location::distance_haversine(grids[i]->se.lat, grids[i]->se.lon, grids[i]->sw.lat, grids[i]->sw.lon) == Approx(10.0));
+            CHECK(Geo::Location::distance_haversine(grids[i]->se.lat, grids[i]->se.lon, grids[i]->ne.lat, grids[i]->ne.lon) == Approx(10.0));
+
+            // Check the circle is only on one grid -> the grids are disjoint.
+            if (i == 271) {
+                CHECK(grids[i]->contains(b_inside));
+            } else {
+                CHECK_FALSE(grids[i]->contains(b_inside));
+            }
+
+            // All grids should touch the bounds.
+            CHECK(grids[i]->touches(b1));
+        }
     }
-    */
+    
+    Geo::Grid::CPtr g2_ptr = grids[271];
+    Geo::Location touch_test(35.952649, -83.933059);
+    Geo::Circle c_touch_test(touch_test, 25.0);
 
     SECTION("Entity") {
-        CHECK(loc_a.get_type() == "location"); 
+        // basic entity test
+        CHECK(b_inside.get_type() == "location"); 
         CHECK(phss->get_type() == "edge");
         CHECK(c1.get_type() == "circle");
-        CHECK(g1.get_type() == "grid");
+        CHECK(g2_ptr->get_type() == "grid");
+        CHECK(b_inside.touches(b1));
+        CHECK(phss->touches(b1));
+        CHECK(g2_ptr->touches(b1));
+        CHECK(c4.touches(b1));
+        CHECK(c5.touches(b1));
+        CHECK(c6.touches(b1));
+        CHECK(c_touch_test.touches(b1));
     }
 }
 
