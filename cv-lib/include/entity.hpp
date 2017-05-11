@@ -1195,7 +1195,7 @@ class Bounds {
         /**
          * @brief A predicate indicating whether any portion of the provided circle intersects at least one of the boundary lines.
          *
-         * Note: If any of the circle's north, south, east, or west point are within the bounds an intersection exists.
+         * Note: If any of the circle's north, south, east, or west points create an edge that intersects the bounds.
          *
          * @param c the circle to check against the boundary.
          * @return true if c intersects one or more of this bound's boundary edges; false otherwise.

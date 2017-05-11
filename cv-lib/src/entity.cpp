@@ -653,7 +653,11 @@ bool Bounds::intersects(const Point& pt_a, const Point& pt_b) const {
 }
 
 bool Bounds::intersects( const Circle& circle ) const {
-    return contains(circle.north) || contains(circle.south) || contains(circle.east) || contains(circle.west);
+    return intersects(circle.north, circle.east) || intersects(circle.east, circle.south) || intersects(circle.south, circle.west) || intersects(circle.west, circle.north);
+}
+
+bool Bounds::contains_or_intersects(const Circle& circle ) const {
+    return intersects(circle) || contains(circle);
 }
 
 Point Bounds::west_midpoint() const
@@ -762,7 +766,7 @@ Grid::GridPtrVector Grid::build_grid(const Geo::Location& nw_point, double grid_
 
         height_nw_lat = next_height_nw_lat;
         height_nw_lon = next_height_nw_lon;
-        height += grid_width;
+        height -= grid_width;
         row++;
     }
 
