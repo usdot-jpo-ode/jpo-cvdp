@@ -2,10 +2,12 @@
 #include "catch.hpp"
 
 #include <memory>
+#include <bitset>
 
 #include "cvlib.hpp"
 
 #include "bsmfilter.hpp"
+
 
 TEST_CASE("Entity", "[entity test]") {
     SECTION("Conversions") {
@@ -353,7 +355,6 @@ TEST_CASE( "BSM Checks", "[bsm]" ) {
     }
 }
 
-/*
 TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
 
     // Edge Specification:
@@ -381,61 +382,283 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
 
 //type,id,geography,attributes
 
-    std::array<std::string,13> edge_tests = {
+    std::vector<std::string> argnum_tests {
         "",
-        "edge, 1",
-        "edge, 1, 4, 5, 3",
-
-        "edge, 2, 0, 0",
-        "edge, 3, 0, 0, 0, 0, 0, x, y",
-        "edge, 4, 0;2.4;5.5:3.2",
-        "edge, 0, 0;41.24789403:XXX:1;41.24746145;-111.0455124, way_type=primary:way_id=80",
-        "edge, 0, 0;41.24789403:-111.0467118:1;41.24746145;-111.0455124,wayt_type=primary:way_id=80",
-        "edge, 0, 0;41.24789403:-111.0467118:1;fdsdfsdf;-111.0455124,way_type=primary:way_id=80",
-        "edge, 0, 0;41.24789403:-111.0467118:1;41.24746145;-111.0455124,wayt_type=primary:way_id=80",
-        "edge, 70296,62616666   ;42.2930519   ;-83.7353919:62616669;42.293553;-83.734748,way_type=secondary:way_id=234816700",
-        "edge, 70296,62616666   ;42.2930519   ;-83.7353919:62616669;42.293553;-83.734748,way_type=secondary:way_id=234816700",
-        "edge, 70296, 62616666;42.2930519;-83.7353919 : 62616669;42.293553;-83.734748 : 62616669;42.293553;-83.734748 , way_type=xxxx:way_id=234816700"
+        "edge, 11",
+        // too many edge points or not enough points to define edge.
+        "edge, 12, 0;0;0:1;1;1:2;2;2"
+        "edge, 13, 0;0;0:1;1"
+        "edge, 14, 0;0 : 1;1;1"
     };
 
-//    std::array<std::string,4> circle_tests = {
-//        "circle,2,42.2930519:-83.7353919:2",
-//        "circle,1,42.2930519:-83.7353919:,way_type=xxxx:way_id=234816700",
-//        "circle,3,42.2930519::3,way_type=xxxx:way_id=234816700",
-//        "circle,,::4,way_type=xxxx:way_id=234816700"
-//    };
-//
-//    std::array<std::string,2> grid_tests = {
-//        "grid,1_2,42.29:-83.73:43.29:-85.73",
-//        "grid,2_9,12.29:-23.73:42.29:-83.73"
-//    };
+    // data type problems.
+    std::vector<std::string> datatype_tests {
+        "edge, X , 3;0;0 : 4;1;1",
+        "edge, 21, X;0;0 : 5;1;1",
+        "edge, 22, 6;0;0 : X;1;1",
+        "edge, 23, 7;a;- : 8;1;1",
+        "edge, 24, 9;0;0 : 10;x;*"
+    };
+
+    // TODO: what to do about points with same ID but different position. We are writing an error message but proceeding.
+    
+    // out of lat/lon range problems; in a loop so one point check is sufficient.
+    std::vector<std::string> badposition_tests {
+        "edge,31, 11; 80.1;0       :15;1;1",
+        "edge,32, 12;-84.1;0       :16;1;1",
+        "edge,33, 13; 0    ; 180.1 :17;1;1",
+        "edge,34, 14; 0    ;-180.1 :18;1;1"
+    };
+
+    // TODO: what to do about edges with the same IDs? We are throwing an exception now.
+
+    std::vector<std::string> badedge_tests {
+        // same id for points.
+        "edge,41, 19;0;0       :19;0;0"
+    };
+
+    // make sure SERVICE is in there for testing the invalid_way_exception
+    osm::highway_blacklist.insert( osm::Highway::SERVICE );
+    // this also tests strip and caps business.
+    std::vector<std::string> waytype_tests {
+        "edge,58, 31 ; 41.24 ; -83.74 : 61 ; 41.25 ; -84.04 , way_type = SERVICE",
+        "edge,59, 31 ; 41.24 ; -83.74 : 62 ; 41.25 ; -84.04 , way_type = servicE",
+        "edge,60, 31 ; 41.24 ; -83.74 : 63 ; 41.25 ; -84.04 , way_type = service"
+    };
+
+    std::vector<std::string> good_tests {
+       "edge,71, 51 ; 41.1 ; -83.1 : 52 ; 41.2 ; -84.2 , way_type = primary : way_id=80",
+       "edge,73, 53 ; 41.3 ; -83.3 : 54 ; 41.4 ; -84.4 , way_type = primary : way_id=80",
+       "edge,75, 55 ; 41.5 ; -83.5 : 56 ; 41.6 ; -84.6 , way_type = primary : way_id=80"
+    };
+
+    // checks that we pull from a previously defined vertices.
+    std::vector<std::string> bad_tests {
+       "edge,77, 55 ; 41.7 ; -83.7 : 56 ; 41.8 ; -84.8 , way_type = primary : way_id=80"
+    };
+
 
     Shapes::CSVInputFactory sf{};
-    for ( int i = 0; i < 3; ++i ) {
-        StrVector parts = string_utilities::split(edge_tests[i], ',');
-        REQUIRE_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+
+    for ( auto& testline : argnum_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
     }
 
-    for ( auto& et : edge_tests ) {
-        StrVector parts = string_utilities::split(et, ',');
-        
-        try {
-            sf.make_edge(parts);
-            // catch invalid_argument exceptions for fewer than 3 and more than 4 args.
-            // catch invalid_way_exception; throw out way_types in blacklist.
-            // empty key or values will do nothing, but shouldn't change atts.
-            // undefined way types will result in OTHER for way type.
-        } catch (std::exception& e) {
-            // Deal with all the exceptions thrown from the make_<shape> methods.
-            // Skip the specification and move to the next shape.
-            // TODO: need some logging here.
-            std::cerr << "Failed to make shape: " << e.what() << std::endl;
-        }
+    for ( auto& testline : datatype_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+    }
 
-        sf.make_edge( parts );
+    for ( auto& testline : badposition_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : badedge_tests  ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : waytype_tests  ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), osm::invalid_way_exception );
+    }
+
+    int i = 1;
+    for ( auto& testline : good_tests  ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        // check lat/lon range.
+        CHECK_NOTHROW( sf.make_edge( parts ) );
+        CHECK( sf.get_edges().back()->get_uid() == 70+i  );
+
+        CHECK( sf.get_edges().back()->get_way_type() == osm::Highway::PRIMARY  );
+
+        CHECK( sf.get_edges().back()->v1->uid == 50+i );
+        CHECK( sf.get_edges().back()->v2->uid == 51+i );
+
+        CHECK( sf.get_edges().back()->v1->lat == Approx(41.0 + (i/10.0)) );
+        CHECK( sf.get_edges().back()->v2->lat == Approx(41.1 + (i/10.0)) );
+
+        CHECK( sf.get_edges().back()->v1->lon == Approx(-83.0 - (i/10.0)) );
+        CHECK( sf.get_edges().back()->v2->lon == Approx(-84.1 - (i/10.0)) );
+
+        i+=2; 
+    }
+
+    i = 7;
+    for ( auto& testline : bad_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        // check lat/lon range.
+        CHECK_NOTHROW( sf.make_edge( parts ) );
+        CHECK_FALSE( sf.get_edges().back()->v1->uid == 50+i );
+        CHECK_FALSE( sf.get_edges().back()->v2->uid == 51+i );
+        CHECK_FALSE( sf.get_edges().back()->v1->lat == Approx(41.0 + (i/10.0)) );
+        CHECK_FALSE( sf.get_edges().back()->v2->lat == Approx(41.1 + (i/10.0)) );
+        CHECK_FALSE( sf.get_edges().back()->v1->lon == Approx(-83.0 - (i/10.0)) );
+        CHECK_FALSE( sf.get_edges().back()->v2->lon == Approx(-84.1 - (i/10.0)) );
     }
 }
-*/
+
+TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
+
+    ConfigMap pconf;
+
+    pconf["privacy.filter.velocity"]         = "ON";
+    pconf["privacy.redaction.id"]            = "ON";
+    pconf["privacy.redaction.id.inclusions"] = "ON";
+    pconf["privacy.filter.geofence"]         = "ON";
+
+    pconf["privacy.filter.velocity.min"]     = "2.235";
+    pconf["privacy.filter.velocity.max"]     = "35.763";
+
+    pconf["privacy.redaction.id.value"]      = "FFFFFFFF";
+    pconf["privacy.redaction.id.included"]   = "B1,B2";
+    
+    // Build a small road network on the UT campus.
+    Geo::Vertex::Ptr v_a = std::make_shared<Geo::Vertex>(35.952500, -83.932434, 1);
+    Geo::Vertex::Ptr v_b = std::make_shared<Geo::Vertex>(35.948878, -83.928081, 2);
+    Geo::Vertex::Ptr v_c = std::make_shared<Geo::Vertex>(35.950715, -83.934971, 3);
+    Geo::Vertex::Ptr v_d = std::make_shared<Geo::Vertex>(35.953302, -83.931344, 4);
+    Geo::Vertex::Ptr v_e = std::make_shared<Geo::Vertex>(35.952175, -83.936688, 5);
+    Geo::Vertex::Ptr v_f = std::make_shared<Geo::Vertex>(35.949813, -83.936214, 6);
+    Geo::Vertex::Ptr v_g = std::make_shared<Geo::Vertex>(35.948272, -83.934421, 7);
+
+    Geo::EdgePtr r1 = std::make_shared<Geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
+    Geo::EdgePtr r2 = std::make_shared<Geo::Edge>(v_c, v_a, osm::Highway::SECONDARY, 2);
+    Geo::EdgePtr r3 = std::make_shared<Geo::Edge>(v_d, v_a, osm::Highway::SECONDARY, 3);
+    Geo::EdgePtr r4 = std::make_shared<Geo::Edge>(v_e, v_c, osm::Highway::SECONDARY, 4);
+    Geo::EdgePtr r5 = std::make_shared<Geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
+    Geo::EdgePtr r6 = std::make_shared<Geo::Edge>(v_f, v_c, osm::Highway::SECONDARY, 5);
+
+    // Geo::EdgePtrSet edge_set;
+    // edge_set.insert(r1);
+    // edge_set.insert(r2);
+    // edge_set.insert(r3);
+    // edge_set.insert(r4);
+    // edge_set.insert(r5);
+    // edge_set.insert(r6);
+
+    // Setup the quad.
+    Geo::Point sw{ 35.946920, -83.938486 };
+    Geo::Point ne{ 35.955526, -83.926738 };
+
+    // Declare a quad with the given bounds.
+    Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
+    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r1) );
+    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r2) );
+    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r3) );
+    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r4) );
+    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r5) );
+    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r6) );
+
+    BSMHandler handler{qptr, pconf};
+
+    SECTION( "Handler Instantiation" ) {
+        CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+        CHECK( handler.get_result_string() == "success" );
+        CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+        CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+        CHECK( handler.is_active<BSMHandler::kIdRedactFlag>() );
+        CHECK( handler.get_current_key().size() == 0 );
+        CHECK( handler.get_object_stack().size() == 0 );
+        CHECK( handler.get_tokens().size() == 0 );
+        CHECK( handler.get_json().size() == 0 );
+    };
+
+    StrVector json_malformed{
+        "",
+        "kasjdflajsl\":dfjsl",
+        "{:{},{:},{{},:}}",
+        "{\x00\x01\x03}"
+    };
+
+    StrVector json_outside_fence{
+        "{\"coreData\":{\"msgCnt\":8,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.9493,\"longitude\":-83.927489,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
+        "{\"coreData\":{\"msgCnt\":9,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.949271,\"longitude\":-83.928893,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":0.5,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
+        "{\"coreData\":{\"msgCnt\":10,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.948337,\"longitude\":-83.928826,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":99.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":11,\"id\":\"B2\",\"secMark\":36799,\"position\":{\"latitude\":35.950668,\"longitude\":-83.931295,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":12,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.962259,\"longitude\":-83.914569,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":13,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.953634,\"longitude\":-83.931646,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":2.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+    };
+
+
+    StrVector json_inside_fence{
+        "{\"coreData\":{\"msgCnt\":1,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.94911,\"longitude\":-83.928343,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
+        "{\"coreData\":{\"msgCnt\":2,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.949811,\"longitude\":-83.92909,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":0.5,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
+        "{\"coreData\":{\"msgCnt\":3,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.951084,\"longitude\":-83.930725,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":99.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":4,\"id\":\"B2\",\"secMark\":36799,\"position\":{\"latitude\":35.952555,\"longitude\":-83.932468,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":5,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949821,\"longitude\":-83.936279,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":6,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949915,\"longitude\":-83.936186,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":2.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":7,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.951501,\"longitude\":-83.935851,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}"
+    };
+
+    StrVector json_bad_id{
+        "{\"coreData\":{\"msgCnt\":3,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.951084,\"longitude\":-83.930725,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":99.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":4,\"id\":\"B2\",\"secMark\":36799,\"position\":{\"latitude\":35.952555,\"longitude\":-83.932468,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+    };
+
+    StrVector json_bad_speed{
+        "{\"coreData\":{\"msgCnt\":2,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.949811,\"longitude\":-83.92909,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":0.5,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
+        "{\"coreData\":{\"msgCnt\":3,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.951084,\"longitude\":-83.930725,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":99.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":6,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949915,\"longitude\":-83.936186,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":2.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+    };
+
+    StrVector json_good{
+        "{\"coreData\":{\"msgCnt\":1,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.94911,\"longitude\":-83.928343,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
+        "{\"coreData\":{\"msgCnt\":5,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949821,\"longitude\":-83.936279,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
+        "{\"coreData\":{\"msgCnt\":7,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.951501,\"longitude\":-83.935851,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}"
+    };
+
+    SECTION( "Check Flag Setting" ) {
+        
+        handler.activate<BSMHandler::kVelocityFilterFlag>();
+        handler.activate<BSMHandler::kGeofenceFilterFlag>();
+        handler.activate<BSMHandler::kIdRedactFlag>();
+
+        CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+        CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+        CHECK( handler.is_active<BSMHandler::kIdRedactFlag>() );
+
+        handler.deactivate<BSMHandler::kVelocityFilterFlag>();
+        CHECK_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+
+        handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
+        CHECK_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+
+        handler.deactivate<BSMHandler::kIdRedactFlag>();
+        CHECK_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+
+        CHECK( handler.get_activation_flag() == 0 );
+    }
+
+    SECTION( "Check Malformed JSON" ) {
+        for ( auto& bsm : json_malformed ) {
+            CHECK_FALSE( handler.process( bsm ) );
+        }
+    }
+
+    SECTION( "Check Handler State Reset" ) {
+        // resetting automatically occurs prior to processing.
+        // here we explicitly check that it is working.
+        CHECK( handler.process( json_good[0] ) );
+        handler.reset();
+        CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+        CHECK( handler.get_result_string() == "success" );
+        CHECK( handler.get_current_key().size() == 0 );
+        CHECK( handler.get_object_stack().size() == 0 );
+        CHECK( handler.get_tokens().size() == 0 );
+        CHECK( handler.get_json().size() == 0 );
+    }
+
+    SECTION( "Process Good JSON" ) {
+        for ( auto& bsm : json_good ) {
+            CHECK( handler.process( bsm ) );
+            std::cerr << "status: " << handler.get_result_string() << '\n';
+        }
+    }
+}
+
 /**
 TEST_CASE( "Build Quad Tree", "[quadtree]" ) {
 
@@ -459,36 +682,5 @@ TEST_CASE( "Build Quad Tree", "[quadtree]" ) {
         }
         return 0;
 }
+**/
 
-TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
-
-    // keep in mind that the individual filters/checkers have been checked, so
-    // this should at a higher level abstraction.
-    
-    // process is the big check; hardcode some BSM json here.
-    // 1. Actual BSM
-    // 2. Junk BSM
-    
-    // Check situations that generate all results (and the string corresponds)
-    // 1. SUCCESS
-    // 2. SPEED
-    // 3. GEOPOSITION
-    // 4. PARSE
-    // 5. OTHER
-
-    // Check all the SAX handlers?
-
-    // Must check the output JSON against the input JSON with nothing turned on.
-
-    // Check isWithinEntity...
-    //
-    
-        // Setup the quad.
-        Geo::Point sw{ 42.17, -83.91 };
-        Geo::Point ne{ 42.431, -83.54 };
-
-        // use the plymouth_rd.data file for testing.
-
-
-}
-*/

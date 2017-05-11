@@ -69,6 +69,22 @@
 using ConfigMap = std::unordered_map<std::string,std::string>;            ///< An alias to a string key - value configuration for the privacy parameters.
 
 /**
+ * @brief Functor class to enable use of enums as keys to unordered_maps.
+ */
+struct EnumHash {
+    template <typename T>
+        /**
+         * @brief Return the hash code of a type that can be cast to a size_t, e.g., an enum.
+         *
+         * @return the hash code.
+         */
+        std::size_t operator()(T t) const 
+        {
+            return static_cast<std::size_t>( t );
+        }
+};
+
+/**
  * @brief An IdRedactor encapsulates whether IdRedaction should take place and how it is performed.
  *
  * If inclusion_set_ is false (the default for the default constructor), ALL IDS will be redacted.
@@ -213,16 +229,16 @@ class VelocityFilter {
         /**
          * @brief Predicate function operator indicating whether this velocity should be suppressed; surrogate for filter.
          *
-         * The retension interval is closed: [min_, max_]
+         * The retention interval is closed: [min_, max_]
          *
-         * @return true = filter (suppres); false = retain.
+         * @return true = filter (suppress); false = retain.
          */
         bool suppress( double v );
 
         /**
          * @brief Predicate function operator indicating whether this velocity should be retained.
          *
-         * The retension interval is closed: [min_, max_]
+         * The retention interval is closed: [min_, max_]
          *
          * @return true = keep this BMS; false = suppress.
          */
@@ -337,7 +353,15 @@ class BSM : public Geo::Point {
 class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHandler> { 
     public:
 
-        using Ptr = std::shared_ptr<BSMHandler>;                       ///< Handle to pass this handler around efficiently.
+        /**
+         * records the status of the parsing including what caused parsing to stop, i.e., the point to be suppressed.
+         */
+        enum ResultStatus : uint16_t { SUCCESS, SPEED, GEOPOSITION, PARSE, OTHER };
+
+        using Ptr = std::shared_ptr<BSMHandler>;                                ///< Handle to pass this handler around efficiently.
+        using ResultStringMap = std::unordered_map<ResultStatus,std::string,EnumHash>;   ///< Quick retrieval of result string.
+
+        static ResultStringMap result_string_map;
 
         static constexpr uint32_t kVelocityFilterFlag = 0x1 << 0;
         static constexpr uint32_t kGeofenceFilterFlag = 0x1 << 1;
@@ -346,10 +370,6 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         // must be static const to compose these flags and use in template specialization.
         static const unsigned flags = rapidjson::kParseDefaultFlags | rapidjson::kParseNumbersAsStringsFlag;
 
-        /**
-         * records the status of the parsing including what caused parsing to stop, i.e., the point to be suppressed.
-         */
-        enum ResultStatus { SUCCESS, SPEED, GEOPOSITION, PARSE, OTHER };
 
         /**
          * @brief Construct a BSMHandler instance using a quad tree of the map data defining the geofence and user-specified
@@ -362,6 +382,8 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
 
         /**
          * @brief Predicate indicating whether the BSM's position is within the prescribed geofence.
+         *
+         * @todo: entities use string type values; numeric types would be faster.
          *
          * @param bsm the BSM to be checked.
          * @return true if the BSM is within the geofence; false otherwise.
@@ -384,7 +406,7 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          *
          * @return the parsing result status including success or if failure which element caused the failure.
          */
-        BSMHandler::ResultStatus get_result() const;
+        const BSMHandler::ResultStatus get_result() const;
 
         /**
          * @brief Return the result of the most recent BSM processing as a string.
@@ -392,7 +414,7 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          * @return the parsing result status including success or if failure which element caused the failure as a
          * string.
          */
-        std::string get_result_string();
+        const std::string& get_result_string() const;
 
         /**
          * @brief Return a reference to the BSM instance generated during processing of a JSON string.
@@ -407,7 +429,7 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          *
          * @return a constant reference to the processed BSM as a JSON string.
          */
-        const std::string& get_bsm_json();
+        const std::string& get_json();
 
         /**
          * @brief Return the size in characters (bytes) of the JSON represented of the processed BSM.
@@ -534,6 +556,30 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          */
         bool EndArray(rapidjson::SizeType elementCount);
 
+        template<uint32_t FLAG>
+        bool is_active() {
+            return activated_ & FLAG;
+        }
+
+        template<uint32_t FLAG>
+        const uint32_t activate() {
+            activated_ |= FLAG;
+            return activated_;
+        }
+
+        template<uint32_t FLAG>
+        const uint32_t deactivate() {
+            activated_ &= ~FLAG;
+            return activated_;
+        }
+
+        const uint32_t get_activation_flag() const;
+        const std::string& get_current_key() const;
+        const StrVector& get_object_stack() const; 
+        const StrVector& get_tokens() const; 
+        const VelocityFilter& get_velocity_filter() const;
+        const IdRedactor& get_id_redactor() const;
+        
     private:
         rapidjson::Reader reader_;                  ///< JSON reader.
         uint32_t activated_;                        ///< A flag word indicating which features of the privacy protection are activiated.
@@ -543,8 +589,8 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         bool get_value_;                            ///< Indicates the next value should be saved.
         bool finalized_;                            ///< Indicates the JSON string after redaction has been created and retrieved.
         std::string current_key_;                   ///< The current key being processed by the SAX JSON parser.
-        std::vector<std::string> object_stack_;     ///< A vector that retains the objects being parsed from the JSON; used as a stack.
-        std::vector<std::string> tokens_;           ///< A vector containing all the tokens necessary to generate the JSON of the filtered BSM.
+        StrVector object_stack_;                    ///< A vector that retains the objects being parsed from the JSON; used as a stack.
+        StrVector tokens_;                          ///< A vector containing all the tokens necessary to generate the JSON of the filtered BSM.
         std::string json_;                          ///< The JSON string after redaction.
 
         VelocityFilter vf_;                         ///< The velocity filter functor instance.

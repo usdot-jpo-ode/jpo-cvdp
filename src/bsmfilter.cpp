@@ -217,6 +217,14 @@ std::ostream& operator<<( std::ostream& os, const BSM& bsm )
     return os;
 }
 
+BSMHandler::ResultStringMap BSMHandler::result_string_map{
+            { ResultStatus::SUCCESS, "success" },
+            { ResultStatus::SPEED, "speed" },
+            { ResultStatus::GEOPOSITION, "geoposition" },
+            { ResultStatus::PARSE, "parse" },
+            { ResultStatus::OTHER, "other" }
+        };
+
 BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
     reader_{},
     activated_{0},
@@ -234,17 +242,20 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
 {
     auto search = conf.find("privacy.filter.velocity");
     if ( search != conf.end() && search->second=="ON" ) {
-        activated_ |= kVelocityFilterFlag;
+        activate<BSMHandler::kVelocityFilterFlag>();
+        //activated_ |= kVelocityFilterFlag;
     }
 
     search = conf.find("privacy.filter.geofence");
     if ( search != conf.end() && search->second=="ON" ) {
-        activated_ |= kGeofenceFilterFlag;
+        activate<BSMHandler::kGeofenceFilterFlag>();
+        //activated_ |= kGeofenceFilterFlag;
     }
 
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
-        activated_ |= kIdRedactFlag;
+        activate<BSMHandler::kIdRedactFlag>();
+        //activated_ |= kIdRedactFlag;
     }
 }
 
@@ -253,12 +264,14 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     Geo::EdgeCPtr edge_ptr = nullptr;
     Geo::Grid::CPtr grid_ptr = nullptr;
     Geo::AreaPtr area_ptr = nullptr;
+
     Geo::Entity::PtrSet entity_set = quad_ptr_->retrieve_elements(bsm); 
 
     for (auto& entity_ptr : entity_set) {
         if (entity_ptr->get_type() == "edge") {
             edge_ptr = std::static_pointer_cast<const Geo::Edge>(entity_ptr); 
-            area_ptr = edge_ptr->to_area();
+            // TODO: check with Aaron; we may want to extend this otherwise we will have some gaps.
+            area_ptr = edge_ptr->to_area(10.0);
 
             if (area_ptr->contains(bsm)) {
                 return true;
@@ -283,15 +296,25 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     return false;
 }
 
+void BSMHandler::reset() {
+    tokens_.clear();
+    object_stack_.clear();
+    finalized_ = false;
+    get_value_ = false;
+    current_key_ = "";
+    json_ = "";
+    result_ = ResultStatus::SUCCESS;
+    bsm_.reset();
+}
+
 // bool BSMHandler::process( const char*payload, size_t length ) {
 bool BSMHandler::process( const std::string& bsm_json ) {
+
+    reset();
 
     // TODO: if payload could be assured to be '\0' terminated we could pass the void * cast to
     // this ss and same the creation of the string.
     rapidjson::StringStream ss{ bsm_json.c_str() };
-
-    // we are reusing the bsm instance in the handler, so reset the state.  Not necessary for deployment.
-    bsm_.reset();
 
     rapidjson::ParseResult r = reader_.Parse<BSMHandler::flags>(ss, *this );
     if ( result_ == ResultStatus::SUCCESS && r.Code() != rapidjson::kParseErrorNone ) {
@@ -303,49 +326,19 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     return (r.Code() == rapidjson::kParseErrorNone );
 }
 
-void BSMHandler::reset() {
-    tokens_.clear();
-    object_stack_.clear();
-    finalized_ = false;
-    get_value_ = false;
-    current_key_ = "";
-    result_ = ResultStatus::SUCCESS;
-    json_ = "";
-}
-
-BSMHandler::ResultStatus BSMHandler::get_result() const {
+const BSMHandler::ResultStatus BSMHandler::get_result() const {
     return result_;
 }
 
-std::string BSMHandler::get_result_string() {
-    switch ( result_ ) {
-        case ResultStatus::SUCCESS :
-            return "success";
-            break;
-
-        case ResultStatus::SPEED :
-            return "speed";
-            break;
-
-        case ResultStatus::GEOPOSITION :
-            return "geoposition";
-            break;
-
-        case ResultStatus::PARSE :
-            return "parse";
-            break;
-
-        case ResultStatus::OTHER :
-        default:
-            return "other...";
-    }
+const std::string& BSMHandler::get_result_string() const {
+    return result_string_map[ result_ ];
 }
 
 const BSM& BSMHandler::get_bsm() const {
     return bsm_;
 }
 
-const std::string& BSMHandler::get_bsm_json() {
+const std::string& BSMHandler::get_json() {
 
     if ( !finalized_ ) {
         std::stringstream ss;
@@ -359,10 +352,34 @@ const std::string& BSMHandler::get_bsm_json() {
     return json_;
 }
 
+const uint32_t BSMHandler::get_activation_flag() const {
+    return activated_;
+}
+
+const std::string& BSMHandler::get_current_key() const {
+    return current_key_;
+}
+
+const StrVector& BSMHandler::get_object_stack() const {
+    return object_stack_;
+}
+
+const StrVector& BSMHandler::get_tokens() const {
+    return tokens_;
+}
+
+const VelocityFilter& BSMHandler::get_velocity_filter() const {
+    return vf_;
+}
+
+const IdRedactor& BSMHandler::get_id_redactor() const {
+    return idr_;
+}
+
 std::string::size_type BSMHandler::get_bsm_buffer_size() {
     
     if ( !finalized_ ) {
-        get_bsm_json();
+        get_json();
     }
     return json_.size();
 }
@@ -478,7 +495,7 @@ bool BSMHandler::RawNumber(const char* str, rapidjson::SizeType length, bool cop
         if ("speed" == current_key_) {
             double v = std::strtod( str, &end_ );
             bsm_.set_velocity( v );
-            if ( (activated_ & kVelocityFilterFlag) && !vf_(v) ) {
+            if ( is_active<kVelocityFilterFlag>() && vf_.suppress(v) ) {
                 // Velocity filtering is activated and filtering failed -> suppress.
                 result_ = ResultStatus::SPEED;
             }
@@ -492,7 +509,7 @@ bool BSMHandler::String(const char* str, rapidjson::SizeType length, bool copy) 
 
     std::string s{ str, length };
 
-    if ( get_value_ && (activated_ & kIdRedactFlag) && (current_key_=="id") ) {
+    if ( get_value_ && is_active<kIdRedactFlag>() && (current_key_=="id") ) {
         // previous token requires extracting value.
         // ID redaction is activiated and this is the value associated with the id field.
 
@@ -531,7 +548,7 @@ bool BSMHandler::EndObject(rapidjson::SizeType memberCount)
     tokens_.push_back("}");
     std::string top = object_stack_.back();
 
-    if ( (top=="position") && (activated_ & kGeofenceFilterFlag) && !isWithinEntity(bsm_) ) {
+    if ( (top=="position") && is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_) ) {
         // Shortcircuting: Parsed core position, geofencing is needed, and inside the geofence.
         result_ = ResultStatus::GEOPOSITION;
     } 

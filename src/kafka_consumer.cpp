@@ -631,8 +631,8 @@ usage:
                         std::cout << "Retaining BSM: " << bsm << "\n";
 
                         // if we still have a message in the handler, we send it back out to the producer we have made above.
-                        status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_bsm_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
-                        //RdKafka::ErrorCode resp = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_bsm_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
+                        status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
+                        //RdKafka::ErrorCode resp = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
                         if (status != RdKafka::ERR_NO_ERROR) {
                             std::cerr << "% Produce failed: " << RdKafka::err2str( status ) << "\n";
                         } 
@@ -655,7 +655,6 @@ usage:
             }
 
         }
-        handler.reset();
         delete msg;
         // producer->poll(0);          // needed when using callbacks.
     }
