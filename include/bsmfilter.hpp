@@ -171,6 +171,13 @@ class IdRedactor {
          */
         bool operator()( std::string& id );
 
+        /**
+         * @brief Return the value currently being used for redaction.
+         *
+         * @return a constanct reference to the value used to replace redacted values.
+         */
+        const std::string& redaction_value() const;
+
     private:
         InclusionSetType inclusion_set_;                        ///< The set of ids on which to perform redaction.
         std::string redacted_value_;                            ///< The value to assign to those ids that require redaction.
@@ -395,8 +402,8 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          *
          * The result of the processing besides SAX fail/succeed status can be obtained using the #get_result method.
          *
-         * @param bsm_json a JSON string of the BSM.  @return true if the SAX parser did not encounter any errors during
-         * parsing; false otherwise.
+         * @param bsm_json a JSON string of the BSM.  
+         * @return true if the SAX parser did not encounter any errors during parsing; false otherwise.
          *
          */
         bool process( const std::string& bsm_json );
@@ -575,10 +582,12 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
 
         const uint32_t get_activation_flag() const;
         const std::string& get_current_key() const;
+        bool get_next_value() const;
         const StrVector& get_object_stack() const; 
         const StrVector& get_tokens() const; 
         const VelocityFilter& get_velocity_filter() const;
         const IdRedactor& get_id_redactor() const;
+        const double get_box_extension() const;
         
     private:
         rapidjson::Reader reader_;                  ///< JSON reader.
@@ -595,6 +604,8 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
 
         VelocityFilter vf_;                         ///< The velocity filter functor instance.
         IdRedactor idr_;                            ///< The ID Redactor to use during parsing of BSMs.
+
+        double box_extension_;                      ///< The number of meters to extend the boxes that surround edges and define the geofence.
 
         char* end_;                                 ///< A temporary pointer to the end of a string.
 };
