@@ -362,12 +362,14 @@ TEST_CASE("Quad Tree", "[quad]") {
         CHECK(Quad::insert(quad_ptr, twth));     
         CHECK(Quad::insert(quad_ptr, utdr));
         // retrievals 
+        // All retrievals should give 5 elements since the splitting criteria 
+        // will not be hit untill 32 elements are inserted.
         Geo::Entity::PtrSet element_set = quad_ptr->retrieve_elements(test_point_1);
-        CHECK(element_set.size() == 1);
+        CHECK(element_set.size() == 5);
         element_set = quad_ptr->retrieve_elements(*v_a);
-        CHECK(element_set.size() == 3);
+        CHECK(element_set.size() == 5);
         element_set = quad_ptr->retrieve_elements(*v_c);
-        CHECK(element_set.size() == 2);
+        CHECK(element_set.size() == 5);
         // Try to retrieve either end of UT drive.
         // This will fail since they are outside the quad bounds.
         element_set = quad_ptr->retrieve_elements(*v_f);
@@ -376,7 +378,7 @@ TEST_CASE("Quad Tree", "[quad]") {
         CHECK(element_set.size() == 0);
         // Try to retrieve the edge using a point on the road.
         element_set = quad_ptr->retrieve_elements(test_point_2);
-        CHECK(element_set.size() == 1);
+        CHECK(element_set.size() == 5);
     }    
 
     SECTION("Structural") {
@@ -387,52 +389,45 @@ TEST_CASE("Quad Tree", "[quad]") {
         Quad::insert(quad_ptr, twth);     
         Quad::insert(quad_ptr, utdr);
         std::vector<Geo::Bounds::Ptr> bounds_all = Quad::retrieve_all_bounds(quad_ptr);
-        CHECK(bounds_all.size() == 1231);
+        CHECK(bounds_all.size() == 1);
         bounds_all = Quad::retrieve_all_bounds(quad_ptr, false, true);
-        CHECK(bounds_all.size() == 1231);
+        CHECK(bounds_all.size() == 1);
         bounds_all = Quad::retrieve_all_bounds(quad_ptr, true, false);
-        CHECK(bounds_all.size() == 923);
+        CHECK(bounds_all.size() == 1);
         bounds_all = Quad::retrieve_all_bounds(quad_ptr, true, true);
-        CHECK(bounds_all.size() == 923);
+        CHECK(bounds_all.size() == 1);
 
         // test the bounds of some retreivals
-        Geo::Bounds::Ptr b_ret = quad_ptr->retrieve_bounds(test_point_1);
-        CHECK(b_ret->sw.lat == Approx(35.95194));
-        CHECK(b_ret->sw.lon == Approx(-83.93181));
-        CHECK(b_ret->ne.lat == Approx(35.95202));
-        CHECK(b_ret->ne.lon == Approx(-83.93176));
-        b_ret = quad_ptr->retrieve_bounds(test_point_1, true);
-        CHECK(b_ret->sw.lat == Approx(35.95193));
-        CHECK(b_ret->sw.lon == Approx(-83.93182));
-        CHECK(b_ret->ne.lat == Approx(35.95203));
-        CHECK(b_ret->ne.lon == Approx(-83.93175));
-        b_ret = quad_ptr->retrieve_bounds(test_point_2);
-        CHECK(b_ret->sw.lat == Approx(35.94905));
-        CHECK(b_ret->sw.lon == Approx(-83.935408));
-        CHECK(b_ret->ne.lat == Approx(35.94914));
-        CHECK(b_ret->ne.lon == Approx(-83.935353));
-        b_ret = quad_ptr->retrieve_bounds(test_point_2, true);
-        CHECK(b_ret->sw.lat == Approx(35.94904));
-        CHECK(b_ret->sw.lon == Approx(-83.935414));
-        CHECK(b_ret->ne.lat == Approx(35.94915));
-        CHECK(b_ret->ne.lon == Approx(-83.935347));
+        Geo::Bounds::Ptr b_ret = quad_ptr->retrieve_bounds(test_point_1, true);
+        CHECK(b_ret->sw.lat == Approx(35.9478));
+        CHECK(b_ret->sw.lon == Approx(-83.9367));
+        CHECK(b_ret->ne.lat == Approx(35.95435));
+        CHECK(b_ret->ne.lon == Approx(-83.9282));
+
+        std::cerr << *b_ret << std::endl;
     }
 
-    SECTION("Overflow") {
-        Geo::Location::Ptr test_loc_ptr = std::make_shared<Geo::Location>(35.951959, -83.931815);
+    SECTION("Splitting") {
+        Geo::Location::Ptr loc_ptr = std::make_shared<Geo::Location>(35.951959, -83.931815, 33);
     
         // Fill up a single leaf.
-        for (int i = 0; i < 32; ++i) {
+        for (int i = 0; i < Quad::MAX_ELEMENTS; ++i) {
+            Geo::Location::Ptr test_loc_ptr = std::make_shared<Geo::Location>(35.951959, -83.931815, i);
             Quad::insert(quad_ptr, test_loc_ptr);
         }
 
-        Geo::Bounds::Ptr b_ret = quad_ptr->retrieve_bounds(*test_loc_ptr);
-        CHECK(Geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->sw.lat, b_ret->sw.lon) == Approx(9.44998));
-        // Overflow the leaf.
-        Quad::insert(quad_ptr, test_loc_ptr);
-        // TODO should be split here...
-        //b_ret = quad_ptr->retrieve_bounds(*test_loc_ptr);
-        //CHECK(Geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->sw.lat, b_ret->sw.lon) == Approx(9.44998));
+        Geo::Bounds::Ptr b_ret = quad_ptr->retrieve_bounds(*loc_ptr);
+        CHECK(Geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->sw.lat, b_ret->sw.lon) == Approx(604.7987));
+        // Force the quad to split down to the minimum degree,
+        // by entering the same point 33 times.
+        // This splits the test quad vertically.
+        Quad::insert(quad_ptr, loc_ptr);
+        b_ret = quad_ptr->retrieve_bounds(*loc_ptr);
+        // Test for vertical split.
+        CHECK(Geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->ne.lat, b_ret->ne.lon) == Approx(318.771477));
+        // Check degrees are good.
+        CHECK(b_ret->ne.lon - b_ret->nw.lon >= Approx(0.003));
+        CHECK(b_ret->ne.lat - b_ret->sw.lat >= Approx(0.003));
     }
 }
 
@@ -835,12 +830,12 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
 
     // Declare a quad with the given bounds.
     Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
-    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r1) );
-    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r2) );
-    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r3) );
-    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r4) );
-    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r5) );
-    Quad::insert( qptr, std::dynamic_pointer_cast<const Geo::Entity>(r6) );
+    Quad::insert( qptr, r1);
+    Quad::insert( qptr, r2);
+    Quad::insert( qptr, r3);
+    Quad::insert( qptr, r4);
+    Quad::insert( qptr, r5);
+    Quad::insert( qptr, r6);
 
     BSMHandler handler{qptr, pconf};
 
@@ -1101,8 +1096,11 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         CHECK( handler.isWithinEntity( bsm[0] ) );
         CHECK( handler.isWithinEntity( bsm[1] ) );
         // Aaron's checking on this one.
-        // CHECK( handler.isWithinEntity( bsm[2] ) );
+        CHECK( handler.isWithinEntity( bsm[2] ) );
         CHECK_FALSE( handler.isWithinEntity( bsm[3] ) );
+
+        Geo::Location l2(35.951181, -83.935456);
+        Geo::Entity::PtrSet element_set = qptr->retrieve_elements(bsm[2]);
     }
 
     SECTION( "JSON Tokenizing Checks" ) {

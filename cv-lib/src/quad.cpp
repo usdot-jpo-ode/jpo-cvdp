@@ -26,30 +26,16 @@
 #include "quad.hpp"
 #include "string_utilities.hpp"
 
-int    Quad::minlevels = 7;
-int    Quad::maxlevels = 9;
-double Quad::mindegrees = 0.003;
-int    Quad::maxelements = 32;
-double Quad::fuzzywidth = 0.0;
-double Quad::fuzzyheight = 0.0;
-
 Geo::Vertex::IdToPtrMap Quad::elementmap{};
 Geo::Entity::PtrSet Quad::emptyedgeset{};
 
 Quad::Quad( const Geo::Point& swpoint, const Geo::Point& nepoint, int level, const std::string& position )
     : Geo::Bounds{ swpoint, nepoint }, 
     level_{level}, 
-    position_{position},
-    fuzzywidth_{ Quad::fuzzywidth },            
-    fuzzyheight_{ Quad::fuzzyheight }         
+    position_{position}
 {
-    if ( fuzzywidth_ == 0.0 ) {
-        fuzzywidth_ = width() / REDUCTION_FACTOR;
-    }
-
-    if ( fuzzyheight_ == 0.0 ) {
-        fuzzyheight_ = height() / REDUCTION_FACTOR;
-    }
+    fuzzywidth_ = width() / REDUCTION_FACTOR;
+    fuzzyheight_ = height() / REDUCTION_FACTOR;
 
     fuzzybounds_.sw.lat = sw.lat - fuzzyheight_;
     fuzzybounds_.sw.lon = sw.lon - fuzzywidth_;
@@ -90,25 +76,26 @@ void Quad::verticalsplit()
     children_.emplace_back( std::make_shared<Quad>( sw, east_midpoint(), nextlevel ) );
 }
 
-void Quad::split( bool force )
+bool Quad::split()
 {
-    bool isverticalsplit = height() / 2.0 >= Quad::mindegrees;
-    bool ishorizontalsplit = width() / 2.0 >= Quad::mindegrees;
+    bool isverticalsplit = height() / 2.0 >= Quad::MIN_DEGREES;
+    bool ishorizontalsplit = width() / 2.0 >= Quad::MIN_DEGREES;
 
     if (isverticalsplit && ishorizontalsplit) {
         quadsplit();
 
+        return true;
     } else if (isverticalsplit) {
         verticalsplit();
 
+        return true;
     } else if (ishorizontalsplit) {
         horizontalsplit();
 
-    } else if (force) {
-        // Too small to split, but we will force it.
-        quadsplit();
+        return true;
+    } 
 
-    }  // otherwise, Quad is too small to split.
+    return false;
 }
 
 bool Quad::haschildren() const
@@ -118,7 +105,7 @@ bool Quad::haschildren() const
 
 bool Quad::full() const
 {
-    return static_cast<int>(elementset_.size()) > Quad::maxelements;
+    return static_cast<int>(elementset_.size()) > MAX_ELEMENTS;
 }
 
 bool Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
@@ -127,15 +114,14 @@ bool Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
 
     PtrStack quadstack;
     quadstack.push(quadptr);
-    bool is_insert = false;
 
     while (!quadstack.empty()) {
-
         // attempt to insert this element (edge) in the quad at the top of
         // the stack.
         Ptr currquad = quadstack.top();
         quadstack.pop();
 
+        // Create a list of entities to process.
         if (currquad->haschildren()) {
             // this quad has children (implies no elements in this quad)
             for ( auto& quad : currquad->children_ ) {
@@ -147,51 +133,19 @@ bool Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
 
             continue;
 
-        } else if (currquad->level_ < Quad::minlevels) {
-            // quad not a minimum level; split independent of size
-            // constraints.
-            currquad->split(true);
-            for ( auto& quad : currquad->children_ ) {
-                // attempt to insert into all child quads that contain the
-                // edge.
-                if (entity_ptr->touches(quad->fuzzybounds_)) {
-                    quadstack.push( quad );
-                } 
-            }
-            continue;
-
-        } else if (currquad->level_ < Quad::maxlevels) {
-            // quad not at maximum level; "attempt" to split the quad.
-            currquad->split();
-            if (currquad->haschildren()) {
-                // successful split
-                for ( auto& quad : currquad->children_ ) {
-                    // attempt to insert into all child quads that contain
-                    // edge.
-                    if (entity_ptr->touches(quad->fuzzybounds_)) {
-                        quadstack.push( quad );
-                    }
-                }
-                continue;
-            } // if not split, add the element or force split and redistribute.
-        }
-
-        // level is at max or level is less than max and split request failed to produce children.
+        } 
+        
+        // This is a leaf node. Try to insert.
         currquad->elementset_.insert(entity_ptr);
-        is_insert = true;
 
-        if (currquad->full()) {
+        // Try to split the quad if its full.
+        if (currquad->full() && currquad->split()) {
             // quad is saturated with elements; split and redistribute.
             // add it first so we redistribute everything including this
             // element.
-            currquad->split( true );
-
             for ( auto& e : currquad->elementset_ ) {
                 for ( auto& quad : currquad->children_ ) {
-                    if (e->touches(quad->fuzzybounds_)) {
-                        quad->elementset_.insert(e);
-                        is_insert = true;
-                    }
+                    insert(quad, e);
                 }
             }
 
@@ -199,7 +153,7 @@ bool Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
         } 
     }
 
-    return is_insert;
+    return true;
 }
 
 std::ostream& operator<<( std::ostream& os, const Quad& quad )
@@ -231,7 +185,7 @@ const Geo::Entity::PtrSet& Quad::retrieve_elements( const Geo::Point& pt ) const
     }
 }
 
-Geo::Bounds::Ptr Quad::retrieve_bounds( const Geo::Point& pt, bool fuzzy ) const
+Geo::Bounds::Ptr Quad::retrieve_bounds( const Geo::Point& pt, bool fuzzy) const
 {
     const Quad* currquad = this;
 
@@ -247,6 +201,7 @@ Geo::Bounds::Ptr Quad::retrieve_bounds( const Geo::Point& pt, bool fuzzy ) const
                     break;                   // stop at the first child; retrieval quads are disjoint.
                 }
             }
+
         }
 
         if (fuzzy) {
