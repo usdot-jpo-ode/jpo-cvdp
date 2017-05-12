@@ -55,16 +55,17 @@ class Quad : public Geo::Bounds {
         using CPtr = std::shared_ptr<const Quad>;
         using PtrList = std::vector<Ptr>;
         using PtrStack = std::stack<Ptr>;
+        using EntityPtrStack = std::stack<Entity::CPtr>;
         using PtrSet = std::unordered_set<Ptr>;
 
         constexpr static double REDUCTION_FACTOR = 10.0;            ///< When the fuzzy dimensions are not set (i.e., 0), they will be set to the width of the quad divided by this factor.
 
-        static int minlevels;                                       ///< The minimum number of levels in the Quad tree.
-        static int maxlevels;                                       ///< The maximum number of levels in the Quad tree; the tree will not be deeper than this maximum value.
-        static double mindegrees;                                   ///< The smallest size Quad (in geographic coordinate degrees) to create during splitting unless forced.
-        static int maxelements;                                     ///< The maximum number of entities, or elements, that can be contained in a Quad leaf before it is split into four children.
-        static double fuzzywidth;                                   ///< The amount the Quad is extended to determine which elements should be inserted.
-        static double fuzzyheight;                                  ///< The amount the Quad is extended to determine which elements should be inserted.
+        //! Maximum number of elements allowed in a quad node. If more elements
+        // are added the quad will be split.
+        constexpr static uint32_t MAX_ELEMENTS = 32;
+        //! Minimum degree width/height for a quad.
+        constexpr static double MIN_DEGREES = 0.003;
+
         constexpr static int BUFFER_SIZE = 8 * 1024;                ///< The input stream buffer size when generating a Quad tree from a file.
         /**
          * @brief Attempt to insert an Entity into the Quad tree.
@@ -182,11 +183,10 @@ class Quad : public Geo::Bounds {
         /**
          * @brief Attempt to split this Quad into children and insert those into this Quad's children list.
          *
-         * @param force If the Quad is too small to split vertically and horizontally based on the mindegrees parameter,
          * this flag will force the split anyway; defaults to not splitting Quads that are small.
+         * @return True if the quad is split, False otherise.
          */
-        void split( bool force = false );
-
+        bool split( );
 };
 
 #endif

@@ -25,6 +25,7 @@
 
 #include <librdkafka/rdkafkacpp.h>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 #include "rapidjson/reader.h"
@@ -215,7 +216,7 @@ const std::string& BSM::get_id() const {
 
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )
 {
-    os  << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
+    os  << std::setprecision(16) << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
     os  << "Spd: "  << bsm.velocity_ << " ";
     os  << "Id: "  <<  bsm.id_;
     return os;
@@ -277,7 +278,7 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     Geo::AreaPtr area_ptr = nullptr;
 
     Geo::Entity::PtrSet entity_set = quad_ptr_->retrieve_elements(bsm); 
-    //std::cerr << "esize: " << entity_set.size() << '\n';
+    //std::cerr << "esize: " << entity_set.size() << " " << bsm << '\n';
 
     for (auto& entity_ptr : entity_set) {
 
