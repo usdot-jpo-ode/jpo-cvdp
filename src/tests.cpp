@@ -403,8 +403,6 @@ TEST_CASE("Quad Tree", "[quad]") {
         CHECK(b_ret->sw.lon == Approx(-83.9367));
         CHECK(b_ret->ne.lat == Approx(35.95435));
         CHECK(b_ret->ne.lon == Approx(-83.9282));
-
-        std::cerr << *b_ret << std::endl;
     }
 
     SECTION("Splitting") {
@@ -817,12 +815,12 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
     Geo::Vertex::Ptr v_g = std::make_shared<Geo::Vertex>(35.948272, -83.934421, 7);
 
     // secondaries have 17 meters side to side.
-    Geo::EdgePtr r1 = std::make_shared<Geo::Edge>(v_a, v_b, osm::Highway::OTHER, 1);
-    Geo::EdgePtr r2 = std::make_shared<Geo::Edge>(v_c, v_a, osm::Highway::OTHER, 2);
-    Geo::EdgePtr r3 = std::make_shared<Geo::Edge>(v_d, v_a, osm::Highway::OTHER, 3);
-    Geo::EdgePtr r4 = std::make_shared<Geo::Edge>(v_e, v_c, osm::Highway::OTHER, 4);
-    Geo::EdgePtr r5 = std::make_shared<Geo::Edge>(v_f, v_g, osm::Highway::OTHER, 5);
-    Geo::EdgePtr r6 = std::make_shared<Geo::Edge>(v_f, v_c, osm::Highway::OTHER, 6);
+    Geo::EdgePtr r1 = std::make_shared<Geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
+    Geo::EdgePtr r2 = std::make_shared<Geo::Edge>(v_c, v_a, osm::Highway::SECONDARY, 2);
+    Geo::EdgePtr r3 = std::make_shared<Geo::Edge>(v_d, v_a, osm::Highway::SECONDARY, 3);
+    Geo::EdgePtr r4 = std::make_shared<Geo::Edge>(v_e, v_c, osm::Highway::SECONDARY, 4);
+    Geo::EdgePtr r5 = std::make_shared<Geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
+    Geo::EdgePtr r6 = std::make_shared<Geo::Edge>(v_f, v_c, osm::Highway::SECONDARY, 6);
 
     // Setup the quad.
     Geo::Point sw{ 35.946920, -83.938486 };
