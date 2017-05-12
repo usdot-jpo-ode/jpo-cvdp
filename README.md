@@ -312,6 +312,10 @@ The details of the settings and how they affect the function of the PPM follow:
 - `privacy.filter.geofence.mapfile` : *If redaction is enabled*, specifies the absolute or relative path and filename of a file that contains the
   map information needed to define the geofence.
   
+- `privacy.filter.geofence.extension` : *If redaction is enabled*, this is one
+  of the controls that determines the size of the component geofences that
+  surround road segments. See the [Map Files](#map-files) section.
+  
 - Geofence Boundary Configuration Parameters: The geofence is stored in a geographically-defined data structured called
   a quadtree. The following bounding box coordinates define the quadtree's region. The data that is stored in this data
   structure is limited to those segments provided in the mapfile, e.g., `privacy.filter.geofence.mapfile`. As an example
@@ -368,6 +372,17 @@ This file has four comma-separated elements:
     - The attribute `way_type` determines the width of the geofence around a road segment.
 
 For the WYDOT use case, WYDOT provided a set of edge definitions for I-80 that were converted into the above format.
+
+## Geofencing
+
+BSM records can be suppressed based on their J2735 Part I latitude and longitude
+attributes. If this capability is turned one through the configuration file,
+each edge defined in the map file is used to infer a *component* geofence that
+surrounds that segment of the road. The image below illustrates how a *rectange*
+is drawn to form the segment's geofence.  The aforementioned edge attributes and
+PPM configuration parameters determine the size of the rectange.
+
+![Road Segment Geofence Dimensions](docs/graphics/geofence-dimensions.png)
 
 ## Test Files
 
