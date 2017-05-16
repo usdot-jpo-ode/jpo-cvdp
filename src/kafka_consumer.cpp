@@ -84,6 +84,78 @@ static void sigterm (int sig) {
   run = false;
 }
 
+// JMC: Useful librdkafka reference code for metadata.
+//static void metadata_print (const std::string &topic, const RdKafka::Metadata *metadata) {
+//
+//    std::cout << "Metadata for " << (topic.empty() ? "" : "all topics")
+//        << "(from broker "  << metadata->orig_broker_id()
+//        << ":" << metadata->orig_broker_name() << std::endl;
+//
+//    /* Iterate brokers */
+//    std::cout << " " << metadata->brokers()->size() << " brokers:" << std::endl;
+//
+//    for ( auto ib : *(metadata->brokers()) ) {
+//        std::cout << "  broker " << ib->id() << " at " << ib->host() << ":" << ib->port() << std::endl;
+//    }
+//
+//    /* Iterate topics */
+//    std::cout << metadata->topics()->size() << " topics:" << std::endl;
+//
+//    for ( auto& it : *(metadata->topics()) ) {
+//
+//        std::cout << "  topic \""<< it->topic() << "\" with " << it->partitions()->size() << " partitions:";
+//
+//        if (it->err() != RdKafka::ERR_NO_ERROR) {
+//            std::cout << " " << err2str(it->err());
+//            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) std::cout << " (try again)";
+//        }
+//
+//        std::cout << std::endl;
+//
+//        /* Iterate topic's partitions */
+//        for ( auto& ip : *(it->partitions()) ) {
+//            std::cout << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
+//
+//            /* Iterate partition's replicas */
+//            RdKafka::PartitionMetadata::ReplicasIterator ir;
+//            for (ir = ip->replicas()->begin(); ir != ip->replicas()->end(); ++ir) {
+//                std::cout << (ir == ip->replicas()->begin() ? "":",") << *ir;
+//            }
+//
+//            /* Iterate partition's ISRs */
+//            std::cout << ", isrs: ";
+//            RdKafka::PartitionMetadata::ISRSIterator iis;
+//            for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis)
+//                std::cout << (iis == ip->isrs()->begin() ? "":",") << *iis;
+//
+//            if (ip->err() != RdKafka::ERR_NO_ERROR)
+//                std::cout << ", " << RdKafka::err2str(ip->err()) << std::endl;
+//            else
+//                std::cout << std::endl;
+//        }
+//    }
+//}
+
+static bool ode_topic_available( const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer ) {
+    bool r = false;
+
+    RdKafka::Metadata* md;
+
+    RdKafka::ErrorCode err = consumer->metadata( true, nullptr, &md, 5000 );
+    if ( err == RdKafka::ERR_NO_ERROR ) {
+        RdKafka::Metadata::TopicMetadataIterator it = md->topics()->begin();
+
+        // search for the raw BSM topic.
+        while ( it != md->topics()->end() && !r ) {
+            // finish when we find it.
+            r = ( (*it)->topic() == topic );
+            ++it;
+        }
+    }
+
+    return r;
+}
+
 /**
  * @brief
  */
@@ -220,7 +292,6 @@ int main (int argc, char **argv) {
 
     std::string topic_str;                              // producer topic.
     int32_t partition = RdKafka::Topic::PARTITION_UA;   // producer partition.
-    MyHashPartitionerCb hash_partitioner;               // how partitions are selected.
 
     std::string config_file;
     std::string mode;
@@ -241,9 +312,6 @@ int main (int argc, char **argv) {
     RdKafka::Conf *conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
     RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
 
-    //ExampleRebalanceCb ex_rebalance_cb;
-    //conf->set("rebalance_cb", &ex_rebalance_cb, errstr);
-
     while ((opt = getopt(argc, argv, "c:t:p:g:b:z:qd:o:eX:AM:f:F:v")) != -1) {
         switch (opt) {
 
@@ -252,23 +320,11 @@ int main (int argc, char **argv) {
                 break;
 
             case 't':
-                // produced topic : J2735BsmSanitizedJson
                 topic_str = optarg;
                 break;
 
             case 'p':
-                // the partition for the producer; the best way would be the hash when more than one partitions are
-                // used.
-                if (!strcmp(optarg, "random"))
-                    /* default */;
-                else if (!strcmp(optarg, "hash")) {
-                    if (tconf->set("partitioner_cb", &hash_partitioner, errstr) != RdKafka::Conf::CONF_OK) {
-                        std::cerr << errstr << "\n";
-                        exit(1);
-                    }
-                } else {
-                    partition = std::atoi(optarg);
-                }
+                partition = std::atoi(optarg);
                 break;
 
             case 'g':
@@ -282,12 +338,12 @@ int main (int argc, char **argv) {
                 brokers = optarg;
                 break;
 
-            case 'z':
-                if (conf->set("compression.codec", optarg, errstr) != RdKafka::Conf::CONF_OK) {
-                    std::cerr << errstr << "\n";
-                    exit(1);
-                }
-                break;
+//            case 'z':
+//                if (conf->set("compression.codec", optarg, errstr) != RdKafka::Conf::CONF_OK) {
+//                    std::cerr << errstr << "\n";
+//                    exit(1);
+//                }
+//                break;
 
             case 'o':
                 if (!strcmp(optarg, "end"))
@@ -308,59 +364,59 @@ int main (int argc, char **argv) {
                 debug = optarg;
                 break;
 
-            case 'M':
-                if (conf->set("statistics.interval.ms", optarg, errstr) !=
-                        RdKafka::Conf::CONF_OK) {
-                    std::cerr << errstr << "\n";
-                    exit(1);
-                }
-                break;
+//            case 'M':
+//                if (conf->set("statistics.interval.ms", optarg, errstr) !=
+//                        RdKafka::Conf::CONF_OK) {
+//                    std::cerr << errstr << "\n";
+//                    exit(1);
+//                }
+//                break;
 
-            case 'X':
-                {
-                    char *name, *val;
+//            case 'X':
+//                {
+//                    char *name, *val;
+//
+//                    if (!strcmp(optarg, "dump")) {
+//                        do_conf_dump = true;
+//                        continue;
+//                    }
+//
+//                    name = optarg;
+//
+//                    if (!(val = strchr(name, '='))) {
+//                        std::cerr << "%% Expected -X property=value, not " << name << "\n";
+//                        std::exit(EXIT_FAILURE);
+//                    }
+//
+//                    *val = '\0';
+//                    val++;
+//
+//                    /* Try "topic." prefixed properties on topic
+//                     * conf first, and then fall through to global if
+//                     * it didnt match a topic configuration property. */
+//                    RdKafka::Conf::ConfResult res = RdKafka::Conf::CONF_UNKNOWN;
+//
+//                    if (!strncmp(name, "topic.", strlen("topic.")))
+//                        res = tconf->set(name+strlen("topic."), val, errstr);
+//
+//                    if (res == RdKafka::Conf::CONF_UNKNOWN)
+//                        res = conf->set(name, val, errstr);
+//
+//                    if (res != RdKafka::Conf::CONF_OK) {
+//                        std::cerr << errstr << "\n";
+//                        exit(1);
+//                    }
+//                }
+//                break;
 
-                    if (!strcmp(optarg, "dump")) {
-                        do_conf_dump = true;
-                        continue;
-                    }
-
-                    name = optarg;
-
-                    if (!(val = strchr(name, '='))) {
-                        std::cerr << "%% Expected -X property=value, not " << name << "\n";
-                        std::exit(EXIT_FAILURE);
-                    }
-
-                    *val = '\0';
-                    val++;
-
-                    /* Try "topic." prefixed properties on topic
-                     * conf first, and then fall through to global if
-                     * it didnt match a topic configuration property. */
-                    RdKafka::Conf::ConfResult res = RdKafka::Conf::CONF_UNKNOWN;
-
-                    if (!strncmp(name, "topic.", strlen("topic.")))
-                        res = tconf->set(name+strlen("topic."), val, errstr);
-
-                    if (res == RdKafka::Conf::CONF_UNKNOWN)
-                        res = conf->set(name, val, errstr);
-
-                    if (res != RdKafka::Conf::CONF_OK) {
-                        std::cerr << errstr << "\n";
-                        exit(1);
-                    }
-                }
-                break;
-
-            case 'f':
-                if (!strcmp(optarg, "ccb"))
-                    use_ccb = 1;
-                else {
-                    std::cerr << "Unknown option: " << optarg << "\n";
-                    exit(1);
-                }
-                break;
+//            case 'f':
+//                if (!strcmp(optarg, "ccb"))
+//                    use_ccb = 1;
+//                else {
+//                    std::cerr << "Unknown option: " << optarg << "\n";
+//                    exit(1);
+//                }
+//                break;
             case 'F':
                 // the file that defines the geofence indirectly.
                 region_file = optarg;
@@ -558,8 +614,9 @@ usage:
 
     BSMHandler handler{quad_ptr, pconf};
 
-    // Consumer setup: brining in the J2735BsmJson stream from the ODE (or a pipe to java producer).
-    std::unique_ptr<RdKafka::KafkaConsumer> consumer{RdKafka::KafkaConsumer::create(conf, errstr)};
+    // Consumer setup: bring in topic.J2735BsmRawJSON stream from the ODE (or a pipe to java producer).
+    std::shared_ptr<RdKafka::KafkaConsumer> consumer{RdKafka::KafkaConsumer::create(conf, errstr)};
+
     if (!consumer) {
         std::cerr << "Failed to create consumer: " << errstr << "\n";
         std::exit(EXIT_FAILURE);
@@ -574,6 +631,13 @@ usage:
     } else {
         std::cerr << "Failure to use configured consumer topic: " << errstr << "\n";
         std::exit(EXIT_FAILURE);
+    }
+
+    for ( const std::string& topic : topics ) {
+        if ( !ode_topic_available( topic, consumer )) {
+        std::cerr << "The ODE Topic: " << topic << " is not available. This topic must be readable.\n";
+        std::exit(EXIT_FAILURE);
+        }
     }
 
     // subscribe to the J2735BsmJson topic (or test)

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
-project(bsmjson_privacy)
+# project(bsmjson_privacy)
+project(ppm)
 
 # need to set these prior to setting any targets.
 set(CMAKE_CXX_STANDARD 11)
@@ -32,11 +33,17 @@ endif ()
 
 #### BUILD TARGET FOR THE PPM ####
 
-set(PPM_SRC "src/kafka_consumer.cpp" 
+# set(PPM_SRC "src/kafka_consumer.cpp" 
+#             "src/bsmfilter.cpp" )
+
+set(PPM_SRC "src/ppm.cpp" 
+            "src/tool.cpp" 
             "src/bsmfilter.cpp" )
 
-add_executable(bsmjson_privacy ${PPM_SRC})
-target_link_libraries(bsmjson_privacy CVLib rdkafka++)
+add_executable(ppm ${PPM_SRC})
+target_link_libraries(ppm CVLib rdkafka++)
+# add_executable(bsmjson_privacy ${PPM_SRC})
+# target_link_libraries(bsmjson_privacy CVLib rdkafka++)
 
 #### BUILD TARGET FOR THE PPM UNIT TESTS ####
 
@@ -55,21 +62,33 @@ target_compile_definitions(ppm_tests PRIVATE _PPM_TESTS)               # flag to
 add_subdirectory(kafka-test)
 
 # Copy the data to the build. TODO make this part of the test or data target.
-set(BSM_DATA_DIR $<TARGET_FILE_DIR:bsmjson_privacy>/data)
-set(BSM_CONFIG_DIR $<TARGET_FILE_DIR:bsmjson_privacy>/config)
+# set(BSM_DATA_DIR $<TARGET_FILE_DIR:bsmjson_privacy>/data)
+# set(BSM_CONFIG_DIR $<TARGET_FILE_DIR:bsmjson_privacy>/config)
+set(BSM_DATA_DIR $<TARGET_FILE_DIR:ppm>/data)
+set(BSM_CONFIG_DIR $<TARGET_FILE_DIR:ppm>/config)
 
 # Make the base data directory.
-add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+# add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+#                    -E make_directory ${BSM_DATA_DIR})
+add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E make_directory ${BSM_DATA_DIR})
 # Copy the data files.
-add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+# add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+#                    -E copy_directory ${PROJECT_SOURCE_DIR}/data 
+#                    ${BSM_DATA_DIR})
+add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E copy_directory ${PROJECT_SOURCE_DIR}/data 
                    ${BSM_DATA_DIR})
 # Make the base data directory.
-add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+# add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+#                    -E make_directory ${BSM_CONFIG_DIR})
+add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E make_directory ${BSM_CONFIG_DIR})
 # Copy the data files.
-add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+# add_custom_command(TARGET bsmjson_privacy POST_BUILD COMMAND ${CMAKE_COMMAND} 
+#                    -E copy_directory ${PROJECT_SOURCE_DIR}/config
+#                    ${BSM_CONFIG_DIR})
+add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E copy_directory ${PROJECT_SOURCE_DIR}/config
                    ${BSM_CONFIG_DIR})
 
