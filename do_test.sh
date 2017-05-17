@@ -2,6 +2,9 @@
 
 ./start_kafka.sh
 
+# Give kafka time to create the topics.
+sleep 10
+
 MAP_FILE=data/I_80.edges
 DATA_FILE=data/I_80_test.json
 
