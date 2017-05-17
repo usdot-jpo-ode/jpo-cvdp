@@ -694,7 +694,9 @@ class Edge : public Entity {
         osm::Highway get_way_type() const;
 
         /**
-         *
+         * @brief Return the OSM way type as an integer.
+         * 
+         * @return the OSM way type as an integer.
          */
         int get_way_type_index() const;
 
@@ -1193,7 +1195,7 @@ class Bounds {
         /**
          * @brief A predicate indicating whether any portion of the provided circle intersects at least one of the boundary lines.
          *
-         * Note: If any of the circle's north, south, east, or west point are within the bounds an intersection exists.
+         * Note: If any of the circle's north, south, east, or west points create an edge that intersects the bounds.
          *
          * @param c the circle to check against the boundary.
          * @return true if c intersects one or more of this bound's boundary edges; false otherwise.
@@ -1341,7 +1343,7 @@ class Grid : public Bounds, public Entity {
          * @brief Build a collection of disjoint Grids of a particular size anchored at particular point.
          *
          * @param nw_point The anchor point for the grid.
-         * @param grid_width The width of each individual grid in "degrees"
+         * @param grid_width The width of each individual grid in meters
          * @param lat_threshold The minimum latitude bounds of the collection of grids.
          * @param lon_threshold The maximum longitude bounds of the collection of grids.
          */

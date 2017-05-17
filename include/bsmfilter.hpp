@@ -69,7 +69,27 @@
 using ConfigMap = std::unordered_map<std::string,std::string>;            ///< An alias to a string key - value configuration for the privacy parameters.
 
 /**
+ * @brief Functor class to enable use of enums as keys to unordered_maps.
+ */
+struct EnumHash {
+    template <typename T>
+        /**
+         * @brief Return the hash code of a type that can be cast to a size_t, e.g., an enum.
+         *
+         * @return the hash code.
+         */
+        std::size_t operator()(T t) const 
+        {
+            return static_cast<std::size_t>( t );
+        }
+};
+
+/**
  * @brief An IdRedactor encapsulates whether IdRedaction should take place and how it is performed.
+ *
+ * If inclusion_set_ is false (the default for the default constructor), ALL IDS will be redacted.
+ * If inclusion_set_ is true and the inclusion_set is empty, the NO IDS will be redacted.
+ * If inclusion_set_ is true and the inclusion_set is non-empty, then those IDS in the set will be redacted.
  */
 class IdRedactor {
 
@@ -81,7 +101,7 @@ class IdRedactor {
          * @brief Default Id Redactor constructor.
          *
          * This constructor sets the following defaults:
-         * - Treats all Ids equally; does not use the inclusions set.
+         * - Redacts all ids.
          * - Sets the default redaction value to FFFFFFFF; this is easily changed in the configuration.
          */
         IdRedactor();
@@ -96,10 +116,41 @@ class IdRedactor {
         IdRedactor( const ConfigMap& conf );
 
         /**
+         * @brief Predicate indicating whether of not all ids are redacted.
+         *
+         * @return true if this IdRedactor uses inclusions and the set is non-empty.
+         */
+        bool HasInclusions() const;
+
+        /**
+         * @brief Return the size of the inclusions sets. 
+         *
+         * @return The size of the inclusions set; -1 if inclusions are not used.
+         */
+        int NumInclusions() const;
+
+        /**
+         * @brief Reset the state of this redactor to redact all ids; this also empties the inclusion set.
+         */
+        void RedactAll();
+
+        /**
+         * @brief Empty the inclusions set; this has the effect of NO LONGER PERFORMING REDACTION.
+         *
+         * @return true if the inclusions_set had some items to clear; false if already empty.
+         */
+        bool ClearInclusions();
+
+        /** 
          * @brief Add an id to the set of Ids that require redaction.
          *
-         * @param id an id that requires redaction.
-         * @return true if it was new to the set; false otherwise.
+         * If the this redactor was previously set to including
+         * everything, i.e., NOT use a redaction list, and you add an id using
+         * this method, the previous behavior will stop and only the id you
+         * specified in this call will be redacted.
+         *
+         * @param id an id that requires redaction.  @return true if it was new
+         * to the set; false otherwise.
          */
         bool AddIdInclusion( const std::string& id );
 
@@ -119,6 +170,13 @@ class IdRedactor {
          * @return true the id was redacted (modified) in some way; false the id was not changed.
          */
         bool operator()( std::string& id );
+
+        /**
+         * @brief Return the value currently being used for redaction.
+         *
+         * @return a constanct reference to the value used to replace redacted values.
+         */
+        const std::string& redaction_value() const;
 
     private:
         InclusionSetType inclusion_set_;                        ///< The set of ids on which to perform redaction.
@@ -167,13 +225,31 @@ class VelocityFilter {
         void set_max( double v );
 
         /**
-         * @brief Predicate operator that evaluates this filter given a velocity.
+         * @brief Predicate function operator indicating whether this velocity should be filtered, i.e. suppressed.
          *
-         * The data element having velocity, v, will be suppressed when v < min or v > max.
+         * The retension interval is closed: [min_, max_]
          *
-         * @return true = retain; false = suppress.
+         * @return true = filter (suppres); false = retain.
          */
         bool operator()( double v );
+
+        /**
+         * @brief Predicate function operator indicating whether this velocity should be suppressed; surrogate for filter.
+         *
+         * The retention interval is closed: [min_, max_]
+         *
+         * @return true = filter (suppress); false = retain.
+         */
+        bool suppress( double v );
+
+        /**
+         * @brief Predicate function operator indicating whether this velocity should be retained.
+         *
+         * The retention interval is closed: [min_, max_]
+         *
+         * @return true = keep this BMS; false = suppress.
+         */
+        bool retain( double v );
 
     private:
         double min_;     ///< the minimum velocity for this filter.
@@ -239,11 +315,18 @@ class BSM : public Geo::Point {
         void set_longitude( double longitude );
 
         /**
-         * @brief Set the temporary ID fields for the BSM
+         * @brief Set the temporary ID field for the BSM
          *
          * @param id the temporary id for the BSM.
          */
         void set_id( const std::string& s );
+
+        /**
+         * @brief Get the temporary ID field for the BSM
+         *
+         * @return a const reference to the temporary id for the BSM.
+         */
+        const std::string& get_id() const;
 
         /**
          * @brief Write the BSM in readable form to the provided output stream.
@@ -277,6 +360,16 @@ class BSM : public Geo::Point {
 class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHandler> { 
     public:
 
+        /**
+         * records the status of the parsing including what caused parsing to stop, i.e., the point to be suppressed.
+         */
+        enum ResultStatus : uint16_t { SUCCESS, SPEED, GEOPOSITION, PARSE, OTHER };
+
+        using Ptr = std::shared_ptr<BSMHandler>;                                ///< Handle to pass this handler around efficiently.
+        using ResultStringMap = std::unordered_map<ResultStatus,std::string,EnumHash>;   ///< Quick retrieval of result string.
+
+        static ResultStringMap result_string_map;
+
         static constexpr uint32_t kVelocityFilterFlag = 0x1 << 0;
         static constexpr uint32_t kGeofenceFilterFlag = 0x1 << 1;
         static constexpr uint32_t kIdRedactFlag       = 0x1 << 2;
@@ -284,13 +377,6 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         // must be static const to compose these flags and use in template specialization.
         static const unsigned flags = rapidjson::kParseDefaultFlags | rapidjson::kParseNumbersAsStringsFlag;
 
-        using Ptr = std::shared_ptr<BSMHandler>;                       ///< Handle to pass this handler around efficiently.
-
-
-        /**
-         * records the status of the parsing including what caused parsing to stop, i.e., the point to be suppressed.
-         */
-        enum ResultStatus { SUCCESS, SPEED, GEOPOSITION, PARSE, OTHER };
 
         /**
          * @brief Construct a BSMHandler instance using a quad tree of the map data defining the geofence and user-specified
@@ -304,6 +390,8 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         /**
          * @brief Predicate indicating whether the BSM's position is within the prescribed geofence.
          *
+         * @todo: entities use string type values; numeric types would be faster.
+         *
          * @param bsm the BSM to be checked.
          * @return true if the BSM is within the geofence; false otherwise.
          */
@@ -314,8 +402,8 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          *
          * The result of the processing besides SAX fail/succeed status can be obtained using the #get_result method.
          *
-         * @param bsm_json a JSON string of the BSM.  @return true if the SAX parser did not encounter any errors during
-         * parsing; false otherwise.
+         * @param bsm_json a JSON string of the BSM.  
+         * @return true if the SAX parser did not encounter any errors during parsing; false otherwise.
          *
          */
         bool process( const std::string& bsm_json );
@@ -325,7 +413,7 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          *
          * @return the parsing result status including success or if failure which element caused the failure.
          */
-        BSMHandler::ResultStatus get_result() const;
+        const BSMHandler::ResultStatus get_result() const;
 
         /**
          * @brief Return the result of the most recent BSM processing as a string.
@@ -333,7 +421,7 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          * @return the parsing result status including success or if failure which element caused the failure as a
          * string.
          */
-        std::string get_result_string();
+        const std::string& get_result_string() const;
 
         /**
          * @brief Return a reference to the BSM instance generated during processing of a JSON string.
@@ -348,7 +436,7 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          *
          * @return a constant reference to the processed BSM as a JSON string.
          */
-        const std::string& get_bsm_json();
+        const std::string& get_json();
 
         /**
          * @brief Return the size in characters (bytes) of the JSON represented of the processed BSM.
@@ -475,6 +563,32 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          */
         bool EndArray(rapidjson::SizeType elementCount);
 
+        template<uint32_t FLAG>
+        bool is_active() {
+            return activated_ & FLAG;
+        }
+
+        template<uint32_t FLAG>
+        const uint32_t activate() {
+            activated_ |= FLAG;
+            return activated_;
+        }
+
+        template<uint32_t FLAG>
+        const uint32_t deactivate() {
+            activated_ &= ~FLAG;
+            return activated_;
+        }
+
+        const uint32_t get_activation_flag() const;
+        const std::string& get_current_key() const;
+        bool get_next_value() const;
+        const StrVector& get_object_stack() const; 
+        const StrVector& get_tokens() const; 
+        const VelocityFilter& get_velocity_filter() const;
+        const IdRedactor& get_id_redactor() const;
+        const double get_box_extension() const;
+        
     private:
         rapidjson::Reader reader_;                  ///< JSON reader.
         uint32_t activated_;                        ///< A flag word indicating which features of the privacy protection are activiated.
@@ -484,12 +598,14 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         bool get_value_;                            ///< Indicates the next value should be saved.
         bool finalized_;                            ///< Indicates the JSON string after redaction has been created and retrieved.
         std::string current_key_;                   ///< The current key being processed by the SAX JSON parser.
-        std::vector<std::string> object_stack_;     ///< A vector that retains the objects being parsed from the JSON; used as a stack.
-        std::vector<std::string> tokens_;           ///< A vector containing all the tokens necessary to generate the JSON of the filtered BSM.
+        StrVector object_stack_;                    ///< A vector that retains the objects being parsed from the JSON; used as a stack.
+        StrVector tokens_;                          ///< A vector containing all the tokens necessary to generate the JSON of the filtered BSM.
         std::string json_;                          ///< The JSON string after redaction.
 
         VelocityFilter vf_;                         ///< The velocity filter functor instance.
         IdRedactor idr_;                            ///< The ID Redactor to use during parsing of BSMs.
+
+        double box_extension_;                      ///< The number of meters to extend the boxes that surround edges and define the geofence.
 
         char* end_;                                 ///< A temporary pointer to the end of a string.
 };

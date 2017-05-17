@@ -35,34 +35,45 @@ namespace Shapes {
 
 using StreamPtr = std::shared_ptr<std::istream>;
 
+CSVInputFactory::CSVInputFactory() :
+    file_path_{}
+{}
+
 CSVInputFactory::CSVInputFactory(const std::string& file_path) :
     file_path_{file_path}
 {}
 
+/**
+ * Edge Specification:
+ * - line_parts[0] : "edge"
+ * - line_parts[1] : unique 64-bit integer identifier
+ * - line_parts[2] : A sequence of colon-split points; each point is semi-colon split.
+ *      - Point: <uid>;latitude;longitude
+ * - line_parts[3] : A sequence of colon-split key=value attributes.
+ *      - Attribute Pair: <attribute>=<value>
+ */
 void CSVInputFactory::make_edge(const StrVector& line_parts) {
     double lat, lon;
-    uint64_t id;
+    uint64_t edge_id;
+    uint64_t vertex_id;
+    osm::Highway way_type{osm::Highway::OTHER};                     // default value.
 
-    // default value.
-    osm::Highway way_type{osm::Highway::OTHER};
+    if ( line_parts.size() < 3) {
+        // lines cannot be defined without points.
+        throw std::invalid_argument("insufficient number of components to create an edge: " + std::to_string(line_parts.size()) + "; requires 3." );
+    }
 
-    // Edge Specification:
-    // - line_parts[0] : "edge"
-    // - line_parts[1] : unique 64-bit integer identifier
-    // - line_parts[2] : A sequence of colon-split points; each point is semi-colon split.
-    //      - Point: <uid>;latitude;longitude
-    // - line_parts[3] : A sequence of colon-split key=value attributes.
-    //      - Attribute Pair: <attribute>=<value>
-    //
-
-    if ( line_parts.size() == 4 ) {
-        // parse attributes for this edge.
-        StrVector att_strings = string_utilities::split( line_parts[static_cast<int>(osm::Fields::ATTRIBUTES)], ':' );
+    // Attributes must be processed first (if they exist) so we pickup the specified way_type.
+    if ( line_parts.size() > 3 ) {
+        StrVector att_strings = string_utilities::split( line_parts[SHAPE_ATTS], ':' );
         StrStrMap atts;
 
         for (auto& att_string : att_strings) {
             // att_string format: <attribute>=<value>
             StrPair att = string_utilities::split_attribute( att_string );
+
+            string_utilities::strip( att.first );
+            string_utilities::strip( att.second );
 
             // a pair of empty strings could be returned. If any component is empty do nothing.
             if ( !att.first.empty() && !att.second.empty() ) {
@@ -73,110 +84,79 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
 
         auto s1 = atts.find("way_type");
         if ( s1 != atts.end() ) {
+            // map uses all lower case.
+            std::transform( s1->second.begin(), s1->second.end(), s1->second.begin(), ::tolower );
             auto s2 = osm::highway_map.find( s1->second );
             if ( s2 != osm::highway_map.end() ) {
                 way_type = s2->second;
-            } // default value.
+            } // othewise, use the default value.
         }
 
         auto blacklist_item = osm::highway_blacklist.find( way_type );
         if (blacklist_item != osm::highway_blacklist.end()) {
-            // this edge type should be ignored.
+            // this edge type should be ignored since it is in the blacklist.
             throw osm::invalid_way_exception( way_type );
         }
     }
 
+    edge_id = std::stoull( line_parts[SHAPE_ID] );                  // throws.
+    StrVector geo_parts{ string_utilities::split( line_parts[SHAPE_GEOGRAPHY], ':' ) };
 
-    // calling method confirms at least 3 elements in line_parts.
-    uint64_t edge_id = std::stoull( line_parts[static_cast<int>(osm::Fields::ID)] );
-
-    // geography for an edge is a : separated pair of points.
-    StrVector geo_parts{ string_utilities::split( line_parts[static_cast<int>(osm::Fields::GEOGRAPHY)], ':' ) };
-
-    if ( geo_parts.size() == 2 ) {
-        // We have the two points we need to define and edge.
-
-        Geo::Vertex::Ptr vp1;
-
-        // A point in a geometry is a ; triple: uid ; latitude ; longitude.
-        StrVector point_parts{ string_utilities::split( geo_parts[0], ';' ) };
-
-        if ( point_parts.size() == 3 ) {
-            // We have the three elements to define a point.
-
-            id = std::stoull( point_parts[static_cast<int>(osm::PtFields::ID)] );
-
-            auto element_item = edge_map_.find( id );
-            if (element_item != edge_map_.end()) {
-                // point already defined; use existing instance.
-                vp1 = edge_map_[id];
-            } else {
-                // point must be instantiated.
-                lat = std::stod( point_parts[static_cast<int>(osm::PtFields::LAT)] );
-                lon = std::stod( point_parts[static_cast<int>(osm::PtFields::LON)] );
-
-                if (lat > 80.0 || lat < -84.0) {
-                    throw std::out_of_range{ "bad latitude: " + std::to_string(lat) };
-                }
-
-                if (lon >= 180.0 || lon <= -180.0) {
-                    throw std::out_of_range{"bad longitude: " + std::to_string(lon) };
-                }
-
-                vp1 = std::make_shared<Geo::Vertex>(lat,lon,id);  
-                edge_map_[id] = vp1;
-            }    
-
-        } else {
-            // too many or too few components to define a point -- just skip this point.
-            throw std::out_of_range{ "too many or too few elements to define a point: " + std::to_string(point_parts.size()) };
-
-        }
-
-        Geo::Vertex::Ptr vp2;
-        point_parts = string_utilities::split( geo_parts[1], ';' );
-
-        if ( point_parts.size() == 3 ) {
-            // We have the three elements to define a point.
-
-            id = std::stoull( point_parts[static_cast<int>(osm::PtFields::ID)] );
-
-            auto element_item = edge_map_.find( id );
-            if (element_item != edge_map_.end()) {
-                // point already defined; use existing instance.
-                vp2 = edge_map_[id];
-
-            } else {
-                // instantiate point.
-                lat = std::stod( point_parts[static_cast<int>(osm::PtFields::LAT)] );
-                lon = std::stod( point_parts[static_cast<int>(osm::PtFields::LON)] );
-
-                if (lat > 80.0 || lat < -84.0) {
-                    throw std::out_of_range{ "bad latitude: " + std::to_string(lat) };
-                }
-
-                if (lon >= 180.0 || lon <= -180.0) {
-                    throw std::out_of_range{"bad longitude: " + std::to_string(lon) };
-                }
-
-                vp2 = std::make_shared<Geo::Vertex>(lat,lon,id);  
-                edge_map_[id] = vp2;
-            }    
-        } else {
-            // too many or too few components to define a point -- just skip this point.
-            throw std::out_of_range{ "too many or too few elements to define a point: " + std::to_string(point_parts.size()) };
-        }
-
-        // TODO: the way id does not uniquely identify the edge, as a way is sequence of edges.
-        Geo::EdgePtr edge_ptr = std::make_shared<Geo::Edge>( vp1, vp2, way_type, edge_id ); 
-        vp1->add_edge( edge_ptr );
-        vp2->add_edge( edge_ptr );
-        edges_.push_back(edge_ptr);
-
-    } else {
+    if ( geo_parts.size() != 2 ) {
         // too many or too few points.
         throw std::out_of_range{ "too many or too few points to define an edge: " + std::to_string(geo_parts.size()) };
     }
+
+    Geo::Vertex::Ptr vp[2];
+    for ( int pi = 0; pi < 2; ++pi ) {
+
+        // A point in a geometry is a triple: uid; latitude; longitude.
+        StrVector point_parts{ string_utilities::split( geo_parts[pi], ';' ) };
+
+        if ( point_parts.size() != 3 ) {
+            // too many or too few components to define a point -- just skip this point.
+            throw std::out_of_range{ "too many or too few elements to define a point: " + std::to_string(point_parts.size()) };
+        }
+
+        // convert all the parts so we can perform checks when the id was previously used.
+        vertex_id = std::stoull( point_parts[POINT_ID] );           // throws.
+        lat = std::stod( point_parts[POINT_LAT] );                  // throws.
+        lon = std::stod( point_parts[POINT_LON] );                  // throws.
+
+        auto element_item = vertex_map_.find(vertex_id);
+        if (element_item != vertex_map_.end()) {
+            // point already defined; use existing instance.
+            // needed because we have an incident edge list.
+            vp[pi] = vertex_map_[vertex_id];
+            if ( vp[pi]->lat != lat || vp[pi]->lon != lon ) {
+                std::cerr << "WARNING: identical vertex id with different coordinates!\n";
+            }
+
+        } else {
+            // point must be instantiated.
+
+            if (lat > 80.0 || lat < -84.0) {
+                throw std::out_of_range{ "bad latitude: " + std::to_string(lat) };
+            }
+
+            if (lon >= 180.0 || lon <= -180.0) {
+                throw std::out_of_range{"bad longitude: " + std::to_string(lon) };
+            }
+
+            vp[pi] = std::make_shared<Geo::Vertex>(lat,lon,vertex_id);  
+            vertex_map_[vertex_id] = vp[pi];
+        }    
+    }
+
+    if ( vp[0]->uid == vp[1]->uid ) {
+        throw std::invalid_argument("The identifiers for the edges points are the same.");
+    }
+
+    // TODO: the way id does not uniquely identify the edge, as a way is sequence of edges.
+    Geo::EdgePtr edge_ptr = std::make_shared<Geo::Edge>( vp[0], vp[1], way_type, edge_id ); 
+    vp[0]->add_edge( edge_ptr );
+    vp[1]->add_edge( edge_ptr );
+    edges_.push_back(edge_ptr);
 }
 
 void CSVInputFactory::make_circle(const StrVector& line_parts) 

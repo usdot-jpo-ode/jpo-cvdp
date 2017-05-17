@@ -25,6 +25,7 @@
 
 #include <librdkafka/rdkafkacpp.h>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 #include "rapidjson/reader.h"
@@ -35,34 +36,64 @@
 IdRedactor::IdRedactor() :
     inclusion_set_{},
     redacted_value_{"FFFFFFFF"},                    // default value.
-    inclusions_{false}
+    inclusions_{false}                              // redact everything.
 {}
 
 IdRedactor::IdRedactor( const ConfigMap& conf ) :
     IdRedactor{}
 {
-        auto search = conf.find("privacy.redaction.id.value");
-        if ( search != conf.end() ) {
-            redacted_value_ = search->second;
-        }
+    auto search = conf.find("privacy.redaction.id.value");
+    if ( search != conf.end() ) {
+        redacted_value_ = search->second;
+    }
 
-        search = conf.find("privacy.redaction.id.inclusions");
-        if ( search != conf.end() && search->second=="ON" ) {
-            inclusions_ = true;
-        }
+    search = conf.find("privacy.redaction.id.inclusions");
+    if ( search != conf.end() && search->second=="ON" ) {
+        inclusions_ = true;
+    }
 
-        search = conf.find("privacy.redaction.id.included");
-        if ( search != conf.end() ) {
-           StrVector sv = string_utilities::split( search->second, ',' );
-           for ( auto& id : sv ) {
-               inclusion_set_.insert( id );
-           }
+    search = conf.find("privacy.redaction.id.included");
+    if ( search != conf.end() ) {
+        StrVector sv = string_utilities::split( search->second, ',' );
+        for ( auto& id : sv ) {
+            inclusion_set_.insert( id );
         }
+    }
 };
+
+bool IdRedactor::HasInclusions() const
+{
+    return inclusions_;
+}
+
+int IdRedactor::NumInclusions() const
+{
+    if ( inclusions_ ) {
+        return inclusion_set_.size();
+    }
+    return -1;
+}
+
+void IdRedactor::RedactAll()
+{
+    inclusion_set_.clear();
+    inclusions_ = false;
+}
+
+bool IdRedactor::ClearInclusions()
+{
+    bool r = inclusion_set_.size() > 0;
+    inclusion_set_.clear();
+    return r;
+}
 
 bool IdRedactor::AddIdInclusion( const std::string& id )
 {
     auto result = inclusion_set_.insert( id );
+    if ( !inclusions_ && result.second ) {
+        // previously redacting everything, not we are building the inclusion list.
+        inclusions_ = true;
+    }
     return result.second;
 }
 
@@ -83,17 +114,21 @@ bool IdRedactor::operator()( std::string& id )
     if ( inclusions_ ) {
         auto search = inclusion_set_.find( id );
         if ( search == inclusion_set_.end() ) {
-            // id is not in the inclusion set; NO REDACTION.
+            // Case 1: Using inclusion set, but not found; do NOT redact.
             return false;
         }
-        // found in exclusion set.
-    } 
+        // Case 2: Found this id in the inclusions set; redact.
+    } // Case 3: Not using inclusion set; redact everything.
+
     
-    // Two cases:
-    // 1. Use the inclusion set: found it so redact.
-    // 2. Do not use the inclusion set: redact everything.
+    // Case 2 and 3: Overwrite existing id with redaction id.
     id = redacted_value_;
     return true;
+}
+
+const std::string& IdRedactor::redaction_value() const
+{
+    return redacted_value_;
 }
 
 VelocityFilter::VelocityFilter() :
@@ -130,7 +165,16 @@ void VelocityFilter::set_max( double v ) {
 }
 
 bool VelocityFilter::operator()( double v ) {
-    return v > min_ && v < max_;
+    // true = filter it!
+    return v < min_ || v > max_;
+}
+
+bool VelocityFilter::suppress( double v ) {
+    return (*this)(v);
+}
+
+bool VelocityFilter::retain( double v ) {
+    return !(*this)(v);
 }
 
 BSM::BSM() :
@@ -166,15 +210,27 @@ void BSM::set_id( const std::string& s ) {
     id_ = s;
 }
 
+const std::string& BSM::get_id() const {
+    return id_;
+}
+
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )
 {
-    os  << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
+    os  << std::setprecision(16) << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
     os  << "Spd: "  << bsm.velocity_ << " ";
     os  << "Id: "  <<  bsm.id_;
     return os;
 }
 
-BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const std::unordered_map<std::string,std::string>& conf) :
+BSMHandler::ResultStringMap BSMHandler::result_string_map{
+            { ResultStatus::SUCCESS, "success" },
+            { ResultStatus::SPEED, "speed" },
+            { ResultStatus::GEOPOSITION, "geoposition" },
+            { ResultStatus::PARSE, "parse" },
+            { ResultStatus::OTHER, "other" }
+        };
+
+BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
     reader_{},
     activated_{0},
     result_{ ResultStatus::SUCCESS },
@@ -187,21 +243,31 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const std::unordered_map<std::string,
     tokens_{},
     json_{},
     vf_{ conf },
-    idr_{ conf }
+    idr_{ conf },
+    box_extension_{ 10.0 }
 {
     auto search = conf.find("privacy.filter.velocity");
     if ( search != conf.end() && search->second=="ON" ) {
-        activated_ |= kVelocityFilterFlag;
+        activate<BSMHandler::kVelocityFilterFlag>();
     }
 
     search = conf.find("privacy.filter.geofence");
     if ( search != conf.end() && search->second=="ON" ) {
-        activated_ |= kGeofenceFilterFlag;
+        activate<BSMHandler::kGeofenceFilterFlag>();
     }
 
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
-        activated_ |= kIdRedactFlag;
+        activate<BSMHandler::kIdRedactFlag>();
+    }
+
+    try {
+        search = conf.find("privacy.filter.geofence.extension");
+        if ( search != conf.end() ) {
+            box_extension_ = std::stod( search->second );
+        }
+    } catch ( std::exception& e ) {
+        std::cerr << "WARNING: bad value for geofence extension; keeping default: " << e.what() << '\n';
     }
 }
 
@@ -210,50 +276,41 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     Geo::EdgeCPtr edge_ptr = nullptr;
     Geo::Grid::CPtr grid_ptr = nullptr;
     Geo::AreaPtr area_ptr = nullptr;
+
     Geo::Entity::PtrSet entity_set = quad_ptr_->retrieve_elements(bsm); 
+    //std::cerr << "esize: " << entity_set.size() << " " << bsm << '\n';
 
     for (auto& entity_ptr : entity_set) {
-        if (entity_ptr->get_type() == "circle") {
+
+        edge_ptr = std::static_pointer_cast<const Geo::Edge>(entity_ptr); 
+        //std::cerr << *edge_ptr << '\n';
+
+        if (entity_ptr->get_type() == "edge") {
+            edge_ptr = std::static_pointer_cast<const Geo::Edge>(entity_ptr); 
+            // TODO: Geofence end extensions should be a parameter.
+            area_ptr = edge_ptr->to_area(box_extension_);
+
+            if (area_ptr->contains(bsm)) {
+                return true;
+            }
+
+        }   else    if (entity_ptr->get_type() == "circle") {
             circle_ptr = std::static_pointer_cast<const Geo::Circle>(entity_ptr);
 
             if (circle_ptr->contains(bsm)) {
                 return true;
             }
-        } else if (entity_ptr->get_type() == "edge") {
-            edge_ptr = std::static_pointer_cast<const Geo::Edge>(entity_ptr); 
-            area_ptr = edge_ptr->to_area();
 
-            if (area_ptr->contains(bsm)) {
-                return true;
-            }
-        } else if (entity_ptr->get_type() == "grid") {
+        } else  if (entity_ptr->get_type() == "grid") {
             grid_ptr = std::static_pointer_cast<const Geo::Grid>(entity_ptr); 
 
             if (grid_ptr->contains(bsm)) {
                 return true;
             }
+
         }
     }
     return false;
-}
-
-// bool BSMHandler::process( const char*payload, size_t length ) {
-bool BSMHandler::process( const std::string& bsm_json ) {
-
-    // TODO: if payload could be assured to be '\0' terminated we could pass the void * cast to
-    // this ss and same the creation of the string.
-    rapidjson::StringStream ss{ bsm_json.c_str() };
-
-    // we are reusing the bsm instance in the handler, so reset the state.  Not necessary for deployment.
-    bsm_.reset();
-
-    rapidjson::ParseResult r = reader_.Parse<BSMHandler::flags>(ss, *this );
-    if ( result_ == ResultStatus::SUCCESS && r.Code() != rapidjson::kParseErrorNone ) {
-        // nothing triggered a change in status, but we still failed. Parse error.
-        result_ = ResultStatus::PARSE;
-    }
-
-    return (r.Code() == rapidjson::kParseErrorNone );
 }
 
 void BSMHandler::reset() {
@@ -262,43 +319,43 @@ void BSMHandler::reset() {
     finalized_ = false;
     get_value_ = false;
     current_key_ = "";
-    result_ = ResultStatus::SUCCESS;
     json_ = "";
+    result_ = ResultStatus::SUCCESS;
+    bsm_.reset();
 }
 
-BSMHandler::ResultStatus BSMHandler::get_result() const {
+// bool BSMHandler::process( const char*payload, size_t length ) {
+bool BSMHandler::process( const std::string& bsm_json ) {
+
+    reset();
+
+    // TODO: if payload could be assured to be '\0' terminated we could pass the void * cast to
+    // this ss and same the creation of the string.
+    rapidjson::StringStream ss{ bsm_json.c_str() };
+
+    rapidjson::ParseResult r = reader_.Parse<BSMHandler::flags>(ss, *this );
+    if ( result_ == ResultStatus::SUCCESS && r.Code() != rapidjson::kParseErrorNone ) {
+        // nothing triggered a change in status, but we still failed. Parse error.
+        result_ = ResultStatus::PARSE;
+    }
+ 
+    // successful processing is no parse errors; result carries filter/redaction results.
+    return (r.Code() == rapidjson::kParseErrorNone );
+}
+
+const BSMHandler::ResultStatus BSMHandler::get_result() const {
     return result_;
 }
 
-std::string BSMHandler::get_result_string() {
-    switch ( result_ ) {
-        case ResultStatus::SUCCESS :
-            return "success";
-            break;
-
-        case ResultStatus::SPEED :
-            return "speed";
-            break;
-
-        case ResultStatus::GEOPOSITION :
-            return "geoposition";
-            break;
-
-        case ResultStatus::PARSE :
-            return "parse";
-            break;
-
-        case ResultStatus::OTHER :
-        default:
-            return "other...";
-    }
+const std::string& BSMHandler::get_result_string() const {
+    return result_string_map[ result_ ];
 }
 
 const BSM& BSMHandler::get_bsm() const {
     return bsm_;
 }
 
-const std::string& BSMHandler::get_bsm_json() {
+const std::string& BSMHandler::get_json() {
 
     if ( !finalized_ ) {
         std::stringstream ss;
@@ -312,12 +369,46 @@ const std::string& BSMHandler::get_bsm_json() {
     return json_;
 }
 
+const uint32_t BSMHandler::get_activation_flag() const {
+    return activated_;
+}
+
+const std::string& BSMHandler::get_current_key() const {
+    return current_key_;
+}
+
+const StrVector& BSMHandler::get_object_stack() const {
+    return object_stack_;
+}
+
+const StrVector& BSMHandler::get_tokens() const {
+    return tokens_;
+}
+
+const VelocityFilter& BSMHandler::get_velocity_filter() const {
+    return vf_;
+}
+
+const IdRedactor& BSMHandler::get_id_redactor() const {
+    return idr_;
+}
+
 std::string::size_type BSMHandler::get_bsm_buffer_size() {
     
     if ( !finalized_ ) {
-        get_bsm_json();
+        get_json();
     }
     return json_.size();
+}
+
+const double BSMHandler::get_box_extension() const
+{
+    return box_extension_;
+}
+
+bool BSMHandler::get_next_value() const
+{
+    return get_value_;
 }
 
 bool BSMHandler::starting_new_object() const {
@@ -331,9 +422,6 @@ bool BSMHandler::finished_current_object() const {
 bool BSMHandler::Null() 
 { 
     tokens_.push_back("null");
-    if (get_value_) {
-        std::cout << "null\n";
-    }
     get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
@@ -347,10 +435,6 @@ bool BSMHandler::Bool(bool b)
         tokens_.push_back("false");
     }
 
-    if (get_value_) {
-        std::cout << std::boolalpha << b << '\n';
-    }
-
     get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
@@ -359,9 +443,6 @@ bool BSMHandler::Bool(bool b)
 bool BSMHandler::Int(int i) 
 {
     tokens_.push_back( std::to_string(i) );
-    if (get_value_) {
-        std::cout << i << '\n';
-    }
     get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
@@ -370,9 +451,6 @@ bool BSMHandler::Int(int i)
 bool BSMHandler::Uint(unsigned u) 
 {
     tokens_.push_back( std::to_string(u) );
-    if (get_value_) {
-        std::cout << u << '\n';
-    }
     get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
@@ -381,9 +459,6 @@ bool BSMHandler::Uint(unsigned u)
 bool BSMHandler::Int64(int64_t i) 
 {
     tokens_.push_back( std::to_string(i) );
-    if (get_value_) {
-        std::cout << i << '\n';
-    }
     get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
@@ -392,9 +467,6 @@ bool BSMHandler::Int64(int64_t i)
 bool BSMHandler::Uint64(uint64_t u) 
 {
     tokens_.push_back( std::to_string(u) );
-    if (get_value_) {
-        std::cout << u << '\n';
-    }
     get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
@@ -412,6 +484,7 @@ bool BSMHandler::Double(double d)
 }
 
 bool BSMHandler::RawNumber(const char* str, rapidjson::SizeType length, bool copy) { 
+    static char* end;
     
     tokens_.push_back( std::string(str,length) );
 
@@ -419,19 +492,19 @@ bool BSMHandler::RawNumber(const char* str, rapidjson::SizeType length, bool cop
         get_value_ = false;
 
         if ("latitude" == current_key_) {
-            double v = std::strtod( str, &end_ );
+            double v = std::strtod( str, &end );
             bsm_.set_latitude( v );
         }
 
         if ("longitude" == current_key_) {
-            double v = std::strtod( str, &end_);
+            double v = std::strtod( str, &end );
             bsm_.set_longitude( v );
         }
 
         if ("speed" == current_key_) {
-            double v = std::strtod( str, &end_ );
+            double v = std::strtod( str, &end );
             bsm_.set_velocity( v );
-            if ( (activated_ & kVelocityFilterFlag) && !vf_(v) ) {
+            if ( is_active<kVelocityFilterFlag>() && vf_.suppress(v) ) {
                 // Velocity filtering is activated and filtering failed -> suppress.
                 result_ = ResultStatus::SPEED;
             }
@@ -445,16 +518,15 @@ bool BSMHandler::String(const char* str, rapidjson::SizeType length, bool copy) 
 
     std::string s{ str, length };
 
-    if ( get_value_ && (activated_ & kIdRedactFlag) && (current_key_=="id") ) {
-        // previous token requires extracting value.
+    if ( get_value_ && is_active<kIdRedactFlag>() && (current_key_=="id") ) {
         // ID redaction is activiated and this is the value associated with the id field.
 
         // returns false if NO REDACTION.
         idr_( s );
 
-        // this is needed only for print outs; the data in tokens_ is what is returned.
+        // Setting the BSM id is for testing and printouts; not needed in product, since actual value 
+        // is in tokens_ stack.
         bsm_.set_id( s );
-        get_value_ = false;
 
     } else if ( get_value_ && (current_key_=="id") ) {
         // TODO: This else branch is here so when the tests are run the bsm id is set to the original value and
@@ -463,6 +535,7 @@ bool BSMHandler::String(const char* str, rapidjson::SizeType length, bool copy) 
         bsm_.set_id( s );
     }
 
+    get_value_ = false;
     tokens_.push_back( "\"" + s + "\"" );
     return result_ == ResultStatus::SUCCESS;
 }
@@ -484,7 +557,7 @@ bool BSMHandler::EndObject(rapidjson::SizeType memberCount)
     tokens_.push_back("}");
     std::string top = object_stack_.back();
 
-    if ( (top=="position") && (activated_ & kGeofenceFilterFlag) && !isWithinEntity(bsm_) ) {
+    if ( (top=="position") && is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_) ) {
         // Shortcircuting: Parsed core position, geofencing is needed, and inside the geofence.
         result_ = ResultStatus::GEOPOSITION;
     } 
@@ -526,38 +599,3 @@ bool BSMHandler::EndArray(rapidjson::SizeType elementCount)
     return result_ == ResultStatus::SUCCESS;
 }
 
-/**
- * Testing stub.
- */
-int main_old(int argc, char **argv) {
-    if (argc < 2) {
-        std::cerr << "Missing path to region file." << std::endl;
-        exit(1);
-    }
-
-    // Setup the quad.
-    Geo::Point sw{ 42.17, -83.91 };
-    Geo::Point ne{ 42.431, -83.54 };
-
-    std::string region_file_path = std::string(argv[1]);
-
-    // Declare a quad with the given bounds.
-    Quad::Ptr quad_ptr = std::make_shared<Quad>(sw, ne);
-    // Read the file and parse the shapes.
-    Shapes::CSVInputFactory shape_factory(region_file_path);
-    shape_factory.make_shapes();
-
-    // Add all the shapes to the quad.
-    for (auto& circle_ptr : shape_factory.get_circles()) {
-        Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(circle_ptr)); 
-    }
-
-    for (auto& edge_ptr : shape_factory.get_edges()) {
-        Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(edge_ptr)); 
-    }
-
-    for (auto& grid_ptr : shape_factory.get_grids()) {
-        Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(grid_ptr)); 
-    }
-    return 0;
-}

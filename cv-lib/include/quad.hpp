@@ -55,98 +55,37 @@ class Quad : public Geo::Bounds {
         using CPtr = std::shared_ptr<const Quad>;
         using PtrList = std::vector<Ptr>;
         using PtrStack = std::stack<Ptr>;
+        using EntityPtrStack = std::stack<Entity::CPtr>;
         using PtrSet = std::unordered_set<Ptr>;
 
         constexpr static double REDUCTION_FACTOR = 10.0;            ///< When the fuzzy dimensions are not set (i.e., 0), they will be set to the width of the quad divided by this factor.
 
-        static int minlevels;                                       ///< The minimum number of levels in the Quad tree.
-        static int maxlevels;                                       ///< The maximum number of levels in the Quad tree; the tree will not be deeper than this maximum value.
-        static double mindegrees;                                   ///< The smallest size Quad (in geographic coordinate degrees) to create during splitting unless forced.
-        static int maxelements;                                     ///< The maximum number of entities, or elements, that can be contained in a Quad leaf before it is split into four children.
-        static double fuzzywidth;                                   ///< The amount the Quad is extended to determine which elements should be inserted.
-        static double fuzzyheight;                                  ///< The amount the Quad is extended to determine which elements should be inserted.
+        //! Maximum number of elements allowed in a quad node. If more elements
+        // are added the quad will be split.
+        constexpr static uint32_t MAX_ELEMENTS = 32;
+        //! Minimum degree width/height for a quad.
+        constexpr static double MIN_DEGREES = 0.003;
+
         constexpr static int BUFFER_SIZE = 8 * 1024;                ///< The input stream buffer size when generating a Quad tree from a file.
-
-        /**
-         * @brief Initialize the static parameters for building Quad trees.
-         *
-         * @param minlevels The minimum number of levels in newly made Quads.
-         * @param maxlevels The maximum number of levels in newly made Quads.
-         * @param mindegrees The minimum number of geographical degrees to force a quad split versus a bi split.
-         * @param maxelements The maximum number of elements in a child quad before it is split.
-         * @param fuzzywidth The amount a quad's width is extended to determine whether an element should be inserted.
-         * @param fuzzyheight The amount a quad's height is extended to determine whether an element should be inserted.
-         */
-        static void init( int minlevels, int maxlevels, double mindegrees, int maxelements, double fuzzywidth, double fuzzyheight);
-
-        /**
-         * @brief Make and return a pointer to a Quad whose geographical boundaries are defined by the provided
-         * points.
-         *
-         * @param swpoint The bottom left corner of the Quad.
-         * @param nepoint The top right corner of the Quad.
-         * @return A shared pointer to a Quad that cannot change (const).
-         */
-        static CPtr make_empty_tree(const Point& swpoint, const Point& nepoint );
-
-        /**
-         * @brief Make and return a pointer to a constant Quad tree whose geographical boundaries are defined by the
-         * provided points and whose elements are in the provided file.
-         *
-         * @param swpoint The bottom left corner of the Quad.
-         * @param nepoint The top right corner of the Quad.
-         * @param filename A "shape" file containing the entities to put in the Quad tree.
-         * @return A shared pointer to a Quad that cannot change (const).
-         */
-        static CPtr make_tree( const Point& swpoint, const Point& nepoint, const std::string& filename );
-
-        /**
-         * @brief Make and return a pointer to a constant Quad tree whose geographical boundaries are defined by the
-         * provided points and whose elements are in the provided input stream.
-         *
-         * @param swpoint The bottom left corner of the Quad.
-         * @param nepoint The top right corner of the Quad.
-         * @param stream A data stream containing the entities to put in the Quad tree.
-         * @return A shared pointer to a Quad that cannot change (const).
-         */
-        static CPtr make_tree( const Point& swpoint, const Point& nepoint, std::istream& stream );
-
-        /**
-         * @brief Make a Quad tree whose root is provided from the Shapes in the file.
-         *
-         * @param quadptr A pointer to the root Quad from which to build the tree.
-         * @param filename A "shape" file containing the entities to put in the Quad tree.
-         */
-        static void build_tree( Ptr& quadptr, const std::string& file );
-
-        /**
-         * @brief Make a Quad tree whose root is provided from the Shapes in the stream.
-         *
-         * @param quadptr A pointer to the root Quad from which to build the tree.
-         * @param stream An input stream containing entities to put in the Quad tree.
-         */
-        static void build_tree( Ptr& quadptr, std::istream& stream );
-
         /**
          * @brief Attempt to insert an Entity into the Quad tree.
          *
-         * TODO: This should return some sort of status.
-         *
          * @param quadptr A pointer to the quad in which to insert the Entity
          * @param entity_ptr A pointer to the entity to insert into the given Quad or its children.
+         * @ return True if the entity is inserted into the quad, False otherwise.
          */
-        static void insert( Ptr& quadptr, Entity::CPtr entity_ptr );
+        static bool insert( Ptr& quadptr, Entity::CPtr entity_ptr );
 
         /**
-         * @brief Make an Edge from a Shape file specification.
+         * @brief Return the all the Bounds that contains the provided point.
          *
-         * Shape files have the following edge fields: type,id,geography,attributes
-         * An example fileline is: line,0,69907839;42.306113;-83.6889026:26967868;42.3063761;-83.6890468,way_type=motorway_link:way_id=4411729
-         *
-         * @param fileline The specification from the file.
-         * @return A pointer to the new Edge instance.
+         * @param quadptr A pointer to the quad in which to get the bounds for.
+         * @param leaf_only When set to true, only the leaf bounds of the quad
+         * will be returned.
+         * @param fuzzy When set to true, the bounds returned will reflect the fuzzy boundaries and not the actual boundaries
+         * @return A pointer to a new Bounds instance.
          */
-        static Geo::Edge::Ptr make_edge( const std::string& fileline );
+        static std::vector<Bounds::Ptr> retrieve_all_bounds( Ptr& quadptr, bool leaf_only = false, bool fuzzy = false );
 
         /**
          * @brief Construct a Quad
@@ -188,6 +127,7 @@ class Quad : public Geo::Bounds {
          * @return A pointer to a new Bounds instance.
          */
         Bounds::Ptr retrieve_bounds( const Point& pt, bool fuzzy = false ) const;
+
             
         /**
          * @brief Write a Quad as a human-readable string to the provided output stream.
@@ -243,11 +183,10 @@ class Quad : public Geo::Bounds {
         /**
          * @brief Attempt to split this Quad into children and insert those into this Quad's children list.
          *
-         * @param force If the Quad is too small to split vertically and horizontally based on the mindegrees parameter,
          * this flag will force the split anyway; defaults to not splitting Quads that are small.
+         * @return True if the quad is split, False otherise.
          */
-        void split( bool force = false );
-
+        bool split( );
 };
 
 #endif
