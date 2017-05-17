@@ -77,7 +77,7 @@ surrounds that segment of the road. The image below illustrates how a *rectange*
 is drawn to form the segment's geofence.  The aforementioned edge attributes and
 PPM configuration parameters determine the size of the rectange.
 
-![Road Segment Geofence Dimensions](graphics/geofence-dimensions.png){ width:50%; }
+![Road Segment Geofence Dimensions](graphics/geofence-dimensions.png)
 
 - `privacy.filter.geofence` : enables or disables geofence-based filtering.
     - `ON` : enables the geofence.

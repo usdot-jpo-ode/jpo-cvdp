@@ -157,4 +157,6 @@ Filtering BSM [geoposition] : Pos: (42.2458, -83.6234), Spd: -1 Id: FFFFFFFF
 
 Unit tests are built when the PPM is compiled during installation. Those tests can be run using the following command:
 
-   $ ./ppm_tests
+```bash
+$ ./ppm_tests
+```
