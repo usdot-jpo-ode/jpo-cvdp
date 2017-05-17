@@ -1,4 +1,8 @@
+language: cpp
 sudo: required
+
+compiler:
+    - g++
 
 services:
     - docker
