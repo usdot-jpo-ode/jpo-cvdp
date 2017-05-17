@@ -10,6 +10,7 @@
 
 TEST_CASE("Entity", "[entity test]") {
     SECTION("Conversions") {
+        CHECK(false);
         CHECK(Geo::to_degrees(0.0) == Approx(0.0));
         CHECK(Geo::to_degrees(.5 * Geo::kPi) == Approx(90.0));
         CHECK(Geo::to_degrees(Geo::kPi) == Approx(180.0));
