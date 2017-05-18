@@ -2,9 +2,9 @@
 
 There are several ways to test the capabilities of the PPM.
 
-- Testing as an individual application within Docker.
-- Testing as an individual application on the native client.
-- Unit Testing
+- Testing as an individual application within [Docker](#docker-testing)
+- Testing as an individual application on the [native client](#testing-on-the-native-client)
+- [Unit Testing](#unit-testing)
 
 ## Test Files
 
@@ -66,6 +66,46 @@ Consuming BSM with ID=BEA10000, speed=6.74, position=42.24576, -83.62338
 
 ## Testing on the Native Client
 
+The PPM can be tested as a component of the ODE, and it can be tested using a basic Kafka installation on the native
+client.
+
+### ODE Integration Testing
+
+The PPM is meant to be a module that supports the ODE.  The following instructions outline how to perform integration
+testing on a single linux installation:
+
+1. Follow the [ODE installation instructions](https://github.com/usdot-jpo-ode/jpo-ode#documentation)
+1. Start a terminal for launching the ODE containers.
+1. Set the following environment variables:
+
+```bash
+$ export DOCKER_HOST_IP=<your.host.ip>
+$ export DOCKER_SHARED_VOLUME=<your.shared.directory>
+```
+
+1. Follow the Deploying ODE Application on a Docker Host directions
+
+```bash
+$ docker-compose up --no-recreate -d
+```
+
+1. Start a terminal for launching the PPM.
+
+```bash
+$ cd $BASE_PPM_DIR/jpo-cvdp/build
+$ ./ppm -c ../config/<testconfig>.properties
+```
+1. Open a web browser, and enter the url: `localhost:8080`
+1. Click on the **Connect** button.
+1. Click on the **Browse** button, find a JSON test file with BSMs (one per line).
+1. Click the **Upload** button.
+
+The BSMs from the file should be listed in the web browser: the BSMs section
+lists all the BSMs; the Filtered BSMs section contains the BSMs that were
+processed by the PPM and returned back to the ODE.
+
+### Testing without the ODE
+
 These instructions describe how to run a collection of BSM test JSON objects through the PPM and examine its operation.
 Using *GNU screen* for this work is really handy; you will need several shells.
 
@@ -98,7 +138,7 @@ In another shell, startup the PPM
 
 ```bash
 $ cd $BASE_PPM_DIR/jpo-cvdp/build
-$ ./bsmjson_privacy -c ../config/<testconfig>.properties
+$ ./ppm -c ../config/<testconfig>.properties
 ```
 
 - At this point the PPM will wait for streaming messages from the simulated ODE
@@ -134,7 +174,7 @@ $ cat $BASE_PPM_DIR/jpo-cvdp/data/testing_data.json | bin/kafka-console-producer
 
 - In the PPM shell the output should look something like the following:
 ```bash
-$ ./bsmjson_privacy -c ../config/test.allon.properties
+$ ./ppm -c ../config/test.allon.properties
 >> Created Consumer: rdkafka#consumer-1
 >> Created Producer: rdkafka#producer-2
 Retaining BSM: Pos: (41.7381, -106.587), Spd: 7.02 Id: FFFFFFFF

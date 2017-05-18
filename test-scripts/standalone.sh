@@ -3,7 +3,6 @@
 # There are three input files: ROAD_FILE, CONFIG, TEST_DATA.
 # Offset is the offset in the topic that will be consumed and displayed in the
 # output
-
 USAGE="standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [OFFSET]"
 
 if [ -z $1 ] || [ ! -f $1 ]; then
@@ -46,12 +45,14 @@ echo "**************************"
 echo "Running standalone test with "$1 $2 $3
 echo "**************************"
 
+#docker stop ppm_kafka > /dev/null
+#docker rm ppm_kafka > /dev/null
+
 # Start the PPM in a new container.
-docker run --name ppm_kafka -v /tmp/docker-test/data:/ppm_data -it --rm -p '8080:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm.sh > /dev/null
+docker run --name ppm_kafka -v /tmp/docker-test/data:/ppm_data -it --rm -p '8080:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
 
 sleep 10
 
 # Produce the test data.
 docker exec ppm_kafka /cvdi-stream/docker-test/do_test.sh $OFFSET
-
 docker stop ppm_kafka > /dev/null

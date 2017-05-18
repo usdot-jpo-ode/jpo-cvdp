@@ -63,9 +63,11 @@ class PPM : public tool::Tool {
         PPM( const std::string& name, const std::string& description );
         ~PPM();
         void metadata_print (const std::string &topic, const RdKafka::Metadata *metadata);
-        bool ode_topic_available( const std::string& topic );
+        bool topic_available( const std::string& topic );
         void print_configuration() const;
         bool configure();
+        bool launch_consumer();
+        bool launch_producer();
         RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
         Quad::Ptr BuildGeofence( const std::string& mapfile );
         int operator()(void);

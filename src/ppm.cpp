@@ -51,6 +51,8 @@
 
 #include "ppm.hpp"
 #include <csignal>
+#include <chrono>
+#include <thread>
 
 #ifndef _MSC_VER
 #include <sys/time.h>
@@ -165,11 +167,12 @@ void PPM::metadata_print (const std::string &topic, const RdKafka::Metadata *met
     }
 }
 
-bool PPM::ode_topic_available( const std::string& topic ) {
+bool PPM::topic_available( const std::string& topic ) {
     bool r = false;
 
     RdKafka::Metadata* md;
     RdKafka::ErrorCode err = consumer->metadata( true, nullptr, &md, 5000 );
+    // TODO: Will throw a broker transport error (ERR__TRANSPORT = -195) if the broker is not available.
 
     if ( err == RdKafka::ERR_NO_ERROR ) {
         RdKafka::Metadata::TopicMetadataIterator it = md->topics()->begin();
@@ -188,19 +191,22 @@ bool PPM::ode_topic_available( const std::string& topic ) {
 void PPM::print_configuration() const
 {
     std::cout << "# Global config" << "\n";
-    for (std::list<std::string>::iterator it = conf->dump()->begin(); it != conf->dump()->end(); ) {
-        std::cout << *it << " = ";
-        it++;
-        std::cout << *it << "\n";
-        it++;
+    std::list<std::string>* conf_list = conf->dump();
+
+    int i = 0;
+    for ( auto& v : *conf_list ) {
+        if ( i%2==0 ) std::cout << v << " = ";
+        else std::cout << v << '\n';
+        ++i;
     }
 
     std::cout << "# Topic config" << "\n";
-    for (std::list<std::string>::iterator it = tconf->dump()->begin(); it != tconf->dump()->end(); ) {
-        std::cout << *it << " = ";
-        it++;
-        std::cout << *it << "\n";
-        it++;
+    conf_list = tconf->dump();
+    i = 0;
+    for ( auto& v : *conf_list ) {
+        if ( i%2==0 ) std::cout << v << " = ";
+        else std::cout << v << '\n';
+        ++i;
     }
 
     std::cout << "# Privacy config \n";
@@ -234,11 +240,23 @@ bool PPM::configure() {
         line = string_utilities::strip( line );
         if ( !line.empty() && line[0] != '#' ) {
             pieces = string_utilities::split( line, '=' );
+            bool done = false;
             if (pieces.size() == 2) {
                 // in case the user inserted some spaces...
                 string_utilities::strip( pieces[0] );
                 string_utilities::strip( pieces[1] );
-                if ( conf->set(pieces[0], pieces[1], error_string) != RdKafka::Conf::CONF_OK ) {
+                // some of these configurations are stored in each...?? strange.
+                if ( tconf->set(pieces[0], pieces[1], error_string) == RdKafka::Conf::CONF_OK ) {
+                    //std::cout << "TOPIC CONF: " << pieces[0] << " = " << pieces[1] << '\n';
+                    done = true;
+                }
+
+                if ( conf->set(pieces[0], pieces[1], error_string) == RdKafka::Conf::CONF_OK ) {
+                    //std::cout << "CONF: " << pieces[0] << " = " << pieces[1] << '\n';
+                    done = true;
+                }
+
+                if ( !done ) { 
                     // These configuration options are not expected by Kafka.
                     // Assume there are for the PPM.
                     pconf[ pieces[0] ] = pieces[1];
@@ -323,32 +341,13 @@ bool PPM::configure() {
     // librdkafka defined configuration.
     conf->set("default_topic_conf", tconf, error_string);
 
-    // TODO: CLI for consumed topic string.
-    consumer = std::shared_ptr<RdKafka::KafkaConsumer>( RdKafka::KafkaConsumer::create(conf, error_string) );
-    if (!consumer) {
-        std::cerr << "Failed to create consumer: " << error_string << "\n";
-        return false;
-    }
-
-    std::cout << ">> Created Consumer: " << consumer->name() << "\n";
-    
     auto search = pconf.find("privacy.topic.consumer");
     if ( search != pconf.end() ) {
-        if ( !ode_topic_available( search->second )) {
-            std::cerr << "The ODE Topic: " << search->second << " is not available. This topic must be readable.\n";
-            return false;
-        }
         consumed_topics.push_back( search->second );
 
     } else {
         
         std::cerr << "No consumer topic was specified; must fail.\n";
-        return false;
-    }
-
-    RdKafka::ErrorCode status = consumer->subscribe(consumed_topics);
-    if (status) {
-        std::cerr << "Failed to subscribe to " << consumed_topics.size() << " topics: " << RdKafka::err2str(status) << "\n";
         return false;
     }
 
@@ -367,30 +366,14 @@ bool PPM::configure() {
         }
     }
 
-    // Producer setup: will take the filtered BSMs and send them back to the ODE (or a test java consumer).
-    producer = std::shared_ptr<RdKafka::Producer>( RdKafka::Producer::create(conf, error_string) );
-    if (!producer) {
-        std::cerr << "Failed to create producer: " << error_string << "\n";
-        return false;
-    }
-
-    std::cout << ">> Created Producer: " << producer->name() << "\n";
-
-    filtered_topic = std::shared_ptr<RdKafka::Topic>( RdKafka::Topic::create(producer.get(), published_topic, tconf, error_string) );
-    if ( !filtered_topic ) {
-        std::cerr << "Failed to create topic: " << error_string << "\n";
-        return false;
-    } 
-
-    // maybe it was specified in the configuration file.
-    search = pconf.find("privacy.consumer.timeout");
+    search = pconf.find("privacy.consumer.timeout.ms");
     if ( search != pconf.end() ) {
         try {
-        consumer_timeout = std::stoi( search->second );
+            consumer_timeout = std::stoi( search->second );
         } catch( std::exception& e ) {
             // use the default.
         }
-    } // otherwise, use the default.
+    }
 
     return true;
 }
@@ -516,14 +499,77 @@ Quad::Ptr PPM::BuildGeofence( const std::string& mapfile )  // throws
     return qptr;
 }
 
-/**
- * Runner function.
- */
+bool PPM::launch_producer()
+{
+    std::string error_string;
+
+    producer = std::shared_ptr<RdKafka::Producer>( RdKafka::Producer::create(conf, error_string) );
+    if (!producer) {
+        std::cerr << "Failed to create producer: " << error_string << "\n";
+        return false;
+    }
+
+    filtered_topic = std::shared_ptr<RdKafka::Topic>( RdKafka::Topic::create(producer.get(), published_topic, tconf, error_string) );
+    if ( !filtered_topic ) {
+        std::cerr << "Failed to create topic: " << error_string << "\n";
+        return false;
+    } 
+
+    std::cout << ">> Created Producer: " << producer->name() << " using topic: " << published_topic << "\n";
+    return true;
+}
+
+bool PPM::launch_consumer()
+{
+    std::string error_string;
+
+    consumer = std::shared_ptr<RdKafka::KafkaConsumer>( RdKafka::KafkaConsumer::create(conf, error_string) );
+    if (!consumer) {
+        std::cerr << "Failed to create consumer: " << error_string << "\n";
+        return false;
+    }
+
+    // wait on the topics we specified to become available for subscription.
+    // loop terminates with a signal (CTRL-C) or when all the topics are available.
+    int tcount = 0;
+    for ( auto& topic : consumed_topics ) {
+        while ( bsms_available && tcount < consumed_topics.size() ) {
+            if ( topic_available(topic) ) {
+                // count it and attempt to get the next one if it exists.
+                ++tcount;
+                break;
+            }
+            // topic is not available, wait for a second or two.
+            std::this_thread::sleep_for( std::chrono::milliseconds( 1500 ) );
+            std::cerr << "Waiting for topic: " << topic << " to become available.\n";
+        }
+    }
+
+    if ( tcount == consumed_topics.size() ) {
+        // all the needed topics are available for subscription.
+        RdKafka::ErrorCode status = consumer->subscribe(consumed_topics);
+        if (status) {
+            std::cerr << "Failed to subscribe to " << consumed_topics.size() << " topics: " << RdKafka::err2str(status) << "\n";
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    std::cout << ">> Created Consumer: " << consumer->name() << " using topic(s): ";
+    for ( auto& topic : consumed_topics ) 
+        std::cout << topic << ", ";
+    std::cout << std::endl;
+
+    return true;
+}
+
+
 int PPM::operator()(void) {
 
     std::string error_string;
     RdKafka::ErrorCode status;
-    uint32_t timeout_counter = 0;
+    bool pulse = false;
 
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
@@ -539,6 +585,9 @@ int PPM::operator()(void) {
         return EXIT_FAILURE;
     }
 
+    if ( !launch_consumer() ) return false;
+    if ( !launch_producer() ) return false;
+
     BSMHandler handler{qptr, pconf};
 
     // consume-produce loop.
@@ -550,10 +599,18 @@ int PPM::operator()(void) {
         if ( status == RdKafka::ERR_NO_ERROR ) {
             // Retain BSM.
             const BSM& bsm = handler.get_bsm();
+            if (pulse) {
+                std::cerr << "\n";
+                pulse = false;
+            }
             std::cout << "Retaining BSM: " << bsm << "\n";
 
             status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
             if (status != RdKafka::ERR_NO_ERROR) {
+                if (pulse) {
+                    std::cerr << "\n";
+                    pulse = false;
+                }
                 std::cerr << "% Produce failed: " << RdKafka::err2str( status ) << "\n";
             } else {
 
@@ -565,6 +622,10 @@ int PPM::operator()(void) {
         } else if ( status == RdKafka::ERR_INVALID_MSG ) {
             // Filter BSM.
             const BSM& bsm = handler.get_bsm();
+            if (pulse) {
+                std::cerr << "\n";
+                pulse = false;
+            }
             std::cout << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
             
             // filtered; update counters.
@@ -573,19 +634,25 @@ int PPM::operator()(void) {
 
         } else if ( status == RdKafka::ERR__TIMED_OUT ) {
 
-            if ( ++timeout_counter > 50 ) {
-                std::cerr << "ODE BSM Consumer: no messages for a while, but PPM still alive.\n";
-                timeout_counter = 0;
+            if ( !pulse ) {
+                std::cerr << "ODE BSM Consumer Waiting: .";
+            } else {
+                std::cerr << ".";
             }
+
+            pulse = true;
 
         } else if ( status == RdKafka::ERR__PARTITION_EOF ) {
 
+            if (pulse) std::cerr << "\n";
             std::cerr << "ODE BSM Consumer: partition end of file, but PPM still alive.\n";
+            pulse = false;
 
         } else {
-            // time out and no more messages are normal.
 
+            if (pulse) std::cerr << "\n";
             std::cerr << "% Consumer Problem: " << RdKafka::err2str( status ) << '\n';
+            pulse = false;
         }
     }
 
@@ -607,11 +674,12 @@ int main( int argc, char* argv[] )
     PPM ppm{"ppm","Privacy Protection Module"};
 
     ppm.addOption( 'c', "config", "Configuration for Kafka and Privacy Protection Module.", true );
-    ppm.addOption( 't', "topic", "topic.", true );
-    ppm.addOption( 'p', "partition", "topic partition from which to consume.", true );
+    ppm.addOption( 'C', "config-check", "Check the configuration and output the settings.", false );
+    ppm.addOption( 't', "produce-topic", "topic.", true );
+    ppm.addOption( 'p', "partition", "Consumer topic partition from which to read.", true );
     ppm.addOption( 'g', "group", "Consumer group identifier", true );
     ppm.addOption( 'b', "broker", "Broker address (localhost:9092)", true );
-    ppm.addOption( 'o', "offset", "starting read offset in the partition.", true );
+    ppm.addOption( 'o', "offset", "Byte offset to start reading in the consumed topic.", true );
     ppm.addOption( 'e', "exit", "Exit consumer when last message in partition has been received.", false );
     ppm.addOption( 'd', "debug", "debug level.", true );
     ppm.addOption( 'm', "mapfile", "Map data file to specify the geofence.", true );
@@ -626,6 +694,22 @@ int main( int argc, char* argv[] )
     if (ppm.optIsSet('h')) {
         ppm.help();
         std::exit( EXIT_SUCCESS );
+    }
+
+    // configuration check.
+    if (ppm.optIsSet('C')) {
+        try {
+            if (ppm.configure()) {
+                ppm.print_configuration();
+                std::exit( EXIT_SUCCESS );
+            } else {
+                std::cerr << "Current configuration settings do not work.\n";
+                std::exit( EXIT_FAILURE );
+            }
+        } catch ( std::exception& e ) {
+            std::cerr << "Fatal Exception: " << e.what() << '\n';
+            std::exit( EXIT_FAILURE );
+        }
     }
 
     std::exit( ppm.run() );
