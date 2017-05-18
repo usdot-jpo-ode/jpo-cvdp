@@ -15,11 +15,13 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   ppm:
-      build: .
-      ports:
-        - "8080:8080"
-        - "9090:9090"
-      depends_on:
-        - kafka
-      links:
-        - kafka
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    depends_on:
+      - kafka
+    links:
+      - kafka
