@@ -134,6 +134,32 @@ $ cmake ..
 $ make
 ```
 
+## 16. Integrating with the ODE.
+
+### Using the Docker container.
+
+This will run the PPM module in separate container. First set the required environmental variables. You need to tell the PPM container where the Kafka Docker container is running with the `DOCKER_HOST_IP` variable. Also tell the PPM container where to find the [map file](configuration.md#map-file) and [PPM Configuration file](configuration.md) by setting the `DOCKER_SHARED_VOLUME`:
+
+```bash
+$ export DOCKER_HOST_IP=your.docker.host.ip
+$ export DOCKER_SHARED_VOLUME=/your/shared/directory
+```
+
+Note that the map file and configuration file must be located in the `DOCKER_SHARED_VOLUME` root directory and named `config.properties` and `road_file.csv` respectively. 
+
+Add the following service to the end of your `docker-compose.yml` file:
+
+```bash
+  ppm:
+    build: /path/to/jpo-cvdp/repo
+    environment:
+      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+    volumes:
+      - ${DOCKER_SHARED_VOLUME}:/ppm_data
+```
+
+Start the ODE containers as normal. Note that the topics for raw BSMs must be created ahead of time.
+
 ## Additional information
 
 - The PPM uses [RapidJSON](https://github.com/miloyip/rapidjson), but it is a header-only library included in the repository.
