@@ -7,12 +7,32 @@ The PPM suppresses BSMs and redacts BSM fields based on several conditions. Thes
 3. BSM location is outside of a prescribed geofence.
 4. BSM TemporaryID can be redacted (rendered indistinct).
 
+## PPM Command Line Options
+
+The PPM can be started by specifying only the configuration file. Command line options are also available. **Command
+line options override parameters specified in the configuration file.** The following command line options are available:
+
+- -h | --help : print out all the command line options.
+- -v | --verbose : set the level of logging output (TBD).
+- -t | --produce-topic : the name of the topic where filtered BSMs are published.
+- -p | --partition : the partition from which to consume raw BSMs.
+- -e | --exit : tell the PPM to exist when the last message in the partition is read.
+- -C | --config-check : Check whether the configuration will work and output all the settings.
+- -o | --offset : the byte offset in the consumer partition from which to start reading.
+- -d | --debug : the debug level (TBD)
+- -c | --config : the path to the configuration file.
+- -g | --group : Consumer group identifier
+- -b | --broker : Broker address
+- -m | --mapfile : The path to the map file to use to build the geofence.
+
 # PPM Deployment
 
-Once the PPM is installed and configured it operates as a background service. The following command will start the service:
+Once the PPM is installed and configured it operates as a background service.  The PPM can be started before or after
+other services. If started before the other services, it may produce some error messages while it waits to connect.  The
+following command will start the service using only the configuration file:
 
 ```
-$ ./bsmjson_privacy -c <configuration file>
+$ ./ppm -c <configuration file>
 ```
 
 # PPM Configuration
@@ -107,9 +127,13 @@ instead of having to modify the mapfile.
 
 ## ODE Kafka Interface
 
+- `privacy.topic.producer` : The Kafka topic name where the PPM will write the filtered BSMs.
+
 - `privacy.topic.consumer` : The Kafka topic name used by the Operational Data Environment (or other BSM JSON producer) that will be
   consumed by the PPM. The source of the data stream to be filtered by the PPM.
-- `privacy.topic.producer` : The Kafka topic name where the PPM will write the filtered BSMs.
+
+- `privacy.consumer.timeout.ms` : The amount of time the consumer blocks (or waits) for a new message. If a message is
+  received before this time has elapsed it will be processed immediately.
 
 - `group.id` : The group identifier for the PPM consumer.  Consumers label
   themselves with a consumer group name, and each record published to a topic is
