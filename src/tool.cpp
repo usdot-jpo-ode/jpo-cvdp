@@ -166,7 +166,6 @@ Tool& Tool::set( char short_name, const char* argument ) {
     return *this;
 }
 
-
 const Tool::Option& Tool::getOption( char short_name ) const
 {
     auto search = options_map.find( short_name );
