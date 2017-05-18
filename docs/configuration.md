@@ -127,10 +127,11 @@ instead of having to modify the mapfile.
 
 ## ODE Kafka Interface
 
-- `privacy.topic.producer` : The Kafka topic name where the PPM will write the filtered BSMs.
+- `privacy.topic.producer` : The Kafka topic name where the PPM will write the filtered BSMs. **The name is case
+  sensitive.**
 
 - `privacy.topic.consumer` : The Kafka topic name used by the Operational Data Environment (or other BSM JSON producer) that will be
-  consumed by the PPM. The source of the data stream to be filtered by the PPM.
+  consumed by the PPM. The source of the data stream to be filtered by the PPM. **The name is case sensitive.**
 
 - `privacy.consumer.timeout.ms` : The amount of time the consumer blocks (or waits) for a new message. If a message is
   received before this time has elapsed it will be processed immediately.
