@@ -11,7 +11,7 @@ services:
     environment:
       KAFKA_ADVERTISED_HOST_NAME: 172.17.0.1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "j2735BsmFilteredJson:1:1,j2735BsmRawJson:1:1"
+      KAFKA_CREATE_TOPICS: "topic.J2735BsmFilteredJson:1:1,topic.J2735BsmRawJson:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   ppm:
