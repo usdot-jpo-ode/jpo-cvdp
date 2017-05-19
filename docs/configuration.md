@@ -12,28 +12,32 @@ The PPM suppresses BSMs and redacts BSM fields based on several conditions. Thes
 The PPM can be started by specifying only the configuration file. Command line options are also available. **Command
 line options override parameters specified in the configuration file.** The following command line options are available:
 
-- -h | --help : print out all the command line options.
-- -v | --verbose : set the level of logging output (TBD).
-- -t | --produce-topic : the name of the topic where filtered BSMs are published.
-- -p | --partition : the partition from which to consume raw BSMs.
-- -e | --exit : tell the PPM to exist when the last message in the partition is read.
-- -C | --config-check : Check whether the configuration will work and output all the settings.
-- -o | --offset : the byte offset in the consumer partition from which to start reading.
-- -d | --debug : the debug level (TBD)
-- -c | --config : the path to the configuration file.
-- -g | --group : Consumer group identifier
-- -b | --broker : Broker address
-- -m | --mapfile : The path to the map file to use to build the geofence.
+```bash
+-h | --help : print out all the command line options.
+-v | --verbose : set the level of logging output (TBD).
+-t | --produce-topic : the name of the topic where filtered BSMs are published.
+-p | --partition : the partition from which to consume raw BSMs.
+-e | --exit : tell the PPM to exist when the last message in the partition is read.
+-C | --config-check : Check whether the configuration will work and output all the settings.
+-o | --offset : the byte offset in the consumer partition from which to start reading.
+-d | --debug : the debug level (TBD)
+-c | --config : the path to the configuration file.
+-g | --group : Consumer group identifier
+-b | --broker : Broker address
+-m | --mapfile : The path to the map file to use to build the geofence.
+```
 
 # PPM Deployment
 
-Once the PPM is installed and configured it operates as a background service.  The PPM can be started before or after
-other services. If started before the other services, it may produce some error messages while it waits to connect.  The
-following command will start the service using only the configuration file:
+Once the PPM is [installed and configured](installation.md) it operates as a background service.  The PPM can be started
+before or after other services. If started before the other services, it may produce some error messages while it waits
+to connect.  The following command will start the service using only the configuration file:
 
 ```
 $ ./ppm -c <configuration file>
 ```
+
+We recommend reviewing the [testing documentation](testing.md) for more details on running the PPM.
 
 # PPM Configuration
 

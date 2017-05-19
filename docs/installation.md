@@ -1,4 +1,4 @@
-# Installation Setup and Testing
+# Installation and Setup
 
 The following instructions represent the "hard" way to install and test the PPM. A docker image can be built to make
 this easier (see X). *The directions that follow were developed for a clean installation of Ubuntu.*
@@ -66,35 +66,43 @@ $ docker info
 - Comprehensive instructions can be found on this [website](https://www.digitalocean.com/community/tutorials/how-to-install-docker-compose-on-ubuntu-16-04)
 - Follow steps 1 and 2.
 
-## 10. Create a base directory from which to install all the necessary components to test the PPM.
+## 8. Create a base directory from which to install all the necessary components to test the PPM.
 
 ```bash
 $ export BASE_PPM_DIR=~/some/dir/you/want/to/put/this/stuff
 ```
 
-## 11. Install [`kafka-docker`](https://github.com/wurstmeister/kafka-docker) so kafka and zookeeper can run in a separate container.
+## 9. Install [`kafka-docker`](https://github.com/wurstmeister/kafka-docker) so kafka and zookeeper can run in a separate container.
 
-- These services will need to be running to test the PPM.
+- Get your host IP address. The address is usually listed under an ethernet adapter, e.g., `en<number>`.
+
+```bash
+$ ifconfig
+$ export DOCKER_HOST_IP=<HOST IP>
+```
+- Get the kafka and zookeeper images.
 
 ```bash
 $ cd $BASE_PPM_DIR
 $ git clone https://github.com/wurstmeister/kafka-docker.git
-$ ifconfig                                              // to get the host ip address (device ens33 maybe)
-$ export DOCKER_HOST_IP=<HOST IP>
 $ cd kafka-docker
 $ vim docker-compose.yml	                        // Set karka: ports: to 9092:9092
-$ docker-compose up --no-recreate -d                    // to startup kafka and zookeeper containers and not recreate
-$ docker-compose ps                                     // to check that they are running.
 ```
+- The `docker-compose.yml` file may need to be changed; the ports for kafka should be 9092:9092.
+- Startup the kafka and zookeeper containers and make sure they are running.
 
-## 12. When you want to stop kafka and zookeeper
+```bash
+$ docker-compose up --no-recreate -d
+$ docker-compose ps
+```
+- **When you want to stop kafka and zookeeper, execute the following commands.**
 
 ```bash
 $ cd $BASE_PPM_DIR/kafka-docker
 $ docker-compose down
 ```
 
-## 13. Download and install the Kafka **binary**.
+## 10. Download and install the Kafka **binary**.
 
 -  The Kafka binary provides a producer and consumer tool that can act as surrogates for the ODE (among other items).
 -  [Kafka Binary](https://kafka.apache.org/downloads)
@@ -108,11 +116,7 @@ $ tar -xzf kafka_2.12-0.10.2.1.tgz			               // the kafka version may be 
 $ mv kafka_2.12-0.10.2.1 kafka
 ```
 
-## 14. Download and install [`librdkafka`](https://github.com/edenhill/librdkafka), the C++ Kafka library we use to build the PPM.
-
-- Upon completion of the instructions below, the header files for `librdkafka` should be located in `/usr/local/include/librdkafka`
-  and the libraries (static and dynamic) should be located in `/usr/local/lib`. If you put them in another location
-  the PPM may not build.
+## 11. Download and install [`librdkafka`](https://github.com/edenhill/librdkafka), the C++ Kafka library we use to build the PPM.
 
 ```bash
 $ cd $BASE_PPM_DIR
@@ -123,7 +127,10 @@ $ make
 $ sudo make install
 ```
 
-## 15. Download, build, and install the Privacy Protection Module (PPM)
+- **NOTE**: The header files for `librdkafka` should be located in `/usr/local/include/librdkafka` and the libraries
+  (static and dynamic) should be located in `/usr/local/lib`. If you put them in another location the PPM may not build.
+
+## 12. Download, Build, and Install the Privacy Protection Module (PPM)
 
 ```bash
 $ cd $BASE_PPM_DIR
@@ -134,9 +141,13 @@ $ cmake ..
 $ make
 ```
 
-## 16. Integrating with the ODE.
+## Additional information
 
-### Using the Docker container.
+- The PPM uses [RapidJSON](https://github.com/miloyip/rapidjson), but it is a header-only library included in the repository.
+
+# Integrating with the ODE
+
+## Using the Docker container.
 
 This will run the PPM module in separate container. First set the required environmental variables. You need to tell the PPM container where the Kafka Docker container is running with the `DOCKER_HOST_IP` variable. Also tell the PPM container where to find the [map file](configuration.md#map-file) and [PPM Configuration file](configuration.md) by setting the `DOCKER_SHARED_VOLUME`:
 
@@ -145,9 +156,10 @@ $ export DOCKER_HOST_IP=your.docker.host.ip
 $ export DOCKER_SHARED_VOLUME=/your/shared/directory
 ```
 
-Note that the map file and configuration file must be located in the `DOCKER_SHARED_VOLUME` root directory and named `config.properties` and `road_file.csv` respectively. 
+Note that the map file and configuration file must be located in the `DOCKER_SHARED_VOLUME` root directory and named
+`config.properties` and `road_file.csv` respectively. 
 
-Add the following service to the end of your `docker-compose.yml` file:
+Add the following service to the end of the `docker-compose.yml` file in the `jpo-ode` installation directory.
 
 ```bash
   ppm:
@@ -160,6 +172,3 @@ Add the following service to the end of your `docker-compose.yml` file:
 
 Start the ODE containers as normal. Note that the topics for raw BSMs must be created ahead of time.
 
-## Additional information
-
-- The PPM uses [RapidJSON](https://github.com/miloyip/rapidjson), but it is a header-only library included in the repository.
