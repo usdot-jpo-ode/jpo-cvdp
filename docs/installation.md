@@ -1,7 +1,7 @@
 # Installation and Setup
 
 The following instructions represent the "hard" way to install and test the PPM. A docker image can be built to make
-this easier (see X). *The directions that follow were developed for a clean installation of Ubuntu.*
+this easier: [Using the Docker Container](using-the-docker-container). *The directions that follow were developed for a clean installation of Ubuntu.*
 
 ## 1. Install [Git](https://git-scm.com/)
 
@@ -147,7 +147,7 @@ $ make
 
 # Integrating with the ODE
 
-## Using the Docker container.
+## Using the Docker Container
 
 This will run the PPM module in separate container. First set the required environmental variables. You need to tell the PPM container where the Kafka Docker container is running with the `DOCKER_HOST_IP` variable. Also tell the PPM container where to find the [map file](configuration.md#map-file) and [PPM Configuration file](configuration.md) by setting the `DOCKER_SHARED_VOLUME`:
 

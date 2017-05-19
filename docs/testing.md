@@ -166,10 +166,10 @@ You can confirm PPM operations in two ways:
     - `test.geofenceonly.properties`
     - `test.idredactonly.properties`
     - `test.spdonly.properties`
-- After starting the PPM module, you will use the shell you created above to send the testfile, [jpo-cvdp/data/testing_data.json](data/testing_data.json) to the Kafka producer:
+- After starting the PPM module, you will use the shell you created above to send the [testfile](../data/bsm.wy.test.json) to the Kafka producer:
 
 ```bash
-$ cat $BASE_PPM_DIR/jpo-cvdp/data/testing_data.json | bin/kafka-console-producer.sh --broker-list <HOST IP>:9092 --topic j2735BsmRawJson
+$ cat $BASE_PPM_DIR/jpo-cvdp/data/bsm.wy.test.json | bin/kafka-console-producer.sh --broker-list <HOST IP>:9092 --topic j2735BsmRawJson
 ```
 
 - In the PPM shell the output should look something like the following:
