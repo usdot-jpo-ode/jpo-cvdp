@@ -15,6 +15,8 @@ addons:
     organization: "aferber-github"
     token:
       secure: "LoCufpNNoLhkmLKsemP/VVTfwyhKaQc+SUzzBQuCfY+52zq5+qhdqJ5tQTeA+CI/dkgIH6iOENnHlljD/UIuaanv+Lhy/so76TpAPak1C9FmvS+U/7Iys0/DMJBTCqloHTVEgNg9/3Gz6mgcaNFu/boeWboYrFN75dkxomidrVooW73BR1NxCVYIxMU0elClrS1SZ4RyWsFicwAbRTj8jIvGA4WW2/7TJ14xYGaY9/Q1SJl9VeGktoGDgh+zso2+GFm06kmr2TvMIwg6RfyX6Xh4RhZt8Jty2j7W+BTy3WV1Wfsy9bKO1jICScl9Yq+qVSt2lpi8Qq1H+use9u9W5NiDSlG69Uc3AFTBUMVhL+zn0q/azfRcWw0tkR26f5NtordRw2/q/j2HpdwdiyXkE0kTuyxpXLtPueXfaSvC+121Xgb2CVvk4ak/iEOxb5eersBjohlv4p53C7QUaQqZmU43FigJwdAiRRigMIg7HxUivLwGqS5mKRHP/H4v/zFKHBqFEmHWJaKx4l3GyU2mwfBGS8RP2YycBlIkYFbJllT6o6wj9p/Tim+xYRQyxNOv0g2gEN8kJAyU1dukdgaosyXSNjdeDJsF0GZcnrgaNDOWMCGp2bt/K+pHUzbIBH2AA7N02hO/abZiejWrc7eXNX9HfuBAEF/cqsS5xxNhRnU="
+    branches:
+      - .* 
 
 before_install:
     - docker version
@@ -43,6 +45,7 @@ script:
     - cd /tmp/build
     - cmake $TRAVIS_BUILD_DIR
     - make
+    - export LD_LIBRARY_PATH=/usr/local/lib
     - ./ppm_tests
     - make 
     - build-wrapper-linux-x86-64 --out-dir $TRAVIS_BUILD_DIR/bw-output make clean all
