@@ -10,6 +10,14 @@ services:
 env:
   DOCKER_COMPOSE_VERSION: 1.11.2
 
+addons:
+  sonarqube:
+    organization: "aferber-github"
+    token:
+      secure: $SONAR_SECURITY_TOKEN_NEW
+    branches:
+      - .* 
+
 before_install:
     - docker version
     - docker-compose version
@@ -19,6 +27,32 @@ before_install:
     - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
     - chmod +x docker-compose
     - sudo mv docker-compose /usr/local/bin
+    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+    - sudo apt-get update -qq
+
+install:
+    - sudo apt-get install -qq g++-4.9
+    - export CXX="g++-4.9"
 
 script:
-    - ./do_test.sh
+    - git clone https://github.com/edenhill/librdkafka.git 
+    - cd librdkafka
+    - ./configure
+    - make
+    - sudo make install
+    - cd ..
+    - mkdir /tmp/build
+    - cd /tmp/build
+    - cmake $TRAVIS_BUILD_DIR
+    - make
+    - export LD_LIBRARY_PATH=/usr/local/lib
+    - ./ppm_tests
+    - make 
+    - build-wrapper-linux-x86-64 --out-dir $TRAVIS_BUILD_DIR/bw-output make clean all
+    - cd $TRAVIS_BUILD_DIR
+    - sonar-scanner -X
+    #- ./do_test.sh
+
+cache:
+  directories:
+    - '$HOME/.sonar/cache'
