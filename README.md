@@ -1,4 +1,4 @@
-Master: [![Build Status](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp.svg?branch=master)](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp)
+Master: [![Build Status](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp.svg?branch=master)](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp) [![Quality Gate](https://sonarqube.com/api/badges/gate?key=jpd-cvdo-key)](https://sonarqube.com/dashboard?id=jpo-cvdp-key%3Aci_update)
 
 # jpo-cvdp
 
