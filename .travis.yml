@@ -14,7 +14,7 @@ addons:
   sonarqube:
     organization: "aferber-github"
     token:
-      secure: "lvnucfzOA+5KRBFfSoy2rIOUvylH8S9+euzKCwASwZ1zVCiFGgeZjQWTA1wn1X5Fn6hvwjgBe3dyqKnXqir9BUvFTXc0byvYivXaFKc7Oxqf2C7qRjtK4Mg4Dh49ZBSRS6k/YOc1XGrjhqqrcF7q2/a4g8Lf4N6+HzWe2XRskj21C86Dgu5twRR9fmXEO/mGfvMzjKj3oXWgiF7PcoKKr0IGZz7TF+ua4iULYXRPPWazN+0WK2bokdIXqwlskpRSBvleezmGzyz8TW/uGKYh9/YFegGOupe+iY937Uf8ELmzccqQ9whPnfacPx48mwnZQLfQ4mEFy1zfAFiN3kMTj20FjjcmkJM/VcqH8ESWqV/Z+WG9p2Dp2/VbMXHC68EorR7Esw6GRT3iI170zwjmrHynhE6k0HYPtKSqKHK5kBYQJRjQBDwam6QM+Tm3Mf+eE/5PA2qxVc8O7v1KzJ2Y9q2xL6EV2eT+dZT9qZrRBxFTrzxKOLBDqeU0zMiTHmz9y2qTKDPFecKp0tsi4eaXanr+RztxBKuQBmDQ/S4gePHqjV865rSs0MeaVirJhCfbja8+gHwL7Y3D2QYt/w2FJTmX4pNr6L/13D2j9cBlzMh+eBWfdt4XOeQbPTbKG4c2kBsoAesxS5/Ds/YooYAkmYNeL7ryAU2QPGVKd5uUdYk="
+      secure: $SONAR_SECURITY_TOKEN_NEW
     branches:
       - .* 
 
