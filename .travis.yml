@@ -50,8 +50,8 @@ script:
     - make 
     - build-wrapper-linux-x86-64 --out-dir $TRAVIS_BUILD_DIR/bw-output make clean all
     - cd $TRAVIS_BUILD_DIR
-    - sonar-scanner -X
-    #- ./do_test.sh
+    - sonar-scanner
+    - ./do_kafka_test.sh
 
 cache:
   directories:

@@ -1,9 +1,5 @@
 #!/bin/bash
-
 ./start_kafka.sh
-
-# Do the unit tests.
-./test-scripts/unit.sh
 
 # Wait until Kafka creates our topics.
 while true; do
