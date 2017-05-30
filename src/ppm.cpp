@@ -427,9 +427,13 @@ RdKafka::ErrorCode PPM::msg_consume(RdKafka::Message* message, void* opaque, BSM
 
         case RdKafka::ERR__PARTITION_EOF:
             /* Last message */
-            if (exit_eof && (++eof_cnt == partition_cnt)) {
-                std::cerr << "%% EOF reached for all " << partition_cnt << " partition(s)" << "\n";
-                bsms_available = false;
+            if (exit_eof) {
+                eof_cnt++;
+
+                if (eof_cnt == partition_cnt) {
+                    std::cerr << "%% EOF reached for all " << partition_cnt << " partition(s)" << "\n";
+                    bsms_available = false;
+                }
             }
             break;
 

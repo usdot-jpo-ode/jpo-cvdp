@@ -598,7 +598,7 @@ bool Circle::contains(const Point& point) const {
 }
 
 bool Circle::operator==(const Circle& other) const {
-    double_utilities::are_equal(other.lat, lat, kGPSEpsilon) && double_utilities::are_equal(other.lon, lon, kGPSEpsilon) && double_utilities::are_equal(radius, other.radius, kGPSEpsilon);
+    return double_utilities::are_equal(other.lat, lat, kGPSEpsilon) && double_utilities::are_equal(other.lon, lon, kGPSEpsilon) && double_utilities::are_equal(radius, other.radius, kGPSEpsilon);
 }
 
 Bounds::Bounds() :
