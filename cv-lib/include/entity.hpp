@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -28,10 +28,11 @@
 
 #include <iostream>
 #include <memory>
+#include <limits>
 
 #include "osm.hpp"
 
-namespace Geo {
+namespace geo {
 struct Point;
 class Area;
 class Location;
@@ -46,44 +47,45 @@ class Grid;
  */
 namespace std {
 
-template<> struct hash<Geo::Point>
+template<> struct hash<geo::Point>
 {
-    size_t operator()( const Geo::Point& pt ) const;
+    size_t operator()( const geo::Point& pt ) const;
 };
 
-template<> struct hash<Geo::Location>
+template<> struct hash<geo::Location>
 {
-    size_t operator()( const Geo::Location& loc ) const;
+    size_t operator()( const geo::Location& loc ) const;
 };
 
-template<> struct hash<Geo::Edge>
+template<> struct hash<geo::Edge>
 {
-    size_t operator()( const Geo::Edge& edge ) const;
+    size_t operator()( const geo::Edge& edge ) const;
 };
 
-template<> struct hash<std::shared_ptr<Geo::Edge>>
+template<> struct hash<std::shared_ptr<geo::Edge>>
 {
-    size_t operator()( const std::shared_ptr<Geo::Edge>& eptr ) const;
+    size_t operator()( const std::shared_ptr<geo::Edge>& eptr ) const;
 };
 
-template<> struct hash<Geo::Area>
+template<> struct hash<geo::Area>
 {
-    size_t operator()( const Geo::Area& area ) const;
+    size_t operator()( const geo::Area& area ) const;
 };
 
-template<> struct hash<std::shared_ptr<Geo::Area>>
+template<> struct hash<std::shared_ptr<geo::Area>>
 {
-    size_t operator()( const std::shared_ptr<Geo::Area>& aptr ) const;
+    size_t operator()( const std::shared_ptr<geo::Area>& aptr ) const;
 };
 }
 
 /**
  * @brief Namespace for geographic elements and structures.
  */
-namespace Geo {
+namespace geo {
 
 const double kPi = 3.14159265358979323846;          ///< Pi to 20 digits.
 const double kEarthRadiusM = 6378137.0;             ///< The Earth's radius in meters.
+const double kGPSEpsilon = std::numeric_limits<double>::epsilon()*100;
 
 /**
  * @brief Convert radians to degrees.
@@ -576,6 +578,16 @@ class Vertex : public Location {
         void update_location(const Location& location);
 
         /**
+         * Check if the location of this vertiex is the same as the given point.
+         * 
+         * Used mainly to compare edges.
+         * 
+         * @param p The Point object to check against.
+         * @return True if the locations are the same, False otherise.
+         */
+        bool is_same_point(const Point& p);
+
+        /**
          * Get the incident edge set of this vertex.
          * 
          * @return const EdgePtrSet& The incident edge set of this
@@ -981,13 +993,6 @@ class Area : public Entity {
          *
          */
         const std::string get_poly_string() const;
-
-        /**
-         * @brief Operator that indicates whether two Areas are equivalent.
-         *
-         * @return true if this Area and the parameter are equivalent.
-         */
-        bool operator==( const Area& other ) const;
 
         /**
          * @brief Write a human-readable form of this Area to the provided

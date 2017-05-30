@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -23,8 +23,8 @@
  *    Oak Ridge National Laboratory.
  */
 
-#ifndef CTES_STRING_UTILITIES_H
-#define CTES_STRING_UTILITIES_H
+#ifndef CTES_UTILITIES_H
+#define CTES_UTILITIES_H
 
 #include <string>
 #include <sstream>
@@ -107,6 +107,21 @@ std::string& strip( std::string& s );
  * @return a pair of strings (std::pair)
  */
 StrPair split_attribute( const std::string& s, char delim = '=' );
+
+}  // end namespace.
+
+namespace double_utilities {
+
+/**
+ * @brief Determine if two doubles are equal. Checks if the absolute value of 
+ * the difference is less than the given epsilon.
+ * 
+ * @param a The first double.
+ * @param b The second double.
+ * @param epsilon The epsilon value.
+ * @return True if the doubles are equal, False otherwise.
+ */
+ bool are_equal(double a, double b, double epsilon);
 
 }  // end namespace.
 

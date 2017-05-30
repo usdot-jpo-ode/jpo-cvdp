@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -44,12 +44,12 @@
  * searching through a geographical space since search is logarithmic in the number of levels.  The entities within a
  * leaf Quad must still be searched linearly.
  */
-class Quad : public Geo::Bounds {
+class Quad : public geo::Bounds {
     public:
-        using Point  = Geo::Point;
-        using Edge   = Geo::Edge;
-        using Bounds = Geo::Bounds;
-        using Entity = Geo::Entity;
+        using Point  = geo::Point;
+        using Edge   = geo::Edge;
+        using Bounds = geo::Bounds;
+        using Entity = geo::Entity;
 
         using Ptr = std::shared_ptr<Quad>;
         using CPtr = std::shared_ptr<const Quad>;
@@ -142,8 +142,8 @@ class Quad : public Geo::Bounds {
         friend std::ostream& operator<< (std::ostream& os, const Quad& quad);
 
     private:
-        static Geo::Vertex::IdToPtrMap elementmap;              ///< Lookup table from vertex unique identifer to pointers to Vertex instance; prevents duplicating Vertex creation.
-        static Geo::Entity::PtrSet emptyedgeset;                ///< Fixed empty set of Edges; returned when a point is contained in a Quad with no Entities.
+        static geo::Vertex::IdToPtrMap elementmap;              ///< Lookup table from vertex unique identifer to pointers to Vertex instance; prevents duplicating Vertex creation.
+        static geo::Entity::PtrSet emptyedgeset;                ///< Fixed empty set of Edges; returned when a point is contained in a Quad with no Entities.
 
         int level_;                                             ///< The tree depth, or level, of this Quad.
         std::string position_;                                  ///< The relative position of this Quad amoung siblings.

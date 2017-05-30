@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -27,8 +27,9 @@
 #include <sstream>
 
 #include "entity.hpp"
+#include "utilities.hpp"
 
-namespace Geo {
+namespace geo {
 
 Point::Point() :
     lat{0.0},
@@ -47,7 +48,7 @@ Point::Point( const Point& pt ) :
 
 bool Point::operator==( const Point& other ) const
 {
-    return ( lat==other.lat && lon==other.lon );
+    return (double_utilities::are_equal(lat, other.lat, kGPSEpsilon) && double_utilities::are_equal(lon, other.lon, kGPSEpsilon));
 }
 
 // Static location methods
@@ -84,7 +85,9 @@ double Location::distance_haversine( double lat1, double lon1, double lat2, doub
 
 Location Location::project_position( const Location& loc, double bearing, double distance )
 {
-    double latr, lonr, lon;
+    double latr;
+    double lonr;
+    double lon;
 
     distance /= kEarthRadiusM;
     bearing = to_radians(bearing);
@@ -105,7 +108,9 @@ Location Location::project_position( double lat, double lon, double bearing, dou
 
 Location Location::midpoint( const Location& loc1, const Location& loc2 )
 {
-    double latr, lonr, lon;
+    double latr;
+    double lonr;
+    double lon;
 
     double t = std::cos( loc2.latr );
     double d = loc2.lonr - loc1.lonr;
@@ -191,7 +196,7 @@ double Location::bearing_to(const Location& location) {
 
 bool Location::operator==( const Location& other ) const
 {
-    return ( lat==other.lat && lon==other.lon && uid==other.uid );
+    return (double_utilities::are_equal(lat, other.lat, kGPSEpsilon) && double_utilities::are_equal(lon, other.lon, kGPSEpsilon) && uid==other.uid);
 }
 
 Vertex::Vertex( double lat, double lon ) : 
@@ -247,6 +252,10 @@ void Vertex::update_location( const Location& loc )
     lonr = loc.lonr;
 }
 
+bool Vertex::is_same_point(const Point& p) {
+    return double_utilities::are_equal(lat, p.lat, kGPSEpsilon) && double_utilities::are_equal(lon, p.lon, kGPSEpsilon);
+}
+
 const EdgePtrSet& Vertex::get_incident_edges() const
 {
     return edges_;
@@ -287,10 +296,8 @@ bool Edge::touches(const Bounds& bounds) const {
 
 bool Edge::operator==( const Edge& other ) const
 {
-    return ((v1->lat == other.v1->lat) && (v1->lon == other.v1->lon) && 
-            (v2->lat == other.v2->lat) && (v2->lon == other.v2->lon)) ||
-           ((v1->lat == other.v2->lat) && (v1->lon == other.v2->lon) && 
-            (v2->lat == other.v1->lat) && (v2->lon == other.v1->lon));
+    return (v1->is_same_point(*(other.v1)) && v2->is_same_point(*(other.v2))) ||
+           (v1->is_same_point(*(other.v2)) && v2->is_same_point(*(other.v1)));
 }
 
 bool Edge::is_explicit() const
@@ -351,7 +358,7 @@ double Edge::distance_from_point(const Location& loc) const {
     double diff_lon_b = v2->lon - v1->lon;
     double dot = diff_lat * diff_lat_b + diff_lon * diff_lon_b;
 
-    if (dist_squared == 0.0) {
+    if (double_utilities::are_equal(dist_squared, 0.0, kGPSEpsilon)) {
         return 0.0;
     }
 
@@ -390,7 +397,7 @@ bool Edge::intersects( double lat1, double lon1, double lat2, double lon2 ) cons
 
     double d = -edgedlat * dlongitude() + dlatitude() * edgedlon;
 
-    if (d == 0.0) {
+    if (double_utilities::are_equal(d, 0, kGPSEpsilon)) {
         return false;
     }
 
@@ -420,8 +427,12 @@ AreaPtr Edge::to_area( double extension ) const
 
 AreaPtr Edge::to_area( double cap_width, double extension ) const
 {
-    double half_width, ab_bearing, x_bearing, y_bearing;
-    Vertex::Ptr v1_tmp, v2_tmp, v1x, v1y, v2x, v2y;
+    double half_width;
+    double ab_bearing;
+    double x_bearing;
+    double y_bearing;
+    Vertex::Ptr v1_tmp;
+    Vertex::Ptr v2_tmp;
 
     if (cap_width <= 0.0) {
         throw ZeroAreaException();
@@ -517,15 +528,6 @@ bool Area::outside_edge( int p1, const Point& pt ) const
     return (D < 0.0);
 }
 
-bool Area::operator==( const Area& other ) const
-{
-    // TODO: these corners_ could be in a different order and this will not work.
-    return ( this->corners_[0] == other.corners_[0] ) && 
-           ( this->corners_[1] == other.corners_[1] ) && 
-           ( this->corners_[2] == other.corners_[2] ) && 
-           ( this->corners_[3] == other.corners_[3] );
-}
-
 bool Area::contains( const Point& pt ) const
 {
     return !(outside_edge( 0, pt ) ||
@@ -580,7 +582,9 @@ const std::string Circle::get_type(void) const {
 }
 
 bool Circle::touches(const Bounds& bounds) const {
-    if (bounds.contains(*this) || bounds.contains(north) || bounds.contains(south) || bounds.contains(east) || bounds.contains(west)) {
+    bool cardinals_within_bounds = bounds.contains(north) || bounds.contains(south) || bounds.contains(east) || bounds.contains(west);
+
+    if (bounds.contains(*this) || cardinals_within_bounds) {
         return true;
     }
 
@@ -594,7 +598,7 @@ bool Circle::contains(const Point& point) const {
 }
 
 bool Circle::operator==(const Circle& other) const {
-    return other.lat == lat && other.lon == lon && other.radius == radius;
+    double_utilities::are_equal(other.lat, lat, kGPSEpsilon) && double_utilities::are_equal(other.lon, lon, kGPSEpsilon) && double_utilities::are_equal(radius, other.radius, kGPSEpsilon);
 }
 
 Bounds::Bounds() :
@@ -695,14 +699,14 @@ double Bounds::height() const
     return ne.lat - sw.lat;
 }
 
-Grid::Grid(const Geo::Bounds& bounds, uint32_t row, uint32_t col) :
-    Geo::Bounds{bounds},
+Grid::Grid(const geo::Bounds& bounds, uint32_t row, uint32_t col) :
+    geo::Bounds{bounds},
     row{row},
     col{col}
     {}
 
-Grid::Grid(const Geo::Point& sw_loc, const Geo::Point& ne_loc, uint32_t row, uint32_t col) :
-    Geo::Bounds{sw_loc, ne_loc},
+Grid::Grid(const geo::Point& sw_loc, const geo::Point& ne_loc, uint32_t row, uint32_t col) :
+    geo::Bounds{sw_loc, ne_loc},
     row{row},
     col{col}
     {}
@@ -711,21 +715,19 @@ const std::string Grid::get_type() const {
     return "grid";
 }
    
-bool Grid::touches(const Geo::Bounds& bounds) const {
-    if (bounds.contains(sw) || bounds.contains(ne) || bounds.contains(se) || bounds.contains(sw)) {
+bool Grid::touches(const geo::Bounds& bounds) const {
+    if (bounds.contains(sw) || bounds.contains(ne) || bounds.contains(se) || bounds.contains(nw)) {
         return true;
     } 
 
-    if (contains(bounds.sw) || contains(bounds.ne) || contains(bounds.se) || contains(bounds.sw)) {
+    if (contains(bounds.sw) || contains(bounds.ne) || contains(bounds.se) || contains(bounds.nw)) {
         return true;
     }
     return false;
 }
 
-Grid::GridPtrVector Grid::build_grid(const Geo::Location& nw_point, double grid_width, double lat_threshold, double lon_threshold) {
+Grid::GridPtrVector Grid::build_grid(const geo::Location& nw_point, double grid_width, double lat_threshold, double lon_threshold) {
     GridPtrVector ret;
-    double height = 0.0;
-    double width = 0.0;
     uint32_t row = 0;
     uint32_t col = 0;
     double height_nw_lat = nw_point.lat;
@@ -737,7 +739,6 @@ Grid::GridPtrVector Grid::build_grid(const Geo::Location& nw_point, double grid_
     double next_height_nw_lon = 0.0;
 
     while (height_nw_lat > lat_threshold) {
-        width = 0;
         col = 0; 
     
         width_nw_lat = height_nw_lat;
@@ -745,8 +746,8 @@ Grid::GridPtrVector Grid::build_grid(const Geo::Location& nw_point, double grid_
         has_next_nw = false;
 
         while (width_nw_lon < lon_threshold) {
-            Geo::Location sw_node = Geo::Location::project_position(width_nw_lat, width_nw_lon, 180.0, grid_width);   
-            Geo::Location ne_node = Geo::Location::project_position(width_nw_lat, width_nw_lon, 90.0, grid_width);  
+            geo::Location sw_node = geo::Location::project_position(width_nw_lat, width_nw_lon, 180.0, grid_width);   
+            geo::Location ne_node = geo::Location::project_position(width_nw_lat, width_nw_lon, 90.0, grid_width);  
             sw_node.lon = width_nw_lon;
             ne_node.lat = width_nw_lat;
 
@@ -760,13 +761,11 @@ Grid::GridPtrVector Grid::build_grid(const Geo::Location& nw_point, double grid_
         
             width_nw_lat = ne_node.lat;
             width_nw_lon = ne_node.lon;
-            width += grid_width;
             col++;
         } 
 
         height_nw_lat = next_height_nw_lat;
         height_nw_lon = next_height_nw_lon;
-        height -= grid_width;
         row++;
     }
 
@@ -823,47 +822,47 @@ std::ostream& operator<< (std::ostream& os, const Circle& circle)
 
 namespace std {
 
-size_t hash<Geo::Point>::operator()( const Geo::Point& pt ) const
+size_t hash<geo::Point>::operator()( const geo::Point& pt ) const
 {
     size_t r = ( hash<double>()( pt.lat ) ^ hash<double>()( pt.lon ) >> 7 );
     return r;
 }
 
-size_t hash<Geo::Location>::operator()( const Geo::Location& loc ) const
+size_t hash<geo::Location>::operator()( const geo::Location& loc ) const
 {
-    size_t r =hash<Geo::Point>()( loc ) ^ hash<uint64_t>()( loc.uid ) >> 7;
+    size_t r =hash<geo::Point>()( loc ) ^ hash<uint64_t>()( loc.uid ) >> 7;
     return r;
 }
 
-size_t hash<Geo::Edge>::operator()( const Geo::Edge& e ) const
+size_t hash<geo::Edge>::operator()( const geo::Edge& e ) const
 {
-    size_t r = (hash<Geo::Location>()( *(e.v1) ) ^ hash<Geo::Location>()( *(e.v2) ) >> 7 );
+    size_t r = (hash<geo::Location>()( *(e.v1) ) ^ hash<geo::Location>()( *(e.v2) ) >> 7 );
     r = r ^ hash<uint64_t>()( e.uid_ ) << 7;
     return r;
 }
 
-size_t hash<Geo::EdgePtr>::operator()( const Geo::EdgePtr& eptr ) const
+size_t hash<geo::EdgePtr>::operator()( const geo::EdgePtr& eptr ) const
 {
-    size_t r = (hash<Geo::Location>()( *(eptr->v1) ) ^ hash<Geo::Location>()( *(eptr->v2) ) >> 7 );
+    size_t r = (hash<geo::Location>()( *(eptr->v1) ) ^ hash<geo::Location>()( *(eptr->v2) ) >> 7 );
     r = r ^ hash<uint64_t>()( eptr->uid_ ) << 7;
     return r;
 }
 
-size_t hash<Geo::Area>::operator()( const Geo::Area& area ) const
+size_t hash<geo::Area>::operator()( const geo::Area& area ) const
 {
-    size_t r = hash<Geo::Point>()(area.corners_[0]);
-    r = r ^ (hash<Geo::Point>()(area.corners_[1]) >> 3 );
-    r = r ^ (hash<Geo::Point>()(area.corners_[2]) >> 5 );
-    r = r ^ (hash<Geo::Point>()(area.corners_[3]) >> 7 );
+    size_t r = hash<geo::Point>()(area.corners_[0]);
+    r = r ^ (hash<geo::Point>()(area.corners_[1]) >> 3 );
+    r = r ^ (hash<geo::Point>()(area.corners_[2]) >> 5 );
+    r = r ^ (hash<geo::Point>()(area.corners_[3]) >> 7 );
     return r;
 }
 
-size_t hash<Geo::Area::Ptr>::operator()( const Geo::Area::Ptr& aptr ) const
+size_t hash<geo::Area::Ptr>::operator()( const geo::Area::Ptr& aptr ) const
 {
-    size_t r = hash<Geo::Point>()(aptr->corners_[0]);
-    r = r ^ (hash<Geo::Point>()(aptr->corners_[1]) >> 3 );
-    r = r ^ (hash<Geo::Point>()(aptr->corners_[2]) >> 5 );
-    r = r ^ (hash<Geo::Point>()(aptr->corners_[3]) >> 7 );
+    size_t r = hash<geo::Point>()(aptr->corners_[0]);
+    r = r ^ (hash<geo::Point>()(aptr->corners_[1]) >> 3 );
+    r = r ^ (hash<geo::Point>()(aptr->corners_[2]) >> 5 );
+    r = r ^ (hash<geo::Point>()(aptr->corners_[3]) >> 7 );
     return r;
 }
 

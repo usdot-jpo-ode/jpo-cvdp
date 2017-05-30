@@ -21,7 +21,7 @@ configure_file("${CVLIB_INCLUDE_DIR}/entity.hpp" "${CVLIB_OUT_INCLUDE_DIR}/entit
 configure_file("${CVLIB_INCLUDE_DIR}/names.hpp" "${CVLIB_OUT_INCLUDE_DIR}/names.hpp" COPYONLY)
 configure_file("${CVLIB_INCLUDE_DIR}/osm.hpp" "${CVLIB_OUT_INCLUDE_DIR}/osm.hpp" COPYONLY)
 configure_file("${CVLIB_INCLUDE_DIR}/quad.hpp" "${CVLIB_OUT_INCLUDE_DIR}/quad.hpp" COPYONLY)
-configure_file("${CVLIB_INCLUDE_DIR}/string_utilities.hpp" "${CVLIB_OUT_INCLUDE_DIR}/string_utilities.hpp" COPYONLY)
+configure_file("${CVLIB_INCLUDE_DIR}/utilities.hpp" "${CVLIB_OUT_INCLUDE_DIR}/utilities.hpp" COPYONLY)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -36,7 +36,7 @@ set(CVLIB_INCLUDE ${CVLIB_OUT_INCLUDE_DIR} PARENT_SCOPE)
 # include_directories(${CVLIB_INCLUDE_DIR})
 
 set(CVLIB_SRC "src/quad.cpp" 
-              "src/string_utilities.cpp" 
+              "src/utilities.cpp" 
               "src/osm.cpp" 
               "src/entity.cpp" 
               "src/shapes.cpp")

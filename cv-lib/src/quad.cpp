@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -24,13 +24,13 @@
  */
 
 #include "quad.hpp"
-#include "string_utilities.hpp"
+#include "utilities.hpp"
 
-Geo::Vertex::IdToPtrMap Quad::elementmap{};
-Geo::Entity::PtrSet Quad::emptyedgeset{};
+geo::Vertex::IdToPtrMap Quad::elementmap{};
+geo::Entity::PtrSet Quad::emptyedgeset{};
 
-Quad::Quad( const Geo::Point& swpoint, const Geo::Point& nepoint, int level, const std::string& position )
-    : Geo::Bounds{ swpoint, nepoint }, 
+Quad::Quad( const geo::Point& swpoint, const geo::Point& nepoint, int level, const std::string& position )
+    : geo::Bounds{ swpoint, nepoint }, 
     level_{level}, 
     position_{position}
 {
@@ -108,7 +108,7 @@ bool Quad::full() const
     return static_cast<int>(elementset_.size()) > MAX_ELEMENTS;
 }
 
-bool Quad::insert( Quad::Ptr& quadptr, Geo::Entity::CPtr entity_ptr )
+bool Quad::insert( Quad::Ptr& quadptr, geo::Entity::CPtr entity_ptr )
 {
     if ( !entity_ptr->touches(quadptr->fuzzybounds_) ) return false;
 
@@ -161,7 +161,7 @@ std::ostream& operator<<( std::ostream& os, const Quad& quad )
     return os << "Quad: {" << quad.sw << ", " << quad.ne << "} element count: " << quad.elementset_.size() << " level: " << quad.level_ << " children: " << quad.children_.size() << " fuzzy: {" << quad.fuzzybounds_.sw << ", " << quad.fuzzybounds_.ne << ", " << quad.fuzzybounds_.height() << ", " << quad.fuzzybounds_.width() << "}";
 }
 
-const Geo::Entity::PtrSet& Quad::retrieve_elements( const Geo::Point& pt ) const
+const geo::Entity::PtrSet& Quad::retrieve_elements( const geo::Point& pt ) const
 {
     const Quad* currquad = this;
 
@@ -185,7 +185,7 @@ const Geo::Entity::PtrSet& Quad::retrieve_elements( const Geo::Point& pt ) const
     }
 }
 
-Geo::Bounds::Ptr Quad::retrieve_bounds( const Geo::Point& pt, bool fuzzy) const
+geo::Bounds::Ptr Quad::retrieve_bounds( const geo::Point& pt, bool fuzzy) const
 {
     const Quad* currquad = this;
 
@@ -205,22 +205,21 @@ Geo::Bounds::Ptr Quad::retrieve_bounds( const Geo::Point& pt, bool fuzzy) const
         }
 
         if (fuzzy) {
-            return std::make_shared<Geo::Bounds>(currquad->fuzzybounds_);
+            return std::make_shared<geo::Bounds>(currquad->fuzzybounds_);
         } else {
-            return std::make_shared<Geo::Bounds>(*currquad);
+            return std::make_shared<geo::Bounds>(*currquad);
         }
 
     } else {
-        return Geo::Bounds::Ptr{};
+        return geo::Bounds::Ptr{};
     }
 }
 
-std::vector<Geo::Bounds::Ptr> Quad::retrieve_all_bounds( Quad::Ptr& quadptr, bool leaf_only, bool fuzzy )
+std::vector<geo::Bounds::Ptr> Quad::retrieve_all_bounds( Quad::Ptr& quadptr, bool leaf_only, bool fuzzy )
 {
-    std::vector<Geo::Bounds::Ptr> ret;
+    std::vector<geo::Bounds::Ptr> ret;
     PtrStack quadstack;
     quadstack.push(quadptr);
-    bool is_insert = false;
 
     while (!quadstack.empty()) {
         Ptr currquad = quadstack.top();
@@ -233,16 +232,16 @@ std::vector<Geo::Bounds::Ptr> Quad::retrieve_all_bounds( Quad::Ptr& quadptr, boo
 
             if (!leaf_only) {
                 if (fuzzy) {
-                    ret.push_back(std::make_shared<Geo::Bounds>(currquad->fuzzybounds_));
+                    ret.push_back(std::make_shared<geo::Bounds>(currquad->fuzzybounds_));
                 } else {
-                    ret.push_back(std::make_shared<Geo::Bounds>(*currquad));
+                    ret.push_back(std::make_shared<geo::Bounds>(*currquad));
                 }
             }
         } else {
             if (fuzzy) {
-                ret.push_back(std::make_shared<Geo::Bounds>(currquad->fuzzybounds_));
+                ret.push_back(std::make_shared<geo::Bounds>(currquad->fuzzybounds_));
             } else {
-                ret.push_back(std::make_shared<Geo::Bounds>(*currquad));
+                ret.push_back(std::make_shared<geo::Bounds>(*currquad));
             }
         }
     }

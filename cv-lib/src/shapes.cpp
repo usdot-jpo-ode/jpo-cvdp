@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -29,9 +29,9 @@
 
 #include "shapes.hpp"
 #include "osm.hpp"
-#include "string_utilities.hpp"
+#include "utilities.hpp"
 
-namespace Shapes {
+namespace shapes {
 
 using StreamPtr = std::shared_ptr<std::istream>;
 
@@ -53,7 +53,8 @@ CSVInputFactory::CSVInputFactory(const std::string& file_path) :
  *      - Attribute Pair: <attribute>=<value>
  */
 void CSVInputFactory::make_edge(const StrVector& line_parts) {
-    double lat, lon;
+    double lat;
+    double lon;
     uint64_t edge_id;
     uint64_t vertex_id;
     osm::Highway way_type{osm::Highway::OTHER};                     // default value.
@@ -107,7 +108,7 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
         throw std::out_of_range{ "too many or too few points to define an edge: " + std::to_string(geo_parts.size()) };
     }
 
-    Geo::Vertex::Ptr vp[2];
+    geo::Vertex::Ptr vp[2];
     for ( int pi = 0; pi < 2; ++pi ) {
 
         // A point in a geometry is a triple: uid; latitude; longitude.
@@ -128,7 +129,7 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
             // point already defined; use existing instance.
             // needed because we have an incident edge list.
             vp[pi] = vertex_map_[vertex_id];
-            if ( vp[pi]->lat != lat || vp[pi]->lon != lon ) {
+            if ( !double_utilities::are_equal(vp[pi]->lat, lat, geo::kGPSEpsilon) || !double_utilities::are_equal(vp[pi]->lon, lon, geo::kGPSEpsilon)) {
                 std::cerr << "WARNING: identical vertex id with different coordinates!\n";
             }
 
@@ -143,7 +144,7 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
                 throw std::out_of_range{"bad longitude: " + std::to_string(lon) };
             }
 
-            vp[pi] = std::make_shared<Geo::Vertex>(lat,lon,vertex_id);  
+            vp[pi] = std::make_shared<geo::Vertex>(lat,lon,vertex_id);  
             vertex_map_[vertex_id] = vp[pi];
         }    
     }
@@ -152,8 +153,8 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
         throw std::invalid_argument("The identifiers for the edges points are the same.");
     }
 
-    // TODO: the way id does not uniquely identify the edge, as a way is sequence of edges.
-    Geo::EdgePtr edge_ptr = std::make_shared<Geo::Edge>( vp[0], vp[1], way_type, edge_id ); 
+    // NOTE: the way id does not uniquely identify the edge, as a way is sequence of edges.
+    geo::EdgePtr edge_ptr = std::make_shared<geo::Edge>( vp[0], vp[1], way_type, edge_id ); 
     vp[0]->add_edge( edge_ptr );
     vp[1]->add_edge( edge_ptr );
     edges_.push_back(edge_ptr);
@@ -172,7 +173,7 @@ void CSVInputFactory::make_circle(const StrVector& line_parts)
     StrVector parts = string_utilities::split(line_parts[2], ':');
 
     if ( parts.size() != 3 ) {
-	throw std::range_error{ "wrong number of elements for circle center: " + std::to_string( parts.size() ) };
+	    throw std::range_error{ "wrong number of elements for circle center: " + std::to_string( parts.size() ) };
     } 
 
     double lat = std::stod(parts[0]);
@@ -193,7 +194,7 @@ void CSVInputFactory::make_circle(const StrVector& line_parts)
         throw std::out_of_range{"bad radius: " + std::to_string(radius) };
     }
     
-    circles_.push_back(std::make_shared<Geo::Circle>(lat, lon, uid, radius));
+    circles_.push_back(std::make_shared<geo::Circle>(lat, lon, uid, radius));
 }
 
 void CSVInputFactory::make_grid(const StrVector& line_parts) {
@@ -207,7 +208,7 @@ void CSVInputFactory::make_grid(const StrVector& line_parts) {
     StrVector id_parts = string_utilities::split(line_parts[1], '_');
     
     if (id_parts.size() != 2) {
-        throw std::out_of_range("Geo::Grid missing row/col fields.");
+        throw std::out_of_range("geo::Grid missing row/col fields.");
     }
 
     // id_parts has 2 elements ROW and COL
@@ -218,7 +219,7 @@ void CSVInputFactory::make_grid(const StrVector& line_parts) {
     StrVector geo_parts = string_utilities::split(line_parts[2], ':');
 
     if (geo_parts.size() != 4) {
-        throw std::out_of_range("Geo::Grid missing bounds data.");
+        throw std::out_of_range("geo::Grid missing bounds data.");
     }
 
     // geo_parts has 2 points each defined as a pair (lat, lon)
@@ -228,8 +229,8 @@ void CSVInputFactory::make_grid(const StrVector& line_parts) {
     double ne_lat = std::stod(geo_parts[2]);
     double ne_lon = std::stod(geo_parts[3]);
     
-    Geo::Bounds bounds(Geo::Point(sw_lat, sw_lon), Geo::Point(ne_lat, ne_lon));
-    Geo::Grid::CPtr grid_ptr = std::make_shared<const Geo::Grid>(bounds, row, col);
+    geo::Bounds bounds(geo::Point(sw_lat, sw_lon), geo::Point(ne_lat, ne_lon));
+    geo::Grid::CPtr grid_ptr = std::make_shared<const geo::Grid>(bounds, row, col);
     grids_.push_back(grid_ptr); 
 }
 
@@ -277,15 +278,15 @@ void CSVInputFactory::make_shapes() {
     file.close();
 }
 
-const std::vector<Geo::Circle::CPtr>& CSVInputFactory::get_circles() const {
+const std::vector<geo::Circle::CPtr>& CSVInputFactory::get_circles() const {
     return circles_;
 } 
 
-const std::vector<Geo::EdgeCPtr>& CSVInputFactory::get_edges() const {
+const std::vector<geo::EdgeCPtr>& CSVInputFactory::get_edges() const {
     return edges_;
 }
 
-const std::vector<Geo::Grid::CPtr>& CSVInputFactory::get_grids() const {
+const std::vector<geo::Grid::CPtr>& CSVInputFactory::get_grids() const {
     return grids_;
 }
 
@@ -293,23 +294,23 @@ CSVOutputFactory::CSVOutputFactory(const std::string& file_path) :
     file_path_{file_path}
     {}
 
-void CSVOutputFactory::add_circle(Geo::Circle::CPtr circle_ptr) {
+void CSVOutputFactory::add_circle(geo::Circle::CPtr circle_ptr) {
     circles_.push_back(circle_ptr);
 }
 
-void CSVOutputFactory::add_edge(Geo::EdgeCPtr edge_ptr) {
+void CSVOutputFactory::add_edge(geo::EdgeCPtr edge_ptr) {
     edges_.push_back(edge_ptr);
 }
 
-void CSVOutputFactory::add_grid(Geo::Grid::CPtr grid_ptr) {
+void CSVOutputFactory::add_grid(geo::Grid::CPtr grid_ptr) {
     grids_.push_back(grid_ptr);
 }
 
-void CSVOutputFactory::write_circle(std::ofstream& os, Geo::Circle::CPtr circle_ptr) const {
+void CSVOutputFactory::write_circle(std::ofstream& os, geo::Circle::CPtr circle_ptr) const {
     os << std::setprecision(16) << "circle," << circle_ptr->uid << "," << circle_ptr->lat << ":" << circle_ptr->lon << ":" << circle_ptr->radius << std::endl;
 }
 
-void CSVOutputFactory::write_edge(std::ofstream& os, Geo::EdgeCPtr edge_ptr) const {
+void CSVOutputFactory::write_edge(std::ofstream& os, geo::EdgeCPtr edge_ptr) const {
     std::string highway_name;
 
     try {
@@ -321,7 +322,7 @@ void CSVOutputFactory::write_edge(std::ofstream& os, Geo::EdgeCPtr edge_ptr) con
     os << std::setprecision(16) << "edge," << edge_ptr->get_uid() << "," << edge_ptr->v1->uid << ";" << edge_ptr->v1->lat << ";" << edge_ptr->v1->lon << ":" << edge_ptr->v2->uid << ";" << edge_ptr->v2->lat << ";" << edge_ptr->v2->lon << ",way_type=" << highway_name << ":way_id=" << edge_ptr->get_uid() << std::endl;
 }
 
-void CSVOutputFactory::write_grid(std::ofstream& os, Geo::Grid::CPtr grid_ptr) const {
+void CSVOutputFactory::write_grid(std::ofstream& os, geo::Grid::CPtr grid_ptr) const {
     os << "grid," << std::setprecision(16) << grid_ptr->row << "_" << grid_ptr->col << "," << grid_ptr->sw.lat << ":" << grid_ptr->sw.lon << ":" << grid_ptr->ne.lat << ":" << grid_ptr->ne.lon << std::endl;
 }
 
@@ -349,4 +350,4 @@ void CSVOutputFactory::write_shapes() const {
     file.close();
 }
 
-}  // end namespace Shapes
+}  // end namespace shapes

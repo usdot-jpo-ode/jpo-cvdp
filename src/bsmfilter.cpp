@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -178,7 +178,7 @@ bool VelocityFilter::retain( double v ) {
 }
 
 BSM::BSM() :
-    Geo::Point{90.0, 180.0},
+    geo::Point{90.0, 180.0},
     velocity_{ -1 },
     id_{"UNASSIGNED"}
 {}
@@ -272,21 +272,21 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
 }
 
 bool BSMHandler::isWithinEntity(BSM &bsm) const {
-    Geo::Circle::CPtr circle_ptr = nullptr;
-    Geo::EdgeCPtr edge_ptr = nullptr;
-    Geo::Grid::CPtr grid_ptr = nullptr;
-    Geo::AreaPtr area_ptr = nullptr;
+    geo::Circle::CPtr circle_ptr = nullptr;
+    geo::EdgeCPtr edge_ptr = nullptr;
+    geo::Grid::CPtr grid_ptr = nullptr;
+    geo::AreaPtr area_ptr = nullptr;
 
-    Geo::Entity::PtrSet entity_set = quad_ptr_->retrieve_elements(bsm); 
+    geo::Entity::PtrSet entity_set = quad_ptr_->retrieve_elements(bsm); 
     //std::cerr << "esize: " << entity_set.size() << " " << bsm << '\n';
 
     for (auto& entity_ptr : entity_set) {
 
-        edge_ptr = std::static_pointer_cast<const Geo::Edge>(entity_ptr); 
+        edge_ptr = std::static_pointer_cast<const geo::Edge>(entity_ptr); 
         //std::cerr << *edge_ptr << '\n';
 
         if (entity_ptr->get_type() == "edge") {
-            edge_ptr = std::static_pointer_cast<const Geo::Edge>(entity_ptr); 
+            edge_ptr = std::static_pointer_cast<const geo::Edge>(entity_ptr); 
             // TODO: Geofence end extensions should be a parameter.
             area_ptr = edge_ptr->to_area(box_extension_);
 
@@ -295,14 +295,14 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
             }
 
         }   else    if (entity_ptr->get_type() == "circle") {
-            circle_ptr = std::static_pointer_cast<const Geo::Circle>(entity_ptr);
+            circle_ptr = std::static_pointer_cast<const geo::Circle>(entity_ptr);
 
             if (circle_ptr->contains(bsm)) {
                 return true;
             }
 
         } else  if (entity_ptr->get_type() == "grid") {
-            grid_ptr = std::static_pointer_cast<const Geo::Grid>(entity_ptr); 
+            grid_ptr = std::static_pointer_cast<const geo::Grid>(entity_ptr); 
 
             if (grid_ptr->contains(bsm)) {
                 return true;

@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -29,7 +29,7 @@
 #include <memory>
 #include "entity.hpp"
 
-namespace Shapes {
+namespace shapes {
 
 using StreamPtr = std::shared_ptr<std::istream>;        ///< Shared pointer to an input stream.
 using StrVector = std::vector<std::string>;             ///< List of std::string instances.
@@ -87,7 +87,7 @@ class CSVInputFactory
          *
          * @return an immutable vector containing pointer to circle instances.
          */
-        const std::vector<Geo::Circle::CPtr>& get_circles(void) const;
+        const std::vector<geo::Circle::CPtr>& get_circles(void) const;
 
         /**
          * @brief Return an immutable vector of the Edge shapes specified in the file.
@@ -96,7 +96,7 @@ class CSVInputFactory
          *
          * @return an immutable vector containing pointer to edge instances.
          */
-        const std::vector<Geo::EdgeCPtr>& get_edges(void) const;
+        const std::vector<geo::EdgeCPtr>& get_edges(void) const;
 
         /**
          * @brief Return an immutable vector of the Grid shapes specified in the file.
@@ -105,7 +105,7 @@ class CSVInputFactory
          *
          * @return an immutable vector containing pointer to Grid instances.
          */
-        const std::vector<Geo::Grid::CPtr>& get_grids(void) const;
+        const std::vector<geo::Grid::CPtr>& get_grids(void) const;
 
 
         /**
@@ -161,10 +161,10 @@ class CSVInputFactory
     private:
 
         std::string file_path_;                                 ///< The file containing the shape specifications.
-        Geo::Vertex::IdToPtrMap vertex_map_;                      ///< Map from identifiers to pointers to previously constructed vertices; prevents duplicates seen in OSM.
-        std::vector<Geo::Circle::CPtr> circles_;                ///< Vector of constant pointers to Circle instances.
-        std::vector<Geo::EdgeCPtr> edges_;                      ///< Vector of constant pointers to Edge instances.
-        std::vector<Geo::Grid::CPtr> grids_;                    ///< Vector of constant pointers to Grid instances.
+        geo::Vertex::IdToPtrMap vertex_map_;                      ///< Map from identifiers to pointers to previously constructed vertices; prevents duplicates seen in OSM.
+        std::vector<geo::Circle::CPtr> circles_;                ///< Vector of constant pointers to Circle instances.
+        std::vector<geo::EdgeCPtr> edges_;                      ///< Vector of constant pointers to Edge instances.
+        std::vector<geo::Grid::CPtr> grids_;                    ///< Vector of constant pointers to Grid instances.
 };
 
 /**
@@ -188,7 +188,7 @@ class CSVOutputFactory
          *
          * @param circle_ptr a shared pointer to a constant Circle instance.
          */
-        void add_circle(Geo::Circle::CPtr circle_ptr);
+        void add_circle(geo::Circle::CPtr circle_ptr);
 
         /**
          * @brief Add a Edge shape (pointer) to the collection to eventually
@@ -196,7 +196,7 @@ class CSVOutputFactory
          *
          * @param edge_ptr a shared pointer to a constant Edge instance.
          */
-        void add_edge(Geo::EdgeCPtr edge_ptr);
+        void add_edge(geo::EdgeCPtr edge_ptr);
 
         /**
          * @brief Add a Grid shape (pointer) to the collection to eventually
@@ -204,7 +204,7 @@ class CSVOutputFactory
          *
          * @param grid_ptr a shared pointer to a constant Grid instance.
          */
-        void add_grid(Geo::Grid::CPtr grid_ptr);
+        void add_grid(geo::Grid::CPtr grid_ptr);
 
         /**
          * @brief Write a shape file containing the shapes previously added to
@@ -221,7 +221,7 @@ class CSVOutputFactory
          * @param os The output stream to write the Circle specification to.
          * @param circle_ptr A shared pointer to the Circle instance.
          */
-        void write_circle(std::ofstream& os, Geo::Circle::CPtr circle_ptr) const; 
+        void write_circle(std::ofstream& os, geo::Circle::CPtr circle_ptr) const; 
 
         /**
          * @brief Write a single Edge to the specified stream.
@@ -229,7 +229,7 @@ class CSVOutputFactory
          * @param os The output stream to write the Edge specification to.
          * @param edge_ptr A shared pointer to the Edge instance.
          */
-        void write_edge(std::ofstream& os, Geo::EdgeCPtr edge_ptr) const; 
+        void write_edge(std::ofstream& os, geo::EdgeCPtr edge_ptr) const; 
 
         /**
          * @brief Write a single Grid to the specified stream.
@@ -237,13 +237,13 @@ class CSVOutputFactory
          * @param os The output stream to write the Grid specification to.
          * @param edge_ptr A shared pointer to the Grid instance.
          */
-        void write_grid(std::ofstream& os, Geo::Grid::CPtr grid_ptr) const;
+        void write_grid(std::ofstream& os, geo::Grid::CPtr grid_ptr) const;
 
     private:
         std::string file_path_;                         ///< The file to write the shape specification to.
-        std::vector<Geo::Circle::CPtr> circles_;        ///< The collection of Circle instances to write.
-        std::vector<Geo::EdgeCPtr> edges_;              ///< The collection of Edge instances to write.
-        std::vector<Geo::Grid::CPtr> grids_;            ///< The collection of Grid instance to write.
+        std::vector<geo::Circle::CPtr> circles_;        ///< The collection of Circle instances to write.
+        std::vector<geo::EdgeCPtr> edges_;              ///< The collection of Edge instances to write.
+        std::vector<geo::Grid::CPtr> grids_;            ///< The collection of Grid instance to write.
 };
 
 }  // end namespace Shapes

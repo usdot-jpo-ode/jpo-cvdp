@@ -31,7 +31,7 @@
 #include "quad.hpp"
 #include "osm.hpp"
 #include "shapes.hpp"
-#include "string_utilities.hpp"
+#include "utilities.hpp"
 
 namespace CVLib {
 const int CVLIB_MAJOR_VERSION = @CVLIB_VERSION_MAJOR@;

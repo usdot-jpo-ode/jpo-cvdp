@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -427,7 +427,7 @@ RdKafka::ErrorCode PPM::msg_consume(RdKafka::Message* message, void* opaque, BSM
 
         case RdKafka::ERR__PARTITION_EOF:
             /* Last message */
-            if (exit_eof && ++eof_cnt == partition_cnt) {
+            if (exit_eof && (++eof_cnt == partition_cnt)) {
                 std::cerr << "%% EOF reached for all " << partition_cnt << " partition(s)" << "\n";
                 bsms_available = false;
             }
@@ -454,7 +454,7 @@ RdKafka::ErrorCode PPM::msg_consume(RdKafka::Message* message, void* opaque, BSM
 
 Quad::Ptr PPM::BuildGeofence( const std::string& mapfile )  // throws
 {
-    Geo::Point sw, ne;
+    geo::Point sw, ne;
 
     auto search = pconf.find("privacy.filter.geofence.sw.lat");
     if ( search != pconf.end() ) {
@@ -479,21 +479,21 @@ Quad::Ptr PPM::BuildGeofence( const std::string& mapfile )  // throws
     Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
 
     // Read the file and parse the shapes.
-    Shapes::CSVInputFactory shape_factory( mapfile );
+    shapes::CSVInputFactory shape_factory( mapfile );
     shape_factory.make_shapes();
 
     // Add all the shapes to the quad.
     // NOTE: we are only using Edges right now.
     for (auto& circle_ptr : shape_factory.get_circles()) {
-        Quad::insert(qptr, std::dynamic_pointer_cast<const Geo::Entity>(circle_ptr)); 
+        Quad::insert(qptr, std::dynamic_pointer_cast<const geo::Entity>(circle_ptr)); 
     }
 
     for (auto& edge_ptr : shape_factory.get_edges()) {
-        Quad::insert(qptr, std::dynamic_pointer_cast<const Geo::Entity>(edge_ptr)); 
+        Quad::insert(qptr, std::dynamic_pointer_cast<const geo::Entity>(edge_ptr)); 
     }
 
     for (auto& grid_ptr : shape_factory.get_grids()) {
-        Quad::insert(qptr, std::dynamic_pointer_cast<const Geo::Entity>(grid_ptr)); 
+        Quad::insert(qptr, std::dynamic_pointer_cast<const geo::Entity>(grid_ptr)); 
     }
 
     return qptr;

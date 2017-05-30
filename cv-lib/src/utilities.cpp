@@ -7,7 +7,7 @@
  *
  * @copyright Copyright 2017 US DOT - Joint Program Office
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
@@ -23,7 +23,9 @@
  *    Oak Ridge National Laboratory.
  */
 
-#include "string_utilities.hpp"
+#include "utilities.hpp"
+
+#include <cmath>
 
 const std::string string_utilities::DELIMITERS = " \f\n\r\t\v";
 
@@ -62,3 +64,6 @@ StrPair string_utilities::split_attribute( const std::string& s, char delim) {
     return r;
 }
 
+bool double_utilities::are_equal(double a, double b, double epsilon) {
+    return std::fabs(a - b) < epsilon;
+}
