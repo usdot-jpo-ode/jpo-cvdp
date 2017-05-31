@@ -50,6 +50,10 @@ script:
     - make 
     - build-wrapper-linux-x86-64 --out-dir $TRAVIS_BUILD_DIR/bw-output make clean all
     - cd $TRAVIS_BUILD_DIR
+    - mkdir coverage
+    - cd coverage 
+    - gcov $TRAVIS_BUILD_DIR/cv-lib/src/*.cpp --object-directory /tmp/build/cv-lib/CMakeFiles/CVLib.dir/src/
+    - gcov $TRAVIS_BUILD_DIR/src/*.cpp --object-directory /tmp/build/CMakeFiles/ppm_tests.dir/src/ 
     - sonar-scanner
     - ./do_kafka_test.sh
 

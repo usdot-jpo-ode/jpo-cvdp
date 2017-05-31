@@ -14,6 +14,11 @@ if (${APPLE})
     set(MACPORTS_DIR "/opt")
 endif ()
 
+if(CMAKE_COMPILER_IS_GNUCXX)                                           # add coverage compiler option
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+    set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)
+endif()
+
 # Build the library.
 add_subdirectory("cv-lib")
 
@@ -39,13 +44,14 @@ set(PPM_SRC "src/ppm.cpp"
 add_executable(ppm ${PPM_SRC})
 target_link_libraries(ppm CVLib rdkafka++)
 
-#### BUILD TARGET FOR THE PPM UNIT TESTS ####
+#### BUILD TARGET FOR THE PPM UNIT TESTS AND CODE COVERAGE ####
 
 set(PPM_TEST_SRC "src/tests.cpp")                                      # unit tests
 
 set(CATCH_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/catch")
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})       # catch is header only; tell where to find header.
+
 
 add_executable(ppm_tests ${PPM_TEST_SRC} ${PPM_SRC})                   # need everything to build tests.
 target_link_libraries(ppm_tests CVLib rdkafka++ Catch)
