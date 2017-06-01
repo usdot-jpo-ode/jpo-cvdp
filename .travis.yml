@@ -54,6 +54,7 @@ script:
     - cd coverage 
     - gcov $TRAVIS_BUILD_DIR/cv-lib/src/*.cpp --object-directory /tmp/build/cv-lib/CMakeFiles/CVLib.dir/src/
     - gcov $TRAVIS_BUILD_DIR/src/*.cpp --object-directory /tmp/build/CMakeFiles/ppm_tests.dir/src/ 
+    - cd $TRAVIS_BUILD_DIR
     - sonar-scanner
     - ./do_kafka_test.sh
 
