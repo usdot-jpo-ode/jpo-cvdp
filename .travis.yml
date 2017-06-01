@@ -44,11 +44,9 @@ script:
     - mkdir /tmp/build
     - cd /tmp/build
     - cmake $TRAVIS_BUILD_DIR
-    - make
     - export LD_LIBRARY_PATH=/usr/local/lib
-    - ./ppm_tests
-    - make 
     - build-wrapper-linux-x86-64 --out-dir $TRAVIS_BUILD_DIR/bw-output make clean all
+    - ./ppm_tests
     - cd $TRAVIS_BUILD_DIR
     - mkdir coverage
     - cd coverage 
@@ -56,7 +54,7 @@ script:
     - gcov $TRAVIS_BUILD_DIR/src/*.cpp --object-directory /tmp/build/CMakeFiles/ppm_tests.dir/src/ 
     - cd $TRAVIS_BUILD_DIR
     - sonar-scanner
-    - ./do_kafka_test.sh
+    #- ./do_kafka_test.sh
 
 cache:
   directories:
