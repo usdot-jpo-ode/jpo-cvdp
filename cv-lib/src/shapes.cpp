@@ -168,12 +168,17 @@ void CSVInputFactory::make_circle(const StrVector& line_parts)
     // - line_parts[2] : A sequence of colon-split elements that define the center.
     //      - Center: <lat>:<lon>:<radius in meters>
     // 
+    if ( line_parts.size() < 3) {
+        // lines cannot be defined without points.
+        throw std::invalid_argument("insufficient number of components to create a circle: " + std::to_string(line_parts.size()) + "; requires 3." );
+    }
+
     uint64_t uid = std::stoull(line_parts[1]);
 
     StrVector parts = string_utilities::split(line_parts[2], ':');
 
     if ( parts.size() != 3 ) {
-	    throw std::range_error{ "wrong number of elements for circle center: " + std::to_string( parts.size() ) };
+	    throw std::out_of_range{ "wrong number of elements for circle center: " + std::to_string( parts.size() ) };
     } 
 
     double lat = std::stod(parts[0]);
@@ -205,6 +210,11 @@ void CSVInputFactory::make_grid(const StrVector& line_parts) {
     // - line_parts[2] : A sequence of colon-split elements defining the grid position.
     //      - Point: <sw lat>:<sw lon>:<ne lat>:<ne lon>
     //
+    if ( line_parts.size() < 3) {
+        // lines cannot be defined without points.
+        throw std::invalid_argument("insufficient number of components to create a grid: " + std::to_string(line_parts.size()) + "; requires 3." );
+    }
+
     StrVector id_parts = string_utilities::split(line_parts[1], '_');
     
     if (id_parts.size() != 2) {
@@ -228,6 +238,22 @@ void CSVInputFactory::make_grid(const StrVector& line_parts) {
     double sw_lon = std::stod(geo_parts[1]);
     double ne_lat = std::stod(geo_parts[2]);
     double ne_lon = std::stod(geo_parts[3]);
+
+    if (sw_lat > 80.0 || sw_lat < -84.0) {
+        throw std::out_of_range{ "bad latitude: " + std::to_string(sw_lat) };
+    }
+
+    if (sw_lon >= 180.0 || sw_lon <= -180.0) {
+        throw std::out_of_range{"bad longitude: " + std::to_string(sw_lon) };
+    }
+
+    if (ne_lat > 80.0 || ne_lat < -84.0) {
+        throw std::out_of_range{ "bad latitude: " + std::to_string(ne_lat) };
+    }
+
+    if (ne_lon >= 180.0 || ne_lon <= -180.0) {
+        throw std::out_of_range{"bad longitude: " + std::to_string(ne_lon) };
+    }
     
     geo::Bounds bounds(geo::Point(sw_lat, sw_lon), geo::Point(ne_lat, ne_lon));
     geo::Grid::CPtr grid_ptr = std::make_shared<const geo::Grid>(bounds, row, col);

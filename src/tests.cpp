@@ -20,6 +20,14 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK(geo::to_radians(360.0) == Approx(2.0 * geo::kPi));
     }
 
+    geo::Point pt_a(90.0, 180.0);
+    geo::Point pt_b;
+
+    SECTION("Point") {
+       CHECK(pt_a == pt_a);
+       CHECK(pt_b == pt_b);
+    }
+
     // semi-circumference of Earth (meters)
     const double kSemiCircM = 20037508.3427;
     // Eiffel Tower to Titanic distance (meters)
@@ -111,6 +119,10 @@ TEST_CASE("Entity", "[entity test]") {
     geo::Vertex::Ptr v_a = std::make_shared<geo::Vertex>(35.952500, -83.932434, 1);
     geo::Vertex::Ptr v_b = std::make_shared<geo::Vertex>(35.948878, -83.928081, 2);
     geo::EdgePtr phss = std::make_shared<geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
+    geo::EdgePtr no_edge = std::make_shared<geo::Edge>(v_a, v_a, osm::Highway::SECONDARY, 1);
+    // For coverage.
+    geo::EdgePtr phss_cov_1 = std::make_shared<geo::Edge>(v_a, v_b, 1, true);
+    geo::EdgePtr phss_cov_2 = std::make_shared<geo::Edge>(*v_a, *v_b, 1, true);
     // Andy Hold West.
     geo::Vertex::Ptr v_c = std::make_shared<geo::Vertex>(35.950715, -83.934971, 3);
     geo::EdgePtr ahw = std::make_shared<geo::Edge>(v_c, v_a, osm::Highway::SECONDARY, 2);
@@ -152,6 +164,8 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK(v_a->get_incident_edges().size() == 3);
         CHECK(phss->distance_from_point(cage) == Approx(61.3234)); 
         CHECK(phss->distance_from_point(*v_a) == Approx(0.0)); 
+        CHECK(phss->distance_from_point(*v_b) == Approx(0.0)); 
+        CHECK(no_edge->distance_from_point(*v_b) == Approx(0.0)); 
         // Assume some error here due to the implementation.
         CHECK(phss->distance_from_point(midsum) == Approx(0.03299)); 
         CHECK(phss->get_way_type() == osm::Highway::SECONDARY); 
@@ -163,6 +177,7 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK(phss->length_haversine() == Approx(kPHSSDist));
         CHECK(phss->bearing() == Approx(135.78563));
         CHECK(phss->intersects(*ahw));
+        CHECK_FALSE(no_edge->intersects(*ahw));
         CHECK_FALSE(phss->intersects(*utdr));
         CHECK(phss->intersects(35.952500, -83.932434, 35.950715, -83.934971));
         CHECK_FALSE(phss->intersects(35.949813, -83.936214, 35.948272, -83.934421));
@@ -191,6 +206,7 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK_FALSE(phss_area->contains(outside_1));
         CHECK_FALSE(phss_area->outside_edge(-1, inside));
         CHECK_FALSE(phss_area->outside_edge(20, inside));
+        CHECK(phss_area->get_type() == "area");
         CHECK(phss_area->outside_edge(0, outside_1));
         CHECK_FALSE(phss_area->outside_edge(1, outside_1));
         CHECK_FALSE(phss_area->outside_edge(2, outside_1));
@@ -200,6 +216,7 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK(phss_area_wide_long->contains(inside));
         // Check the corners.
         std::vector<geo::Point> corners = phss_area->get_corners();
+        geo::Area copy(corners[0], corners[1], corners[2], corners[3]);
         CHECK(corners.size() == 4);
         CHECK(corners[0].lat == Approx(35.952553247));
         CHECK(corners[0].lon == Approx(-83.9323663936));
@@ -219,8 +236,8 @@ TEST_CASE("Entity", "[entity test]") {
     geo::Circle c1(cage, 10.0);
     // contains itself
     geo::Circle c2(cage, 0.0);
-    // contains nothing
-    geo::Circle c3(cage, -1.0);
+    // contains nothing (cage)
+    geo::Circle c3(35.951250, -83.931861, -1.0);
     geo::Location c_inside(35.951295, -83.931768);
     geo::Location c_outside(35.951297, -83.931765);
 
@@ -235,9 +252,18 @@ TEST_CASE("Entity", "[entity test]") {
         CHECK_FALSE(c3.contains(c2));    
     }
 
-    geo::Location sw(35.951853, -83.932832);
-    geo::Location ne(35.953642, -83.929975);
-    geo::Bounds b1(sw, ne);
+    geo::Location sw1(35.951853, -83.932832);
+    geo::Location ne1(35.953642, -83.929975);
+    geo::Bounds b1(sw1, ne1);
+    geo::Location sw2(35.952062, -83.931951);
+    geo::Location ne2(35.952320, -83.931718);
+    geo::Bounds b2(sw2, ne2);
+    geo::Location sw3(35.951644, -83.931921);
+    geo::Location ne3(35.951953, -83.930746);
+    geo::Bounds b3(sw3, ne3);
+    geo::Location sw4(35.950260, -83.931860);
+    geo::Location ne4(35.950601, -83.931282);
+    geo::Bounds b4(sw4, ne4);
     geo::Location b_inside(35.952670, -83.931534);
     geo::Circle c4(b_inside, 10.0);
     geo::Circle c5(b_inside, 120.0);
@@ -245,11 +271,15 @@ TEST_CASE("Entity", "[entity test]") {
 
     SECTION("Bounds") {
         CHECK_FALSE(b1.contains(loc_a));
-        CHECK(b1.contains(sw));
-        CHECK(b1.contains(ne));
+        CHECK_FALSE(c1 == c2);
+        CHECK(b1.contains(sw1));
+        CHECK(b1.contains(ne1));
         CHECK(b1.contains(b_inside));
         CHECK(b1.intersects(b_inside, loc_a));
         CHECK_FALSE(b1.contains(*phss));
+        CHECK(phss_area->touches(b1));
+        CHECK(phss_area->touches(b2));
+        CHECK(phss_area->touches(b3));
         CHECK(b1.intersects(*phss));
         CHECK(b1.contains(*ahe));
         CHECK_FALSE(b1.intersects(*ahe));
@@ -305,6 +335,9 @@ TEST_CASE("Entity", "[entity test]") {
             // All grids should touch the bounds.
             CHECK(grids[i]->touches(b1));
         }
+
+        CHECK(g1.touches(b2));
+        CHECK_FALSE(g1.touches(b4));
     }
     
     geo::Grid::CPtr g2_ptr = grids[271];
@@ -420,6 +453,8 @@ TEST_CASE("Quad Tree", "[quad]") {
         b_ret = quad_ptr->retrieve_bounds(*loc_ptr);
         // Test for vertical split.
         CHECK(geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->ne.lat, b_ret->ne.lon) == Approx(318.771477));
+        Quad::insert(quad_ptr, loc_ptr);
+        b_ret = quad_ptr->retrieve_bounds(*loc_ptr);
         // Check degrees are good.
         CHECK(b_ret->ne.lon - b_ret->nw.lon >= Approx(0.003));
         CHECK(b_ret->ne.lat - b_ret->sw.lat >= Approx(0.003));
@@ -622,9 +657,22 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         "",
         "edge, 11",
         // too many edge points or not enough points to define edge.
-        "edge, 12, 0;0;0:1;1;1:2;2;2"
-        "edge, 13, 0;0;0:1;1"
+        "edge, 12, 0;0;0:1;1;1:2;2;2",
+        "edge, 13, 0;0;0:1;1",
         "edge, 14, 0;0 : 1;1;1"
+    };
+
+    std::vector<std::string> argnum_grid_tests {
+        "",
+        "grid,0_0,-83.91:42.431661:-83.89782906874559",
+        "grid,0_0,42.431661:-83.89782906874559",
+        "grid,0_0,-83.89782906874559"
+    };
+
+    std::vector<std::string> argnum_circle_tests {
+        "",
+        "circle,0,-83.735670:22.0",
+        "circle,0,22.0"
     };
 
     // data type problems.
@@ -636,6 +684,21 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         "edge, 24, 9;0;0 : 10;x;*"
     };
 
+    std::vector<std::string> datatype_grid_tests {
+        "grid,X,42.42267784715881:-83.91:42.431661:-83.89782906874559",
+        "grid,0_0,X:-83.91:42.431661:-83.89782906874559",
+        "grid,0_0,42.42267784715881:X:42.431661:-83.89782906874559"
+        "grid,0_0,42.42267784715881:-83.91:X:-83.89782906874559",
+        "grid,0_0,42.42267784715881:-83.91:42.431661:X"
+    };
+
+    std::vector<std::string> datatype_circle_tests {
+        "circle,X,42.283135:-83.735670:22.0",
+        "circle,0,X:-83.735670:22.0",
+        "circle,0,42.283135:X:22.0",
+        "circle,0,42.283135:-83.735670:X"
+    };
+
     // TODO: what to do about points with same ID but different position. We are writing an error message but proceeding.
     
     // out of lat/lon range problems; in a loop so one point check is sufficient.
@@ -644,6 +707,25 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         "edge,32, 12;-84.1;0       :16;1;1",
         "edge,33, 13; 0    ; 180.1 :17;1;1",
         "edge,34, 14; 0    ;-180.1 :18;1;1"
+    };
+
+    std::vector<std::string> badposition_grid_tests {
+        "grid,0_0,80.1:0:1:1",
+        "grid,0_0,-84.1:0:1:1",
+        "grid,0_0,0:180.1:1:1",
+        "grid,0_0,0:-180.1:1:1"
+        "grid,0_0,0:0,80.1:0:",
+        "grid,0_0,0:0:-84.1:0",
+        "grid,0_0,0:0:0:180",
+        "grid,0_0,0:0:0:-180"
+    };
+
+    std::vector<std::string> badposition_circle_tests {
+        "circle,0,80.1:0:22.0",
+        "circle,0,-84.1:0:22.0",
+        "circle,0,0:180:22.0",
+        "circle,0,0:-180:22.0",
+        "circle,0,42.283135:-83.735670:-22.0"
     };
 
     // TODO: what to do about edges with the same IDs? We are throwing an exception now.
@@ -660,6 +742,20 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         "edge,58, 31 ; 41.24 ; -83.74 : 61 ; 41.25 ; -84.04 , way_type = SERVICE",
         "edge,59, 31 ; 41.24 ; -83.74 : 62 ; 41.25 ; -84.04 , way_type = servicE",
         "edge,60, 31 ; 41.24 ; -83.74 : 63 ; 41.25 ; -84.04 , way_type = service"
+    };
+
+    std::vector<std::string> good_grid_tests {
+        "grid,0_0,42.42267784715881:-83.91:42.431661:-83.89782906874559",
+        "grid,0_1,42.42267784715881:-83.89782906874559:42.431661:-83.88565813749122",
+        "grid,0_2,42.42267784715881:-83.88565813749122:42.431661:-83.87348720623683",
+        "grid,0_3,42.42267784715881:-83.87348720623683:42.431661:-83.86131627498244"
+    };
+
+    std::vector<std::string> good_circle_tests {
+        "circle,0,42.283135:-83.735670:22.0",
+        "circle,1,42.297902:-83.720502:32.0",
+        "circle,2,42.304978:-83.692901:32.0",
+        "circle,3,42.302505:-83.707290:22.0"
     };
 
     std::vector<std::string> good_tests {
@@ -700,6 +796,46 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         StrVector parts = string_utilities::split(testline, ',');
         CHECK_THROWS_AS( sf.make_edge( parts ), osm::invalid_way_exception );
     }
+    
+    for ( auto& testline : argnum_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : argnum_circle_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : datatype_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : datatype_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : badposition_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : badposition_circle_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : good_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_NOTHROW( sf.make_grid( parts ) );
+    }
+
+    for ( auto& testline : good_circle_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_NOTHROW( sf.make_circle( parts ) );
+    }
 
     int i = 1;
     for ( auto& testline : good_tests  ) {
@@ -734,6 +870,33 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         CHECK_FALSE( sf.get_edges().back()->v1->lon == Approx(-83.0 - (i/10.0)) );
         CHECK_FALSE( sf.get_edges().back()->v2->lon == Approx(-84.1 - (i/10.0)) );
     }
+
+    // Do quick read/write file tests.
+    shapes::CSVInputFactory input_factory_bad_1("data/test-data/test.shapes.bad1");
+    input_factory_bad_1.make_shapes();
+    shapes::CSVInputFactory input_factory_bad_2("data/test-data/test.shapes.bad2");
+    CHECK_THROWS_AS(input_factory_bad_2.make_shapes(), std::invalid_argument);
+    shapes::CSVInputFactory input_factory_bad_3("data/test-data/test.shapes.bad3");
+    CHECK_THROWS_AS(input_factory_bad_3.make_shapes(), std::invalid_argument);
+    shapes::CSVInputFactory input_factory("data/test-data/test.shapes");
+    CHECK_NOTHROW(input_factory.make_shapes());
+    shapes::CSVOutputFactory output_factory_1("data/empty/test.shapes.out");
+    CHECK_THROWS_AS(output_factory_1.write_shapes(), std::invalid_argument);
+    shapes::CSVOutputFactory output_factory("data/test-data/test.shapes.out");
+
+    for ( auto& eptr : input_factory.get_edges() ) {
+        output_factory.add_edge(eptr);
+    }
+
+    for ( auto& gptr : input_factory.get_grids() ) {
+        output_factory.add_grid(gptr);
+    }
+
+    for ( auto& cptr : input_factory.get_circles() ) {
+        output_factory.add_circle(cptr);
+    }
+
+    CHECK_NOTHROW(output_factory.write_shapes());
 }
 
 TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
