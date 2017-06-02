@@ -164,6 +164,7 @@ TEST_CASE("Entity", "[entity test]") {
         ss.str("");
         ss << *phss;
         CHECK(ss.str() == "1,explicit,secondary,1,35.9525,-83.932434,0,2,35.948878,-83.92808100000001,0");
+        CHECK(phss_cov_1->length() == Approx(phss_cov_2->length()));
         CHECK(v_a->add_edges(edge_set));
         CHECK(v_a->degree() == 3);
         CHECK(v_a->outdegree() == 2);
