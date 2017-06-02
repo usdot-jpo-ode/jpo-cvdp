@@ -57,25 +57,11 @@ template<> struct hash<geo::Location>
     size_t operator()( const geo::Location& loc ) const;
 };
 
-template<> struct hash<geo::Edge>
-{
-    size_t operator()( const geo::Edge& edge ) const;
-};
-
 template<> struct hash<std::shared_ptr<geo::Edge>>
 {
     size_t operator()( const std::shared_ptr<geo::Edge>& eptr ) const;
 };
 
-template<> struct hash<geo::Area>
-{
-    size_t operator()( const geo::Area& area ) const;
-};
-
-template<> struct hash<std::shared_ptr<geo::Area>>
-{
-    size_t operator()( const std::shared_ptr<geo::Area>& aptr ) const;
-};
 }
 
 /**
@@ -170,6 +156,7 @@ class Entity {
     public:
         using Ptr = std::shared_ptr<Entity>;                ///< Shared pointer to an entity.
         using CPtr = std::shared_ptr<const Entity>;         ///< Constant shared pointer to entity.
+        using PtrList = std::vector<CPtr>;            ///< Set of constant shared pointers to entities.
         using PtrSet = std::unordered_set<CPtr>;            ///< Set of constant shared pointers to entities.
 
         /**
@@ -850,14 +837,6 @@ class Edge : public Entity {
         bool operator==( const Edge& other ) const;
 
         /**
-         * @brief Return the hash code for this edge; this is a form of unique
-         * identifier.
-         *
-         * @return this edge's hash code to use in containers.
-         */
-        friend std::size_t std::hash<Edge>::operator()( const Edge& e ) const;
-
-        /**
          * @brief Return the hash code for this edge (referenced by a shared
          * poitner); this is a form of unique identifier.
          *
@@ -1003,22 +982,6 @@ class Area : public Entity {
          * @return The output stream after it has been written to.
          */
         friend std::ostream& operator<< ( std::ostream& os, const Area& area );
-
-        /**
-         * @brief Return the hash code for this Area; this is a form of unique
-         * identifier.
-         *
-         * @return this area's hash code to use in containers.
-         */
-        friend std::size_t std::hash<Area>::operator()( const Area& pt ) const;
-
-        /** 
-         * @brief Return the hash code for the Area pointed to; this is a form
-         * of unique identifier.
-         *
-         * @return this area's hash code to use in containers.
-         */
-        friend std::size_t std::hash<Ptr>::operator()( const Ptr& aptr ) const;
 };
 
 /**

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <bitset>
+#include <sstream>
 
 #include "cvlib.hpp"
 
@@ -22,10 +23,13 @@ TEST_CASE("Entity", "[entity test]") {
 
     geo::Point pt_a(90.0, 180.0);
     geo::Point pt_b;
+    std::stringstream ss;
+    ss << pt_a;
 
     SECTION("Point") {
-       CHECK(pt_a == pt_a);
-       CHECK(pt_b == pt_b);
+        CHECK(ss.str() == "90,180");
+        CHECK(pt_a == pt_a);
+        CHECK(pt_b == pt_b);
     }
 
     // semi-circumference of Earth (meters)
@@ -50,8 +54,11 @@ TEST_CASE("Entity", "[entity test]") {
     geo::Location loc_i(48.857801, 2.295968);
     // Titanic
     geo::Location loc_j(41.728342, -49.948810);
+    ss.str("");
+    ss << loc_a;
 
     SECTION("Location") {
+        CHECK(ss.str() == "0,90,180");
         // Test the floating point comparisons.
         CHECK(loc_a == loc_a);
         CHECK_FALSE(loc_a == loc_b);
@@ -143,12 +150,20 @@ TEST_CASE("Entity", "[entity test]") {
     // midpt on Summit
     geo::Location midsum = geo::Location(35.950689,-83.930257);
 
+    // TODO This stream op for vertext is not working and I don't know why....
+
     geo::EdgePtrSet edge_set;
     edge_set.insert(phss);
     edge_set.insert(ahw);
     edge_set.insert(ahe);
 
     SECTION("VertexAndEdges") {
+        ss.str("");
+        ss << *v_b;
+        CHECK(ss.str() == "2,35.948878,-83.92808100000001,0");
+        ss.str("");
+        ss << *phss;
+        CHECK(ss.str() == "1,explicit,secondary,1,35.9525,-83.932434,0,2,35.948878,-83.92808100000001,0");
         CHECK(v_a->add_edges(edge_set));
         CHECK(v_a->degree() == 3);
         CHECK(v_a->outdegree() == 2);
@@ -195,8 +210,11 @@ TEST_CASE("Entity", "[entity test]") {
     geo::Location inside(35.951128, -83.930657);
     geo::Location outside_1(35.951130, -83.930655);
     geo::Location outside_2(35.952511, -83.932457);
+    ss.str("");
+    ss << *phss_area;
     
     SECTION("Area") {
+        CHECK(ss.str() == "[35.95255324700415,-83.93236639356081, 35.94893124700415,-83.92801339666028, 35.94882475295794,-83.92814860324864, 35.95244675295794,-83.93250160634807, ]");
         CHECK_THROWS(phss->to_area(0.0, 10));
         CHECK_THROWS(phss->to_area(-1.0, 10));
         CHECK_NOTHROW(phss->to_area(10.0, 5));
@@ -240,8 +258,11 @@ TEST_CASE("Entity", "[entity test]") {
     geo::Circle c3(35.951250, -83.931861, -1.0);
     geo::Location c_inside(35.951295, -83.931768);
     geo::Location c_outside(35.951297, -83.931765);
+    ss.str("");
+    ss << c1;
 
     SECTION("Circle") {
+        CHECK(ss.str() == "35.95125, -83.931861, 10");
         CHECK_FALSE(c1.contains(loc_a));
         CHECK(c1.contains(c_inside));
         CHECK_FALSE(c1.contains(c_outside));
@@ -268,8 +289,11 @@ TEST_CASE("Entity", "[entity test]") {
     geo::Circle c4(b_inside, 10.0);
     geo::Circle c5(b_inside, 120.0);
     geo::Circle c6(b_inside, 1200.0);
+    ss.str("");
+    ss << b1; 
 
     SECTION("Bounds") {
+        CHECK(ss.str() == "35.951853,-83.932832,35.953642,-83.929975");
         CHECK_FALSE(b1.contains(loc_a));
         CHECK_FALSE(c1 == c2);
         CHECK(b1.contains(sw1));
@@ -314,8 +338,11 @@ TEST_CASE("Entity", "[entity test]") {
 //    }
 
     geo::Grid::GridPtrVector grids = geo::Grid::build_grid(nw, 10, 35.951853, -83.929975);
+    ss.str("");
+    ss << g1;
 
     SECTION("Grid") {
+        CHECK(ss.str() == "35.951853,-83.932832,35.953642,-83.929975,0,0");
         CHECK(grids.size() == 520);
 
         // Each grid should be 10 by 10 meters.
@@ -378,13 +405,18 @@ TEST_CASE("Quad Tree", "[quad]") {
     geo::Vertex::Ptr v_f = std::make_shared<geo::Vertex>(35.949813, -83.936214, 6);
     geo::Vertex::Ptr v_g = std::make_shared<geo::Vertex>(35.948272, -83.934421, 7);
     geo::EdgePtr utdr = std::make_shared<geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
-    geo::Point sw(35.948378, -83.936072);
-    geo::Point ne(35.953811, -83.928997);
     geo::Point test_point_1(35.951959, -83.931815);
     geo::Point test_point_2(35.949098, -83.935403);
+    geo::Point test_point_3(90.0, 180.0);
+    // horizontal split
+    geo::Point sw(35.948378, -83.936072);
+    geo::Point ne(35.953811, -83.928997);
     Quad::Ptr quad_ptr = std::make_shared<Quad>(sw, ne);
+    std::stringstream ss;
+    ss << *quad_ptr;
     
     SECTION("Basic") {
+        CHECK(ss.str() == "Quad: {35.948378,-83.936072, 35.953811,-83.928997} element count: 0 level: 0 children: 0 fuzzy: {35.9478347,-83.9367795, 35.95435430000001,-83.92828949999999, 0.006519600000004289, 0.00849000000000899}");
         // inserts
         CHECK(Quad::insert(quad_ptr, phss));     
         CHECK(Quad::insert(quad_ptr, ahw));     
@@ -394,21 +426,23 @@ TEST_CASE("Quad Tree", "[quad]") {
         // retrievals 
         // All retrievals should give 5 elements since the splitting criteria 
         // will not be hit untill 32 elements are inserted.
-        geo::Entity::PtrSet element_set = quad_ptr->retrieve_elements(test_point_1);
-        CHECK(element_set.size() == 5);
-        element_set = quad_ptr->retrieve_elements(*v_a);
-        CHECK(element_set.size() == 5);
-        element_set = quad_ptr->retrieve_elements(*v_c);
-        CHECK(element_set.size() == 5);
+        geo::Entity::PtrList element_list = quad_ptr->retrieve_elements(test_point_1);
+        CHECK(element_list.size() == 5);
+        element_list = quad_ptr->retrieve_elements(*v_a);
+        CHECK(element_list.size() == 5);
+        element_list = quad_ptr->retrieve_elements(*v_c);
+        CHECK(element_list.size() == 5);
         // Try to retrieve either end of UT drive.
         // This will fail since they are outside the quad bounds.
-        element_set = quad_ptr->retrieve_elements(*v_f);
-        CHECK(element_set.size() == 0);
-        element_set = quad_ptr->retrieve_elements(*v_g);
-        CHECK(element_set.size() == 0);
+        element_list = quad_ptr->retrieve_elements(*v_f);
+        CHECK(element_list.size() == 0);
+        element_list = quad_ptr->retrieve_elements(*v_g);
+        CHECK(element_list.size() == 0);
         // Try to retrieve the edge using a point on the road.
-        element_set = quad_ptr->retrieve_elements(test_point_2);
-        CHECK(element_set.size() == 5);
+        element_list = quad_ptr->retrieve_elements(test_point_2);
+        CHECK(element_list.size() == 5);
+        // Try to retrieve something outsdie the quad.
+        CHECK_FALSE(quad_ptr->retrieve_bounds(test_point_3));
     }    
 
     SECTION("Structural") {
@@ -435,15 +469,34 @@ TEST_CASE("Quad Tree", "[quad]") {
         CHECK(b_ret->ne.lon == Approx(-83.9282));
     }
 
+    // 4-way split
+    geo::Point sw_2(35.948378, -83.936072);
+    geo::Point ne_2(35.955110, -83.928997);
+    Quad::Ptr quad_ptr_2 = std::make_shared<Quad>(sw_2, ne_2);
+
+    // vertical split
+    geo::Point sw_3(35.948378, -83.934448);
+    geo::Point ne_3(35.955110, -83.928997);
+    Quad::Ptr quad_ptr_3 = std::make_shared<Quad>(sw_3, ne_3);
+
     SECTION("Splitting") {
         geo::Location::Ptr loc_ptr = std::make_shared<geo::Location>(35.951959, -83.931815, 33);
     
-        // Fill up a single leaf.
+        // Fill up a single leaf. Horizontal split.
         for (int i = 0; i < Quad::MAX_ELEMENTS; ++i) {
             geo::Location::Ptr test_loc_ptr = std::make_shared<geo::Location>(35.951959, -83.931815, i);
             Quad::insert(quad_ptr, test_loc_ptr);
         }
-
+        // Fill up a single leaf. 4-way split.
+        for (int i = 0; i < Quad::MAX_ELEMENTS + 1; ++i) {
+            geo::Location::Ptr test_loc_ptr = std::make_shared<geo::Location>(35.951959, -83.931815, i);
+            Quad::insert(quad_ptr_2, test_loc_ptr);
+        }
+        // Fill up a single leaf. Vertical split.
+        for (int i = 0; i < Quad::MAX_ELEMENTS + 1; ++i) {
+            geo::Location::Ptr test_loc_ptr = std::make_shared<geo::Location>(35.951959, -83.931815, i);
+            Quad::insert(quad_ptr_3, test_loc_ptr);
+        }
         geo::Bounds::Ptr b_ret = quad_ptr->retrieve_bounds(*loc_ptr);
         CHECK(geo::Location::distance_haversine(b_ret->nw.lat, b_ret->nw.lon, b_ret->sw.lat, b_ret->sw.lon) == Approx(604.7987));
         // Force the quad to split down to the minimum degree,
@@ -458,6 +511,12 @@ TEST_CASE("Quad Tree", "[quad]") {
         // Check degrees are good.
         CHECK(b_ret->ne.lon - b_ret->nw.lon >= Approx(0.003));
         CHECK(b_ret->ne.lat - b_ret->sw.lat >= Approx(0.003));
+        // Check element size.
+        geo::Entity::PtrList element_list = quad_ptr->retrieve_elements(*loc_ptr);
+        CHECK(element_list.size() == 34);
+        CHECK(Quad::retrieve_all_bounds(quad_ptr).size() == 3);
+        CHECK(Quad::retrieve_all_bounds(quad_ptr, false, true).size() == 3);
+        CHECK(Quad::retrieve_all_bounds(quad_ptr, true, true).size() == 2);
     }
 }
 
@@ -792,9 +851,38 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
     }
 
+    int j = 0;
+    std::string err_msg;
+
     for ( auto& testline : waytype_tests  ) {
         StrVector parts = string_utilities::split(testline, ',');
         CHECK_THROWS_AS( sf.make_edge( parts ), osm::invalid_way_exception );
+       
+        // Exception checking.
+        try {
+            sf.make_edge( parts );
+        } catch (osm::invalid_way_exception& e) {
+            err_msg = e.what();
+            
+            switch (j) {
+            case 0:
+                CHECK(err_msg == "way type excluded from use in quad map [2] : 7");
+                CHECK(e.occurrences() == 2);
+                break;
+            case 1:
+                CHECK(err_msg == "way type excluded from use in quad map [4] : 7");
+                CHECK(e.occurrences() == 4);
+                break;
+            case 2:
+                CHECK(err_msg == "way type excluded from use in quad map [6] : 7");
+                CHECK(e.occurrences() == 6);
+                break;
+            default:
+                break;
+            }
+        }
+
+        j++;
     }
     
     for ( auto& testline : argnum_grid_tests ) {
@@ -1258,7 +1346,7 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         CHECK_FALSE( handler.isWithinEntity( bsm[3] ) );
 
         geo::Location l2(35.951181, -83.935456);
-        geo::Entity::PtrSet element_set = qptr->retrieve_elements(bsm[2]);
+        geo::Entity::PtrList element_list = qptr->retrieve_elements(bsm[2]);
     }
 
     SECTION( "JSON Tokenizing Checks" ) {

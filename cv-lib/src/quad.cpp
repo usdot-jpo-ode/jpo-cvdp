@@ -27,7 +27,7 @@
 #include "utilities.hpp"
 
 geo::Vertex::IdToPtrMap Quad::elementmap{};
-geo::Entity::PtrSet Quad::emptyedgeset{};
+geo::Entity::PtrList Quad::empty_element_list{};
 
 Quad::Quad( const geo::Point& swpoint, const geo::Point& nepoint, int level, const std::string& position )
     : geo::Bounds{ swpoint, nepoint }, 
@@ -105,7 +105,7 @@ bool Quad::haschildren() const
 
 bool Quad::full() const
 {
-    return static_cast<int>(elementset_.size()) > MAX_ELEMENTS;
+    return static_cast<int>(element_list_.size()) > MAX_ELEMENTS;
 }
 
 bool Quad::insert( Quad::Ptr& quadptr, geo::Entity::CPtr entity_ptr )
@@ -136,20 +136,20 @@ bool Quad::insert( Quad::Ptr& quadptr, geo::Entity::CPtr entity_ptr )
         } 
         
         // This is a leaf node. Try to insert.
-        currquad->elementset_.insert(entity_ptr);
+        currquad->element_list_.push_back(entity_ptr);
 
         // Try to split the quad if its full.
         if (currquad->full() && currquad->split()) {
             // quad is saturated with elements; split and redistribute.
             // add it first so we redistribute everything including this
             // element.
-            for ( auto& e : currquad->elementset_ ) {
+            for ( auto& e : currquad->element_list_ ) {
                 for ( auto& quad : currquad->children_ ) {
                     insert(quad, e);
                 }
             }
 
-            currquad->elementset_.clear();
+            currquad->element_list_.clear();
         } 
     }
 
@@ -158,10 +158,10 @@ bool Quad::insert( Quad::Ptr& quadptr, geo::Entity::CPtr entity_ptr )
 
 std::ostream& operator<<( std::ostream& os, const Quad& quad )
 {
-    return os << "Quad: {" << quad.sw << ", " << quad.ne << "} element count: " << quad.elementset_.size() << " level: " << quad.level_ << " children: " << quad.children_.size() << " fuzzy: {" << quad.fuzzybounds_.sw << ", " << quad.fuzzybounds_.ne << ", " << quad.fuzzybounds_.height() << ", " << quad.fuzzybounds_.width() << "}";
+    return os << "Quad: {" << quad.sw << ", " << quad.ne << "} element count: " << quad.element_list_.size() << " level: " << quad.level_ << " children: " << quad.children_.size() << " fuzzy: {" << quad.fuzzybounds_.sw << ", " << quad.fuzzybounds_.ne << ", " << quad.fuzzybounds_.height() << ", " << quad.fuzzybounds_.width() << "}";
 }
 
-const geo::Entity::PtrSet& Quad::retrieve_elements( const geo::Point& pt ) const
+const geo::Entity::PtrList& Quad::retrieve_elements( const geo::Point& pt ) const
 {
     const Quad* currquad = this;
 
@@ -178,10 +178,10 @@ const geo::Entity::PtrSet& Quad::retrieve_elements( const geo::Point& pt ) const
                 }
             }
         }
-        return currquad->elementset_;
+        return currquad->element_list_;
 
     } else {
-        return Quad::emptyedgeset;
+        return Quad::empty_element_list;
     }
 }
 

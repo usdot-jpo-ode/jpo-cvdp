@@ -799,7 +799,6 @@ std::ostream& operator<< (std::ostream& os, const Vertex& vertex)
 
 std::ostream& operator<< (std::ostream& os, const Edge& edge)
 {
-    //return os << edge.uid_ << "," << edge.is_explicit() << "," << static_cast<int>(edge.way_type_) << "," << *(edge.v1) << "," << *(edge.v2);
     return os << edge.uid_ << "," << (edge.is_explicit() ? "explicit" : "implicit") << "," << osm::highway_name_map[edge.way_type_] << "," << *(edge.v1) << "," << *(edge.v2);
 }
 
@@ -834,35 +833,10 @@ size_t hash<geo::Location>::operator()( const geo::Location& loc ) const
     return r;
 }
 
-size_t hash<geo::Edge>::operator()( const geo::Edge& e ) const
-{
-    size_t r = (hash<geo::Location>()( *(e.v1) ) ^ hash<geo::Location>()( *(e.v2) ) >> 7 );
-    r = r ^ hash<uint64_t>()( e.uid_ ) << 7;
-    return r;
-}
-
 size_t hash<geo::EdgePtr>::operator()( const geo::EdgePtr& eptr ) const
 {
     size_t r = (hash<geo::Location>()( *(eptr->v1) ) ^ hash<geo::Location>()( *(eptr->v2) ) >> 7 );
     r = r ^ hash<uint64_t>()( eptr->uid_ ) << 7;
-    return r;
-}
-
-size_t hash<geo::Area>::operator()( const geo::Area& area ) const
-{
-    size_t r = hash<geo::Point>()(area.corners_[0]);
-    r = r ^ (hash<geo::Point>()(area.corners_[1]) >> 3 );
-    r = r ^ (hash<geo::Point>()(area.corners_[2]) >> 5 );
-    r = r ^ (hash<geo::Point>()(area.corners_[3]) >> 7 );
-    return r;
-}
-
-size_t hash<geo::Area::Ptr>::operator()( const geo::Area::Ptr& aptr ) const
-{
-    size_t r = hash<geo::Point>()(aptr->corners_[0]);
-    r = r ^ (hash<geo::Point>()(aptr->corners_[1]) >> 3 );
-    r = r ^ (hash<geo::Point>()(aptr->corners_[2]) >> 5 );
-    r = r ^ (hash<geo::Point>()(aptr->corners_[3]) >> 7 );
     return r;
 }
 

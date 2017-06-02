@@ -117,7 +117,7 @@ class Quad : public geo::Bounds {
          * @param pt The point whose containing Quad we are interested in.
          * @return A pointer to the set of entities contained in the same quad that contain pt.
          */
-        const Entity::PtrSet& retrieve_elements( const Point& pt ) const;
+        const Entity::PtrList& retrieve_elements( const Point& pt ) const;
 
         /**
          * @brief Return the Bounds that contains the provided point.
@@ -143,7 +143,7 @@ class Quad : public geo::Bounds {
 
     private:
         static geo::Vertex::IdToPtrMap elementmap;              ///< Lookup table from vertex unique identifer to pointers to Vertex instance; prevents duplicating Vertex creation.
-        static geo::Entity::PtrSet emptyedgeset;                ///< Fixed empty set of Edges; returned when a point is contained in a Quad with no Entities.
+        static geo::Entity::PtrList empty_element_list;                ///< Fixed empty set of Edges; returned when a point is contained in a Quad with no Entities.
 
         int level_;                                             ///< The tree depth, or level, of this Quad.
         std::string position_;                                  ///< The relative position of this Quad amoung siblings.
@@ -154,7 +154,7 @@ class Quad : public geo::Bounds {
         Bounds fuzzybounds_;                                    ///< The fuzzy dimensions of this Quad as a Bounds instance.
 
         PtrList children_;                                      ///< The list of this Quad's children Quads.
-        Entity::PtrSet elementset_;                             ///< The elements contained in this Quad.
+        Entity::PtrList element_list_;                             ///< The elements contained in this Quad.
 
         /**
          * @brief Split this Quad into four children. The child list will be cleared, the children created and inserted. The order in

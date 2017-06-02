@@ -277,7 +277,7 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     geo::Grid::CPtr grid_ptr = nullptr;
     geo::AreaPtr area_ptr = nullptr;
 
-    geo::Entity::PtrSet entity_set = quad_ptr_->retrieve_elements(bsm); 
+    geo::Entity::PtrList entity_set = quad_ptr_->retrieve_elements(bsm); 
     //std::cerr << "esize: " << entity_set.size() << " " << bsm << '\n';
 
     for (auto& entity_ptr : entity_set) {
