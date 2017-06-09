@@ -6,8 +6,8 @@ project(ppm)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# set(CMAKE_CXX_FLAGS "-O3")
-# set(CMAKE_C_FLAGS "-O3")
+set(CMAKE_CXX_FLAGS "-O3")
+set(CMAKE_C_FLAGS "-O3")
 
 if (${APPLE})
     set(CMAKE_CXX_EXTENSIONS OFF)
@@ -28,6 +28,7 @@ include_directories(${CVLIB_INCLUDE})
 # Include application, JSON parser headers.
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/rapidjson")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/spdlog")
 include_directories("/usr/local/include")
 
 if (${APPLE})
@@ -42,7 +43,7 @@ set(PPM_SRC "src/ppm.cpp"
             "src/bsmfilter.cpp" )
 
 add_executable(ppm ${PPM_SRC})
-target_link_libraries(ppm CVLib rdkafka++)
+target_link_libraries(ppm pthread CVLib rdkafka++)
 
 #### BUILD TARGET FOR THE PPM UNIT TESTS AND CODE COVERAGE ####
 
@@ -54,7 +55,7 @@ target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})       # catch i
 
 
 add_executable(ppm_tests ${PPM_TEST_SRC} ${PPM_SRC})                   # need everything to build tests.
-target_link_libraries(ppm_tests CVLib rdkafka++ Catch)
+target_link_libraries(ppm_tests pthread CVLib rdkafka++ Catch)
 target_compile_definitions(ppm_tests PRIVATE _PPM_TESTS)               # flag to exclude the tool's main.
 
 #### BUILD TARGET FOR THE KAFKA TEST TOOL ####

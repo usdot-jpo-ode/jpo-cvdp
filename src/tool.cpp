@@ -1,4 +1,5 @@
 #include "tool.hpp"
+#include "spdlog/spdlog.h"
 #include <iomanip>
 
 namespace tool {

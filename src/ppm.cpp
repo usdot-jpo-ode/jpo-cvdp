@@ -50,9 +50,14 @@
  */
 
 #include "ppm.hpp"
+#include "spdlog/spdlog.h"
 #include <csignal>
 #include <chrono>
 #include <thread>
+
+// for both windows and linux.
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifndef _MSC_VER
 #include <sys/time.h>
@@ -85,7 +90,8 @@ PPM::PPM( const std::string& name, const std::string& description ) :
     bsm_recv_bytes{0},
     bsm_send_bytes{0},
     bsm_filt_bytes{0},
-    verbosity{0},
+    iloglevel{ spdlog::level::trace },
+    eloglevel{ spdlog::level::err },
     pconf{},
     brokers{"localhost"},
     partition{RdKafka::Topic::PARTITION_UA},
@@ -100,13 +106,15 @@ PPM::PPM( const std::string& name, const std::string& description ) :
     consumer{},
     consumer_timeout{500},
     producer{},
-    filtered_topic{}
+    filtered_topic{},
+    ilogger{},
+    elogger{}
 {
 }
 
 PPM::~PPM() 
 {
-    consumer->close();
+    if (consumer) consumer->close();
 
     // free raw librdkafka pointers.
     if (tconf) delete tconf;
@@ -181,8 +189,13 @@ bool PPM::topic_available( const std::string& topic ) {
         while ( it != md->topics()->end() && !r ) {
             // finish when we find it.
             r = ( (*it)->topic() == topic );
+            if ( r ) ilogger->info( "found topic in the metadata: {}", topic );
             ++it;
         }
+        if (!r) ilogger->warn( "did not find topic in metadata!" );
+
+    } else {
+        elogger->error( "cannot retrieve consumer metadata: {}", err2str(err) );
     }
     
     return r;
@@ -217,6 +230,28 @@ void PPM::print_configuration() const
 
 bool PPM::configure() {
 
+    if ( optIsSet('v') ) {
+        if ( "trace" == optString('v') ) {
+            ilogger->set_level( spdlog::level::trace );
+        } else if ( "debug" == optString('v') ) {
+            ilogger->set_level( spdlog::level::trace );
+        } else if ( "info" == optString('v') ) {
+            ilogger->set_level( spdlog::level::trace );
+        } else if ( "warning" == optString('v') ) {
+            ilogger->set_level( spdlog::level::warn );
+        } else if ( "error" == optString('v') ) {
+            ilogger->set_level( spdlog::level::err );
+        } else if ( "critical" == optString('v') ) {
+            ilogger->set_level( spdlog::level::critical );
+        } else if ( "off" == optString('v') ) {
+            ilogger->set_level( spdlog::level::off );
+        } else {
+            elogger->warn("information logger level was configured but unreadable; using default.");
+        }
+    } // else it is already set to default.
+
+    ilogger->trace("starting configure()");
+
     std::string line;
     std::string error_string;
     StrVector pieces;
@@ -226,13 +261,17 @@ bool PPM::configure() {
     tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
 
     // must use a configuration file.
-    if ( !optIsSet('c') ) return false;
+    if ( !optIsSet('c') ) {
+        elogger->error( "asked to use a configuration file, but option not set." );
+        return false;
+    }
 
     const std::string& cfile = optString('c');              // needed for error message.
+    ilogger->info("using configuration file: {}", cfile );
     std::ifstream ifs{ cfile };
 
     if (!ifs) {
-        std::cerr << "cannot open configuration file: " << cfile << "\n";
+        elogger->error("cannot open configuration file: {}", cfile);
         return false;
     }
 
@@ -247,21 +286,26 @@ bool PPM::configure() {
                 string_utilities::strip( pieces[1] );
                 // some of these configurations are stored in each...?? strange.
                 if ( tconf->set(pieces[0], pieces[1], error_string) == RdKafka::Conf::CONF_OK ) {
-                    //std::cout << "TOPIC CONF: " << pieces[0] << " = " << pieces[1] << '\n';
+                    ilogger->info("kafka topic configuration: {} = {}", pieces[0], pieces[1]);
                     done = true;
                 }
 
                 if ( conf->set(pieces[0], pieces[1], error_string) == RdKafka::Conf::CONF_OK ) {
-                    //std::cout << "CONF: " << pieces[0] << " = " << pieces[1] << '\n';
+                    ilogger->info("kafka configuration: {} = {}", pieces[0], pieces[1]);
                     done = true;
                 }
 
                 if ( !done ) { 
+                    ilogger->info("ppm configuration: {} = {}", pieces[0], pieces[1]);
                     // These configuration options are not expected by Kafka.
                     // Assume there are for the PPM.
                     pconf[ pieces[0] ] = pieces[1];
                 }
+
+            } else {
+                elogger->warn("too many pieces in the configuration file line: {}", line);
             }
+
         } // otherwise: empty or comment line.
     }
 
@@ -279,15 +323,18 @@ bool PPM::configure() {
         if ( search != pconf.end() ) {
             mapfile = search->second;
         } else {
-            std::cerr << "No map file specified; must fail.\n";
+            elogger->error("no map file specified; must fail.");
             return false;
         }
     }
+
+    ilogger->info("ppm mapfile: {}", mapfile);
 
     qptr = BuildGeofence( mapfile );                // throws.
 
     if ( optIsSet('b') ) {
         // broker specified.
+        ilogger->info("setting kafka broker to: {}", optString('b'));
         conf->set("metadata.broker.list", optString('b'), error_string);
     } 
 
@@ -302,9 +349,11 @@ bool PPM::configure() {
         }  // otherwise leave at default; PARTITION_UA
     }
 
+    ilogger->info("kafka partition: {}", partition);
+
     if ( getOption('g').isSet() && conf->set("group.id", optString('g'), error_string) != RdKafka::Conf::CONF_OK) {
         // NOTE: there are some checks in librdkafka that require this to be present and set.
-        std::cerr << error_string << "\n";
+        elogger->error("kafka error setting configuration parameters group.id h: {}", error_string);
         return false;
     }
 
@@ -321,20 +370,15 @@ bool PPM::configure() {
         } else {
             offset = strtoll(o.c_str(), NULL, 10);              // throws
         }
+
+        ilogger->info("offset in partition set to byte: {}", o);
     }
 
     // Do we want to exit if a stream eof is sent.
-    exit_eof = getOption('e').isSet();
-
-    if ( optIsSet('v') ) {
-        // verbosity of messages is set.
-        // TODO: Implement this with logging.
-        verbosity = optInt('v');
-    }
+    exit_eof = getOption('x').isSet();
 
     if (optIsSet('d') && conf->set("debug", optString('d'), error_string) != RdKafka::Conf::CONF_OK) {
-        // debug information. TODO: Implement this will logging story.
-        std::cerr << error_string << "\n";
+        elogger->error("kafka error setting configuration parameter debug: {}", error_string);
         return false;
     }
 
@@ -344,10 +388,11 @@ bool PPM::configure() {
     auto search = pconf.find("privacy.topic.consumer");
     if ( search != pconf.end() ) {
         consumed_topics.push_back( search->second );
+        ilogger->info("consumed topic: {}", search->second);
 
     } else {
         
-        std::cerr << "No consumer topic was specified; must fail.\n";
+        elogger->error("no consumer topic was specified; must fail.");
         return false;
     }
 
@@ -361,24 +406,30 @@ bool PPM::configure() {
         if ( search != pconf.end() ) {
             published_topic = search->second;
         } else {
-            std::cerr << "No publisher topic was specified; must fail.\n";
+            elogger->error("no publisher topic was specified; must fail.");
             return false;
         }
     }
+
+    ilogger->info("published topic: {}", published_topic);
 
     search = pconf.find("privacy.consumer.timeout.ms");
     if ( search != pconf.end() ) {
         try {
             consumer_timeout = std::stoi( search->second );
         } catch( std::exception& e ) {
-            // use the default.
+            ilogger->info("using the default consumer timeout value.");
         }
     }
 
+    ilogger->trace("ending configure()");
     return true;
 }
 
-RdKafka::ErrorCode PPM::msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler) {
+//RdKafka::ErrorCode PPM::msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler) {
+bool PPM::msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler) {
+    static std::string tsname;
+    static RdKafka::MessageTimestamp ts;
 
     // payload is a void *
     // len is a size_t
@@ -386,6 +437,8 @@ RdKafka::ErrorCode PPM::msg_consume(RdKafka::Message* message, void* opaque, BSM
 
     switch (message->err()) {
         case RdKafka::ERR__TIMED_OUT:
+            ilogger->info("waiting for ODE BSM consumer");
+            elogger->warn("waiting for ODE BSM consumer; kafka messaged timed out.");
             break;
 
         case RdKafka::ERR_NO_ERROR:
@@ -393,67 +446,74 @@ RdKafka::ErrorCode PPM::msg_consume(RdKafka::Message* message, void* opaque, BSM
             bsm_recv_count++;
             bsm_recv_bytes += message->len();
 
-            if (verbosity >= 3) {
-                std::cerr << "Read msg at offset " << message->offset() << "\n";
-            }
+            ilogger->trace("read message at byte offset: {}", message->offset() );
 
-            RdKafka::MessageTimestamp ts;
+            //RdKafka::MessageTimestamp ts;
             ts = message->timestamp();
 
-            if (verbosity >= 2 && ts.type != RdKafka::MessageTimestamp::MSG_TIMESTAMP_NOT_AVAILABLE) {
-                std::string tsname = "?";
-
+            if (ts.type != RdKafka::MessageTimestamp::MSG_TIMESTAMP_NOT_AVAILABLE) {
                 if (ts.type == RdKafka::MessageTimestamp::MSG_TIMESTAMP_CREATE_TIME) {
                     tsname = "create time";
                 } else if (ts.type == RdKafka::MessageTimestamp::MSG_TIMESTAMP_LOG_APPEND_TIME) {
                     tsname = "log append time";
+                } else {
+                    tsname = "unknown";
                 }
 
-                std::cout << "Timestamp: " << tsname << " " << ts.timestamp << "\n";
+                ilogger->trace("message timestamp: {}, type: {}", tsname, ts.timestamp);
             }
 
-            if (verbosity >= 2 && message->key()) {
-                std::cout << "Key: " << *message->key() << "\n";
+            if ( message->key() ) {
+                ilogger->trace("message key: {}", *message->key() );
             }
 
             // Process the BSM payload.
             if ( handler.process( payload ) ) {
-                return RdKafka::ERR_NO_ERROR;
+                // TODO: need a bsm summary string!
+                ilogger->info("Retaining BSM: {}", "bsm summary string needed.");
+                return true;
+                //return RdKafka::ERR_NO_ERROR;
+                
             } else {
-                return RdKafka::ERR_INVALID_MSG;
-            }
+                // Filter BSM.
+                //const BSM& bsm = handler.get_bsm();
+                // TODO: don't need bsm maybe to output the reason?
+                ilogger->info("Suppressing BSM [{}] {}", handler.get_result_string(), "bsm summary string needed.");
 
+                // filtered; update counters.
+                bsm_filt_count++;
+                bsm_filt_bytes += message->len();
+            } // return false;
             break;
 
         case RdKafka::ERR__PARTITION_EOF:
+            ilogger->info("ODE BSM consumer partition end of file, but PPM still alive.");
             /* Last message */
             if (exit_eof) {
                 eof_cnt++;
 
                 if (eof_cnt == partition_cnt) {
-                    std::cerr << "%% EOF reached for all " << partition_cnt << " partition(s)" << "\n";
+                    ilogger->info("EOF reached for all {} partition(s)", partition_cnt);
                     bsms_available = false;
                 }
             }
             break;
 
         case RdKafka::ERR__UNKNOWN_TOPIC:
-            std::cerr << "Consume failed due to an UNKNOWN consumer topic: " << message->errstr() << "\n";
-            bsms_available = false;
-            break;
+            elogger->error("cannot consume due to an UNKNOWN consumer topic: {}", message->errstr());
 
         case RdKafka::ERR__UNKNOWN_PARTITION:
-            std::cerr << "Consume failed due to an UNKNOWN consumer partition: " << message->errstr() << "\n";
+            elogger->error("cannot consume due to an UNKNOWN consumer partition: {}", message->errstr());
             bsms_available = false;
             break;
 
         default:
-            /* Errors */
-            std::cerr << "Consume failed: " << message->errstr() << "\n";
+            elogger->error("cannot consume due to an error: {}", message->errstr());
             bsms_available = false;
     }
 
-    return message->err();
+    return false;
+    //return message->err();
 }
 
 Quad::Ptr PPM::BuildGeofence( const std::string& mapfile )  // throws
@@ -568,12 +628,97 @@ bool PPM::launch_consumer()
     return true;
 }
 
+/**
+ * @brief predicate indicating whether a file exists on the filesystem.
+ *
+ * @return true if it exists, false otherwise.
+ */
+bool fileExists( const std::string& s ) {
+    struct stat info;
+
+    if (stat( s.c_str(), &info) != 0) {
+        // bad stat
+        return false;
+    } else if (info.st_mode & S_IFREG) {
+        // regular file exists.
+        return true;
+    } 
+
+    return false;
+}
+
+/**
+ * @brief predicate indicating whether a path/directory exists on the filesystem.
+ *
+ * @return true if it exists, false otherwise.
+ */
+bool dirExists( const std::string& s ) {
+    struct stat info;
+
+    if (stat( s.c_str(), &info) != 0) {
+        // bad stat.
+        return false;
+    } else if (info.st_mode & S_IFDIR) {
+        // directory exists.
+        return true;
+    } 
+
+    return false;
+}
+
+
+bool PPM::make_loggers()
+{
+    std::string path{ "logs/" };
+    std::string ilogname{ "log.info" };
+    std::string elogname{ "log.error" };
+
+    if (getOption('D').hasArg()) {
+        path = getOption('D').argument();
+        if ( path.back() != '/' ) {
+            path += '/';
+        }
+    }
+
+    std::cerr << path << '\n';
+    
+    if (!dirExists( path )) {
+#ifndef _MSC_VER
+        if (mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH ) != 0)   // linux
+#elif _MSC_VER 
+        if (_mkdir(path.c_str()) != 0)                                          // windows
+#else
+        // ??
+#endif
+        {
+            std::cerr << "Error making the logging directory.\n";
+            return false;
+        }
+    }
+    
+    // ilog check for user-defined file locations and names.
+    if (getOption('i').hasArg()) {
+        ilogname = string_utilities::basename<std::string>( getOption('i').argument() );
+    }
+
+    if (getOption('e').hasArg()) {
+        elogname = string_utilities::basename<std::string>( getOption('i').argument() );
+    }
+
+    // setup logging error log.
+    ilogger = spdlog::rotating_logger_mt("ilog", path + ilogname, ilogsize, ilognum);
+    ilogger->set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
+    ilogger->set_level( iloglevel );
+
+    elogger = spdlog::rotating_logger_mt("elog", path + elogname, elogsize, elognum);
+    elogger->set_level( iloglevel );
+    elogger->set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
+}
 
 int PPM::operator()(void) {
 
     std::string error_string;
     RdKafka::ErrorCode status;
-    bool pulse = false;
 
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
@@ -598,76 +743,31 @@ int PPM::operator()(void) {
     while (bsms_available) {
 
         std::unique_ptr<RdKafka::Message> msg{ consumer->consume( consumer_timeout ) };
-        status = msg_consume(msg.get(), NULL, handler);
+        //status = msg_consume(msg.get(), NULL, handler);
+        if ( msg_consume(msg.get(), NULL, handler) ) {
 
-        if ( status == RdKafka::ERR_NO_ERROR ) {
-            // Retain BSM.
-            const BSM& bsm = handler.get_bsm();
-            if (pulse) {
-                std::cerr << "\n";
-                pulse = false;
-            }
-            std::cout << "Retaining BSM: " << bsm << "\n";
+        //if ( status == RdKafka::ERR_NO_ERROR ) {
 
             status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
-            if (status != RdKafka::ERR_NO_ERROR) {
-                if (pulse) {
-                    std::cerr << "\n";
-                    pulse = false;
-                }
-                std::cerr << "% Produce failed: " << RdKafka::err2str( status ) << "\n";
-            } else {
 
+            if (status != RdKafka::ERR_NO_ERROR) {
+                ilogger->error("failed to produce retained BSM because: {}", RdKafka::err2str( status ));
+                elogger->error("failed to produce retained BSM because: {}", RdKafka::err2str( status ));
+
+            } else {
                 // successfully sent; update counters.
                 bsm_send_count++;
                 bsm_send_bytes += msg->len();
+                ilogger->trace("produced BSM successfully.");
             }
 
-        } else if ( status == RdKafka::ERR_INVALID_MSG ) {
-            // Filter BSM.
-            const BSM& bsm = handler.get_bsm();
-            if (pulse) {
-                std::cerr << "\n";
-                pulse = false;
-            }
-            std::cout << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
-            
-            // filtered; update counters.
-            bsm_filt_count++;
-            bsm_filt_bytes += msg->len();
-
-        } else if ( status == RdKafka::ERR__TIMED_OUT ) {
-
-            if ( !pulse ) {
-                std::cerr << "ODE BSM Consumer Waiting: .";
-            } else {
-                std::cerr << ".";
-            }
-
-            pulse = true;
-
-        } else if ( status == RdKafka::ERR__PARTITION_EOF ) {
-
-            if (pulse) std::cerr << "\n";
-            std::cerr << "ODE BSM Consumer: partition end of file, but PPM still alive.\n";
-            pulse = false;
-
-        } else {
-
-            if (pulse) std::cerr << "\n";
-            std::cerr << "% Consumer Problem: " << RdKafka::err2str( status ) << '\n';
-            pulse = false;
-        }
+        } 
     }
 
-    std::cout << "\nPPM Operations Complete.\n";
-    std::cout << "Consumption\n";
-    std::cout << "\t" << bsm_recv_count << " BSMs (" << bsm_recv_bytes << ").\n";
-    std::cout << "Publishing\n";
-    std::cout << "\t" << bsm_send_count << " BSMs (" << bsm_send_bytes << ")\n";
-    std::cout << "Suppression\n";
-    std::cout << "\t" << bsm_filt_count << " BSMs (" << bsm_filt_bytes << ").\n";
-
+    ilogger->info("PPM operations complete; shutting down...");
+    ilogger->info("PPM consumed  : {} BSMs and {} bytes", bsm_recv_count, bsm_recv_bytes);
+    ilogger->info("PPM published : {} BSMs and {} bytes", bsm_send_count, bsm_send_bytes);
+    ilogger->info("PPM suppressed: {} BSMs and {} bytes", bsm_filt_count, bsm_filt_bytes);
     return EXIT_SUCCESS;
 }
 
@@ -684,10 +784,13 @@ int main( int argc, char* argv[] )
     ppm.addOption( 'g', "group", "Consumer group identifier", true );
     ppm.addOption( 'b', "broker", "Broker address (localhost:9092)", true );
     ppm.addOption( 'o', "offset", "Byte offset to start reading in the consumed topic.", true );
-    ppm.addOption( 'e', "exit", "Exit consumer when last message in partition has been received.", false );
+    ppm.addOption( 'x', "exit", "Exit consumer when last message in partition has been received.", false );
     ppm.addOption( 'd', "debug", "debug level.", true );
     ppm.addOption( 'm', "mapfile", "Map data file to specify the geofence.", true );
-    ppm.addOption( 'v', "verbose", "verbosity level.", true );
+    ppm.addOption( 'v', "log-level", "The info log level [trace,debug,info,warning,error,critical,off]", true );
+    ppm.addOption( 'D', "logdir", "Directory for the log files.", true );
+    ppm.addOption( 'i', "ilog", "Information log file name.", true );
+    ppm.addOption( 'e', "elog", "Error log file name.", true );
     ppm.addOption( 'h', "help", "print out some help" );
 
     if (!ppm.parseArgs(argc, argv)) {
@@ -700,6 +803,9 @@ int main( int argc, char* argv[] )
         std::exit( EXIT_SUCCESS );
     }
 
+    // can set levels if needed here.
+    ppm.make_loggers();
+
     // configuration check.
     if (ppm.optIsSet('C')) {
         try {
@@ -708,10 +814,12 @@ int main( int argc, char* argv[] )
                 std::exit( EXIT_SUCCESS );
             } else {
                 std::cerr << "Current configuration settings do not work.\n";
+                ppm.ilogger->error( "current configuration settings do not work; exiting." );
                 std::exit( EXIT_FAILURE );
             }
         } catch ( std::exception& e ) {
             std::cerr << "Fatal Exception: " << e.what() << '\n';
+            ppm.elogger->error( "exception: {}", e.what() );
             std::exit( EXIT_FAILURE );
         }
     }

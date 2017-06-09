@@ -108,6 +108,56 @@ std::string& strip( std::string& s );
  */
 StrPair split_attribute( const std::string& s, char delim = '=' );
 
+/**
+ * @brief Return the dirname (i.e., the directory path substring).
+ *
+ * This is a template to accomodate different string types.
+ *
+ * @param path the path from which to extract the directory path substring.
+ * @param delims the set of delimiters to split on to find basename (each character in the string is an element in the
+ * set).
+ * @return the path.
+ */
+template<class T>
+T dirname(T const & path, T const& delims = "/\\")
+{
+    return path.substr(0,path.find_last_of(delims)+1);
+}
+
+/**
+ * @brief Return the basename (i.e., the file name or last dir in a path) of a path.
+ *
+ * This is a template to accomodate different string types.
+ *
+ * @param path the path from which to extract the basename.
+ * @param delims the set of delimiters to split on to find basename (each character in the string is an element in the
+ * set).
+ * @return the basename.
+ */
+template<class T>
+T basename(T const & path, T const& delims = "/\\")
+{
+  return path.substr(path.find_last_of(delims) + 1);
+}
+
+/**
+ * @brief Return the root/name of a file without the extension. If the filename does not have an extension (started with
+ * a '.' character) the entire name will be returned. This method will only remove the last extension if there are
+ * multiples.
+ *
+ * This is a template to accomodate different string types.
+ *
+ * @param filename the filename from which to extract the root.
+ * @return the root filename.
+ */
+template<class T>
+T remove_extension(T const& filename)
+{
+  typename T::size_type const p(filename.find_last_of('.'));
+  return p > 0 && p != T::npos ? filename.substr(0, p) : filename;
+}
+
+
 }  // end namespace.
 
 namespace double_utilities {

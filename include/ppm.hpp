@@ -53,10 +53,14 @@
 #include "tool.hpp"
 #include "bsmfilter.hpp"
 #include "cvlib.hpp"
+#include "spdlog/spdlog.h"
 
 class PPM : public tool::Tool {
 
     public:
+
+        std::shared_ptr<spdlog::logger> ilogger;
+        std::shared_ptr<spdlog::logger> elogger;
 
         static void sigterm (int sig);
 
@@ -68,13 +72,22 @@ class PPM : public tool::Tool {
         bool configure();
         bool launch_consumer();
         bool launch_producer();
-        RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
+        //RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
+        bool msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
         Quad::Ptr BuildGeofence( const std::string& mapfile );
         int operator()(void);
+        bool make_loggers();
 
     private:
 
         static bool bsms_available;                                     ///> flag to exit application; set via signals so static.
+
+        static constexpr long ilogsize = 1048576 * 5;                   ///> The size of a single information log; these rotate.
+        static constexpr long elogsize = 1048576 * 2;                   ///> The size of a single error log; these rotate.
+
+        static constexpr int ilognum = 5;                               ///> The number of information logs to rotate.
+        static constexpr int elognum = 2;                               ///> The number of error logs to rotate.
+
 
         bool exit_eof;                                                  ///> flag to cause the application to exit on stream eof.
         int eof_cnt;                                                    ///> counts the number of eofs needed for exit_eof to work; each partition must end.
@@ -88,7 +101,8 @@ class PPM : public tool::Tool {
         int64_t bsm_send_bytes;                                         ///> Counter for the nubmer of BSM bytes published.
         int64_t bsm_filt_bytes;                                         ///> Counter for the nubmer of BSM bytes filtered/suppressed.
 
-        int verbosity;
+        spdlog::level::level_enum iloglevel;                            ///> Log level for the information log.
+        spdlog::level::level_enum eloglevel;                            ///> Log level for the error log.
         std::string mode;
         std::string debug;
 

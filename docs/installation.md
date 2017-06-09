@@ -1,7 +1,7 @@
 # Installation and Setup
 
 The following instructions represent the "hard" way to install and test the PPM. A docker image can be built to make
-this easier: [Using the Docker Container](using-the-docker-container). *The directions that follow were developed for a clean installation of Ubuntu.*
+this easier: [Using the Docker Container](#using-the-docker-container). *The directions that follow were developed for a clean installation of Ubuntu.*
 
 ## 1. Install [Git](https://git-scm.com/)
 
