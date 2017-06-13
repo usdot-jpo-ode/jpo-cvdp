@@ -27,6 +27,8 @@
 #define CVDP_DI_OSM_HPP
 
 #include "names.hpp"
+#include <exception>
+#include <sstream>
 
 namespace osm {
 
@@ -114,8 +116,9 @@ extern HighwayWidthMap highway_width_map;                               ///< A l
 class invalid_way_exception : public std::runtime_error
 {
     private:
-        Highway type;                   ///< The Highway type that triggered the exception.
-        static int count;               ///< The number of times the exception was triggered during a run.
+        static int count_;               ///< The number of times the exception was triggered during a run.
+        std::string message_;            ///< The exception message;
+        Highway type_;                   ///< The Highway type that triggered the exception.
 
     public:
 
@@ -127,7 +130,7 @@ class invalid_way_exception : public std::runtime_error
         invalid_way_exception( const Highway& way_type );
 
         /**
-         * @brief Generate and return the exception message string.
+         * @brief Return the exception message string.
          *
          * @return The exception message as a constant pointer to a character string.
          */

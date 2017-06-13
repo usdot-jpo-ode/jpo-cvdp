@@ -23,6 +23,7 @@
  *    Oak Ridge National Laboratory, Center for Trustworthy Embedded Systems, UT Battelle.
  */
 
+#include <iostream>
 #include "osm.hpp"
 
 namespace std {
@@ -175,25 +176,27 @@ namespace osm {
     HighwaySet highway_blacklist{ Highway::PEDESTRIAN, Highway::SERVICE };
 
     invalid_way_exception::invalid_way_exception( const Highway& way_type ) :
-        runtime_error{ "way type excluded from use in quad map" }, 
-        type{way_type}
+        runtime_error{"way type excluded from use in quad map"},
+        type_{way_type},
+        message_{ runtime_error::what() }
     { 
         // count up the number of blacklisted ways found.
-        ++count; 
+        ++count_; 
+        message_ += " [" + std::to_string(count_) + "] : ";
+        message_ += std::to_string(static_cast<int>(type_));
     }
 
     const char* invalid_way_exception::what() const noexcept
     {
-        std::string r{ runtime_error::what() };
-        r = r + " [" + std::to_string(count) + "] : " + std::to_string(static_cast<int>(type));
-        return r.c_str();
+        // CANNOT CONSTRUCT THE ERROR MESSAGE HERE!!
+        return message_.c_str();
     }
 
-    int invalid_way_exception::count = 0;
+    int invalid_way_exception::count_ = 0;
 
     int invalid_way_exception::occurrences() const
     {
-        return count;
+        return count_;
     }
 }
 

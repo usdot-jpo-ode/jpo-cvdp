@@ -524,7 +524,6 @@ TEST_CASE("Quad Tree", "[quad]") {
 TEST_CASE( "Redactor Checks", "[redactor]" ) {
 
     ConfigMap conf{ 
-        { "privacy.redaction.id.value", "---" },
         { "privacy.redaction.id.inclusions", "ON" },
         { "privacy.redaction.id.included", "ID1,ID2" },
     };
@@ -550,13 +549,15 @@ TEST_CASE( "Redactor Checks", "[redactor]" ) {
 
         r = "ID1";
         CHECK( idr(r) );
-        CHECK( r == "---" );
+        // should be random.
+        CHECK( r != "ID1" );
     }
 
     SECTION( "Exclusion No Redact" ) {
 
         r = "IDX";
         CHECK_FALSE( idr(r) );
+        // no random redaction.
         CHECK( r == "IDX" );
     }
 
@@ -569,7 +570,7 @@ TEST_CASE( "Redactor Checks", "[redactor]" ) {
         SECTION( "Inclusion Redaction" ) {
             r = "ID3";
             CHECK( idr(r) );
-            CHECK( r == "---" );
+            CHECK( r != "ID3" );
         }
     }
 
@@ -582,7 +583,7 @@ TEST_CASE( "Redactor Checks", "[redactor]" ) {
         SECTION( "Inclusion Redaction" ) {
             r = "ID2";
             CHECK( idr(r) );
-            CHECK( r == "---" );
+            CHECK( r != "ID2" );
         }
         SECTION( "Exclusion No Redaction" ) {
             r = "ID1";
@@ -596,7 +597,7 @@ TEST_CASE( "Redactor Checks", "[redactor]" ) {
         idr.RedactAll();
         r = "IDX";
         CHECK( idr(r) );
-        CHECK( r == "---" );
+        CHECK( r != "IDX" );
     }
 
     SECTION( "Clear Inclusions - Redact NOTHING" ) {
@@ -664,7 +665,9 @@ TEST_CASE( "BSM Checks", "[bsm]" ) {
         CHECK( bsm.lat == 90.0 );
         CHECK( bsm.lon == 180.0 );
         CHECK( bsm.get_velocity() == -1.0 );
-        CHECK( bsm.get_id() == "UNASSIGNED" );
+        CHECK( bsm.get_secmark() == 0 );
+        CHECK( bsm.get_id() == "" );
+        CHECK( bsm.get_original_id() == "" );
     }
 
     SECTION( "Change and Reset" ) {
@@ -675,15 +678,22 @@ TEST_CASE( "BSM Checks", "[bsm]" ) {
         CHECK( bsm.lon == 22.0 );
         bsm.set_id( "XXX" );
         CHECK( bsm.get_id() == "XXX" );
+        bsm.set_original_id( "YYY" );
+        CHECK( bsm.get_original_id() == "YYY" );
         bsm.set_velocity( 456 );
         CHECK( bsm.get_velocity() == 456.0 );
+        bsm.set_secmark( 123 );
+        CHECK( bsm.get_secmark() == 123 );
+        CHECK( bsm.logString() == "(XXX,123,22.000000,22.000000,456.000000)" );
 
         SECTION( "Reset" ) {
             bsm.reset();
             CHECK( bsm.lat == 90.0 );
             CHECK( bsm.lon == 180.0 );
             CHECK( bsm.get_velocity() == -1.0 );
-            CHECK( bsm.get_id() == "UNASSIGNED" );
+            CHECK( bsm.get_id() == "" );
+            CHECK( bsm.get_secmark() == 0 );
+            CHECK( bsm.get_original_id() == "");
         }
     }
 }
@@ -853,7 +863,6 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
     }
 
     int j = 0;
-    std::string err_msg;
 
     for ( auto& testline : waytype_tests  ) {
         StrVector parts = string_utilities::split(testline, ',');
@@ -862,20 +871,20 @@ TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
         // Exception checking.
         try {
             sf.make_edge( parts );
-        } catch (osm::invalid_way_exception& e) {
-            err_msg = e.what();
+        } catch (const osm::invalid_way_exception& e) {
+            std::string msg{ e.what() };
             
             switch (j) {
             case 0:
-                CHECK(err_msg == "way type excluded from use in quad map [2] : 7");
+                CHECK( msg == "way type excluded from use in quad map [2] : 7");
                 CHECK(e.occurrences() == 2);
                 break;
             case 1:
-                CHECK(err_msg == "way type excluded from use in quad map [4] : 7");
+                CHECK( msg == "way type excluded from use in quad map [4] : 7");
                 CHECK(e.occurrences() == 4);
                 break;
             case 2:
-                CHECK(err_msg == "way type excluded from use in quad map [6] : 7");
+                CHECK( msg == "way type excluded from use in quad map [6] : 7");
                 CHECK(e.occurrences() == 6);
                 break;
             default:
@@ -1159,7 +1168,8 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
             // bad ids parse fine and return success status, but their id value changes.
             CHECK( handler.process( bsm ) );
             CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK_FALSE( handler.get_bsm().get_id() == pconf["privacy.redaction.id.value"] );
+            // check for change.
+            CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_speed ) {
@@ -1263,13 +1273,15 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         for ( auto& bsm : json_good ) {
             CHECK( handler.process( bsm ) );
             CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_bsm().get_id() != pconf["privacy.redaction.id.value"] );
+            // check for no change.
+            CHECK( handler.get_bsm().get_id() == handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_id ) {
             CHECK( handler.process( bsm ) );
             CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_bsm().get_id() == pconf["privacy.redaction.id.value"] );
+            // check for change.
+            CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_speed ) {
@@ -1293,7 +1305,8 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
             // bad ids parse fine and return success status, but their id value changes.
             CHECK( handler.process( bsm ) );
             CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_bsm().get_id() == pconf["privacy.redaction.id.value"] );
+            // check for change.
+            CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_speed ) {

@@ -29,6 +29,7 @@
 #include <string>
 #include <stack>
 #include <vector>
+#include <random>
 #include "rapidjson/reader.h"
 #include "cvlib.hpp"
 
@@ -163,6 +164,13 @@ class IdRedactor {
         bool RemoveIdInclusion( const std::string& id );
 
         /**
+         * @brief Build and return a new randomly generated unsigned 32-bit identifier in hex to replace the current identifier.
+         *
+         * @return a hexidecimal string of a random unsigned 32-bit integer (based on the J2735 specification).
+         */
+		std::string GetRandomId();
+
+        /**
          * @brief Operator to redact (or retain) an id.
          *
          * @param id the id to redact.
@@ -178,7 +186,10 @@ class IdRedactor {
          */
         const std::string& redaction_value() const;
 
+
     private:
+        std::mt19937 rgen_;                                     ///< random number generator (mersenne twister).
+        std::uniform_int_distribution<uint32_t> dist_;
         InclusionSetType inclusion_set_;                        ///< The set of ids on which to perform redaction.
         std::string redacted_value_;                            ///< The value to assign to those ids that require redaction.
         bool inclusions_;                                       ///< Flag indicating whether this redactor will use the inclusion_set.
@@ -315,6 +326,20 @@ class BSM : public geo::Point {
         void set_longitude( double longitude );
 
         /**
+         * @brief Set the BSM's secMark.
+         *
+         * @param dsec the secMark (DSeconds) field of the BSM.
+         */
+        void set_secmark( uint16_t dsec );
+
+        /**
+         * @brief Get the BSM's secMark.
+         *
+         * @return the BSM's current secMark value.
+         */
+        uint16_t get_secmark() const;
+
+        /**
          * @brief Set the temporary ID field for the BSM
          *
          * @param id the temporary id for the BSM.
@@ -322,11 +347,32 @@ class BSM : public geo::Point {
         void set_id( const std::string& s );
 
         /**
+         * @brief Set the original id field for the BSM; for unit testing.
+         *
+         * @param the original id in the BSM.
+         */
+        void set_original_id( const std::string& s );
+
+        /**
          * @brief Get the temporary ID field for the BSM
          *
          * @return a const reference to the temporary id for the BSM.
          */
         const std::string& get_id() const;
+
+        /**
+         * @brief Get the original ID field for the BSM; for unit testing.
+         *
+         * @return a const reference to the original id for the BSM.
+         */
+        const std::string& get_original_id() const;
+
+        /**
+         * @brief Get a string representation of this BSM for the log.
+         *
+         * @return a string for the log that characterizes this BSM.
+         */
+        std::string logString();
 
         /**
          * @brief Write the BSM in readable form to the provided output stream.
@@ -337,9 +383,12 @@ class BSM : public geo::Point {
         friend std::ostream& operator<<( std::ostream& os, const BSM& bsm );
 
     private:
-        double velocity_;        ///< the velocity of the BSM.
-        std::string id_;         ///< the id of the BSM.
-        char* end_;              ///< pointer to the last character parsed.
+        double velocity_;                       ///< the velocity of the BSM.
+        uint16_t dsec_;                         ///< the dsecond field if it exists.
+        std::string id_;                        ///< the id of the BSM.
+        std::string oid_;                        ///< the original id of the BSM.
+        char* end_;                             ///< pointer to the last character parsed.
+        std::string logstring_;           ///< a string to build for logging about the BSM.
 };
 
 /** 
@@ -385,7 +434,7 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          * @param quad_ptr the quad tree containing the map elements.
          * @param conf the user-specified configuration.
          */
-        BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf);
+        BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf );
 
         /**
          * @brief Predicate indicating whether the BSM's position is within the prescribed geofence.
@@ -426,9 +475,9 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         /**
          * @brief Return a reference to the BSM instance generated during processing of a JSON string.
          *
-         * @return a constant reference to the BSM instance.
+         * @return a reference to the BSM instance.
          */
-        const BSM& get_bsm() const;
+        BSM& get_bsm();
 
         /**
          * @brief Return the processed BSM as a JSON string including any changes made due to redaction of fields. This string
@@ -606,8 +655,6 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         IdRedactor idr_;                            ///< The ID Redactor to use during parsing of BSMs.
 
         double box_extension_;                      ///< The number of meters to extend the boxes that surround edges and define the geofence.
-
-        char* end_;                                 ///< A temporary pointer to the end of a string.
 };
 
 #endif

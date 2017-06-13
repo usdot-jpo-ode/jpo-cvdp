@@ -96,7 +96,7 @@ void CSVInputFactory::make_edge(const StrVector& line_parts) {
         auto blacklist_item = osm::highway_blacklist.find( way_type );
         if (blacklist_item != osm::highway_blacklist.end()) {
             // this edge type should be ignored since it is in the blacklist.
-            throw osm::invalid_way_exception( way_type );
+            throw osm::invalid_way_exception{ way_type };
         }
     }
 

@@ -27,21 +27,30 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <random>
+#include <limits>
 
 #include "rapidjson/reader.h"
 
 #include "cvlib.hpp"
 #include "bsmfilter.hpp"
+#include "spdlog/spdlog.h"
 
 IdRedactor::IdRedactor() :
     inclusion_set_{},
     redacted_value_{"FFFFFFFF"},                    // default value.
     inclusions_{false}                              // redact everything.
-{}
+{
+    // setup random number generator.
+    std::random_device rd;
+    rgen_ = std::mt19937{ rd() };
+    dist_ = std::uniform_int_distribution<uint32_t>{ 0, std::numeric_limits<uint32_t>::max() };
+}
 
 IdRedactor::IdRedactor( const ConfigMap& conf ) :
     IdRedactor{}
 {
+    // TODO: The redaction value is deprecated (it is randomly assigned now).
     auto search = conf.find("privacy.redaction.id.value");
     if ( search != conf.end() ) {
         redacted_value_ = search->second;
@@ -109,6 +118,14 @@ bool IdRedactor::RemoveIdInclusion( const std::string& id )
     return r;
 }
 
+std::string IdRedactor::GetRandomId()
+{
+	std::stringstream ss;
+    uint32_t v = dist_(rgen_);
+    ss << std::hex << std::setfill('0') << std::setw(sizeof(uint32_t)*2) << v;                                                 
+	return ss.str();
+}
+
 bool IdRedactor::operator()( std::string& id )
 {
     if ( inclusions_ ) {
@@ -120,9 +137,9 @@ bool IdRedactor::operator()( std::string& id )
         // Case 2: Found this id in the inclusions set; redact.
     } // Case 3: Not using inclusion set; redact everything.
 
-    
     // Case 2 and 3: Overwrite existing id with redaction id.
-    id = redacted_value_;
+    //id = redacted_value_;
+    id = GetRandomId();
     return true;
 }
 
@@ -139,20 +156,14 @@ VelocityFilter::VelocityFilter() :
 VelocityFilter::VelocityFilter( const ConfigMap& conf ) :
     VelocityFilter{}
 {
-    try {
+    auto search = conf.find("privacy.filter.velocity.min");
+    if ( search != conf.end() ) {
+        min_ = std::stod( search->second );
+    }
 
-        auto search = conf.find("privacy.filter.velocity.min");
-        if ( search != conf.end() ) {
-            min_ = std::stod( search->second );
-        }
-
-        search = conf.find("privacy.filter.velocity.max");
-        if ( search != conf.end() ) {
-            max_ = std::stod( search->second );
-        }
-
-    } catch ( std::exception& e ) {
-        std::cerr << e.what() << '\n';
+    search = conf.find("privacy.filter.velocity.max");
+    if ( search != conf.end() ) {
+        max_ = std::stod( search->second );
     }
 }
 
@@ -180,14 +191,29 @@ bool VelocityFilter::retain( double v ) {
 BSM::BSM() :
     geo::Point{90.0, 180.0},
     velocity_{ -1 },
-    id_{"UNASSIGNED"}
+    dsec_{0},
+    id_{""},
+    oid_{""},
+    logstring_{}
 {}
 
 void BSM::reset() {
     lat = 90.0;
     lon = 180.0;
     velocity_ = -1.0;
-    id_ = "UNASSIGNED";
+    dsec_ = 0;
+    id_ = "";
+    oid_ = "";
+}
+
+std::string BSM::logString() {
+    logstring_ = "(" + id_;
+    logstring_ += "," + std::to_string(dsec_);
+    logstring_ += "," + std::to_string(lat);
+    logstring_ += "," + std::to_string(lon);
+    logstring_ += "," + std::to_string(velocity_);
+    logstring_ += ")";
+    return logstring_;
 }
 
 void BSM::set_velocity( double v ) {
@@ -206,12 +232,30 @@ void BSM::set_longitude( double longitude ) {
     lon = longitude;
 }
 
+void BSM::set_secmark( uint16_t dsec ) {
+    dsec_ = dsec;
+}
+
+uint16_t BSM::get_secmark() const {
+    return dsec_;
+}
+
 void BSM::set_id( const std::string& s ) {
     id_ = s;
 }
 
 const std::string& BSM::get_id() const {
     return id_;
+}
+
+// for testing.
+void BSM::set_original_id( const std::string& s ) {
+    oid_ = s;
+}
+
+// for testing.
+const std::string& BSM::get_original_id() const {
+    return oid_;
 }
 
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )
@@ -230,7 +274,7 @@ BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::OTHER, "other" }
         };
 
-BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
+BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     reader_{},
     activated_{0},
     result_{ ResultStatus::SUCCESS },
@@ -261,13 +305,9 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf) :
         activate<BSMHandler::kIdRedactFlag>();
     }
 
-    try {
-        search = conf.find("privacy.filter.geofence.extension");
-        if ( search != conf.end() ) {
-            box_extension_ = std::stod( search->second );
-        }
-    } catch ( std::exception& e ) {
-        std::cerr << "WARNING: bad value for geofence extension; keeping default: " << e.what() << '\n';
+    search = conf.find("privacy.filter.geofence.extension");
+    if ( search != conf.end() ) {
+        box_extension_ = std::stod( search->second );
     }
 }
 
@@ -278,16 +318,13 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     geo::AreaPtr area_ptr = nullptr;
 
     geo::Entity::PtrList entity_set = quad_ptr_->retrieve_elements(bsm); 
-    //std::cerr << "esize: " << entity_set.size() << " " << bsm << '\n';
 
     for (auto& entity_ptr : entity_set) {
 
         edge_ptr = std::static_pointer_cast<const geo::Edge>(entity_ptr); 
-        //std::cerr << *edge_ptr << '\n';
 
         if (entity_ptr->get_type() == "edge") {
             edge_ptr = std::static_pointer_cast<const geo::Edge>(entity_ptr); 
-            // TODO: Geofence end extensions should be a parameter.
             area_ptr = edge_ptr->to_area(box_extension_);
 
             if (area_ptr->contains(bsm)) {
@@ -324,7 +361,6 @@ void BSMHandler::reset() {
     bsm_.reset();
 }
 
-// bool BSMHandler::process( const char*payload, size_t length ) {
 bool BSMHandler::process( const std::string& bsm_json ) {
 
     reset();
@@ -351,7 +387,7 @@ const std::string& BSMHandler::get_result_string() const {
     return result_string_map[ result_ ];
 }
 
-const BSM& BSMHandler::get_bsm() const {
+BSM& BSMHandler::get_bsm() {
     return bsm_;
 }
 
@@ -492,50 +528,61 @@ bool BSMHandler::RawNumber(const char* str, rapidjson::SizeType length, bool cop
         get_value_ = false;
 
         if ("latitude" == current_key_) {
-            double v = std::strtod( str, &end );
+            double v = std::strtod( str, &end );            // if cannot be converted 0 is returned.
             bsm_.set_latitude( v );
-        }
 
-        if ("longitude" == current_key_) {
-            double v = std::strtod( str, &end );
+        } else if ("longitude" == current_key_) {
+            double v = std::strtod( str, &end );            // if cannot be converted 0 is returned.
             bsm_.set_longitude( v );
-        }
 
-        if ("speed" == current_key_) {
-            double v = std::strtod( str, &end );
+        } else if ("speed" == current_key_) {
+            double v = std::strtod( str, &end );            // if cannot be converted 0 is returned.
             bsm_.set_velocity( v );
             if ( is_active<kVelocityFilterFlag>() && vf_.suppress(v) ) {
                 // Velocity filtering is activated and filtering failed -> suppress.
                 result_ = ResultStatus::SPEED;
             }
-        }
+
+        } else if ( "secMark" == current_key_ ) {
+            // This is only set for bookeeping and logging purposes.
+            uint16_t v = 65535;  // default for j2735 unavailable value in range.
+
+            try {
+                v = static_cast<uint16_t>( std::stoi(str) );
+            } catch ( std::logic_error& e ) {
+                // keep the default.
+            }
+
+            bsm_.set_secmark( v );
+        } 
     }
 
     return result_ == ResultStatus::SUCCESS;
 }
 
 bool BSMHandler::String(const char* str, rapidjson::SizeType length, bool copy) { 
+    static char* end;
+    static uint16_t v;
 
     std::string s{ str, length };
 
-    if ( get_value_ && is_active<kIdRedactFlag>() && (current_key_=="id") ) {
-        // ID redaction is activiated and this is the value associated with the id field.
+    if ( get_value_ ) {
+        get_value_ = false;
+        // the previously seen key indicated we need to use this value.
+    
+        if ( current_key_ == "id" ) {
+            if ( is_active<kIdRedactFlag>() ) {
+                bsm_.set_original_id(s);        // for unit testing.
+                idr_(s);                        // use the redactor.
+            }
 
-        // returns false if NO REDACTION.
-        idr_( s );
+            // This is set no matter what for logging and bookeeping; it may not have changed and it is not needed for
+            // the output json since that is retained in the stack.
+            bsm_.set_id(s);
 
-        // Setting the BSM id is for testing and printouts; not needed in product, since actual value 
-        // is in tokens_ stack.
-        bsm_.set_id( s );
-
-    } else if ( get_value_ && (current_key_=="id") ) {
-        // TODO: This else branch is here so when the tests are run the bsm id is set to the original value and
-        // can be displayed correctly. In operation, only the information on the tokens_ stack is needed, so 
-        // this operation is wasted.
-        bsm_.set_id( s );
+        } 
     }
 
-    get_value_ = false;
     tokens_.push_back( "\"" + s + "\"" );
     return result_ == ResultStatus::SUCCESS;
 }
@@ -573,14 +620,18 @@ bool BSMHandler::Key(const char* str, rapidjson::SizeType length, bool copy) {
         tokens_.push_back(",");
     }
 
+    // save in case we need to "produce" this bsm.
     tokens_.push_back("\"" + std::string( str, length) + "\":");
+    // get the enclosing json object.
     std::string top = object_stack_.back();
+
+    // sets state, so we can handle the data correctly.
     current_key_ = str;
 
     if ( top == "position" ) {
         get_value_ = ("latitude"==current_key_ ||  "longitude"==current_key_);
     } else if ( top == "coreData" ) {
-        get_value_ = ("id"==current_key_ || "speed"==current_key_ );
+        get_value_ = ("id"==current_key_ || "speed"==current_key_ || "secMark"==current_key_ );
     }
 
     return result_ == ResultStatus::SUCCESS;

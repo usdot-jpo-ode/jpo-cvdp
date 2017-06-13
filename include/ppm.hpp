@@ -72,11 +72,22 @@ class PPM : public tool::Tool {
         bool configure();
         bool launch_consumer();
         bool launch_producer();
-        //RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
         bool msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
         Quad::Ptr BuildGeofence( const std::string& mapfile );
         int operator()(void);
-        bool make_loggers();
+
+        /**
+         * @brief Create and setup the two loggers used for the PPM. The locations and filenames for the logs can be specified
+         * using command line parameters. The CANNOT be set via the configuration file, since these loggers are setup
+         * prior to the configuration file being read.
+         *
+         * If the log directory does not exist it will be created.
+         *
+         * Log files will be appended to, unless specified by a command line option.
+         *
+         * @return true upon success; false if some failure occurred during logger setup.
+         */
+        bool make_loggers( bool remove_files );
 
     private:
 
