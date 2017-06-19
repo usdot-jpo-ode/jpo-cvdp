@@ -52,6 +52,15 @@ loitering locations can aid in learning the identity of the driver.
 
 ## Release Notes
 
+### ODE Sprint 15
+
+- ODE-369/ORNL-15: Logging
+- Updated Identifier Redactor to include random assignment in lieu of fixed assignment.
+
+### ODE Sprint 14
+
+- ORNL-17: USDOT Playbook
+
 ### ODE Sprint 13
 
 - ODE-290: Integration with the ODE.

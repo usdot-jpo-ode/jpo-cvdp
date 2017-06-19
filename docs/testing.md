@@ -156,7 +156,7 @@ $ cat $BASE_PPM_DIR/jpo-cvdp/data/<testfile> | bin/kafka-console-producer.sh --b
 
 You can confirm PPM operations in two ways:
 
-- Return to the PPM shell and examine the output; it should behave based on PPM configuration settings and the test BSMs.
+- Open the information log file in an editor and inspect the output. The `[datetimestamp] [info] BSM` messages should describe the actions the PPM is taking based on the input.
 - Return to the simulated ODE consumer shell and examine the output JSON; this is more difficult because the JSON does not render well on the screen.
 
 ## Testing All Capabilities
@@ -172,25 +172,31 @@ You can confirm PPM operations in two ways:
 $ cat $BASE_PPM_DIR/jpo-cvdp/data/bsm.wy.test.json | bin/kafka-console-producer.sh --broker-list <HOST IP>:9092 --topic j2735BsmRawJson
 ```
 
-- In the PPM shell the output should look something like the following:
+- Open the information log file in an editor and inspect the `info BSM` message (an example of these messages is shown below). The message immediately
+to the right of `BSM` indicates whether the message was RETAINED, or passed on to a filtered stream, or SUPPRESSED with the cause. The information in
+parenthesis is the TemporaryID, secMark, lat, lon, and speed information in the message; this can be used to test and troubleshoot your configuration.
+
 ```bash
-$ ./ppm -c ../config/test.allon.properties
->> Created Consumer: rdkafka#consumer-1
->> Created Producer: rdkafka#producer-2
-Retaining BSM: Pos: (41.7381, -106.587), Spd: 7.02 Id: FFFFFFFF
-Filtering BSM [parse] : Pos: (90, 180), Spd: -1 Id: UNASSIGNED
-Filtering BSM [speed] : Pos: (41.6087, -109.227), Spd: 1.12 Id: FFFFFFFF
-Filtering BSM [parse] : Pos: (90, 180), Spd: -1 Id: UNASSIGNED
-Filtering BSM [speed] : Pos: (41.3111, -110.513), Spd: 97.16 Id: BEA10009
-Retaining BSM: Pos: (41.2466, -111.027), Spd: 7.44 Id: BEA10009
-Retaining BSM: Pos: (41.6004, -106.223), Spd: 7.44 Id: BEA10004
-Filtering BSM [parse] : Pos: (90, 180), Spd: -1 Id: UNASSIGNED
-Filtering BSM [geoposition] : Pos: (42.2979, -83.7203), Spd: -1 Id: BEA10004
-Filtering BSM [geoposition] : Pos: (42.2979, -83.7203), Spd: -1 Id: FFFFFFFF
-Filtering BSM [geoposition] : Pos: (42.2458, -83.6234), Spd: -1 Id: FFFFFFFF
-Filtering BSM [geoposition] : Pos: (42.2458, -83.6234), Spd: -1 Id: BEA10005
-Filtering BSM [geoposition] : Pos: (42.2458, -83.6234), Spd: -1 Id: FFFFFFFF
+[170613 12:30:47.057503] [info] BSM [RETAINED]: (ON-VG---,36710,41.116496,-104.888494,5.000000)
+[170613 12:30:47.057566] [info] BSM [RETAINED]: (ON-VG-99,36711,41.116496,-104.888494,5.000000)
+[170613 12:30:47.057584] [info] BSM [SUPPRESSED-speed]: (ON-VBL--,36712,41.116496,-104.888494,1.000000)
+[170613 12:30:47.057593] [info] BSM [SUPPRESSED-speed]: (ON-VBH--,36713,41.116496,-104.888494,100.000000)
+[170613 12:30:47.057623] [info] BSM [RETAINED]: (OFFVG---,36714,41.118110,-104.889282,5.000000)
+[170613 12:30:47.057639] [info] BSM [SUPPRESSED-speed]: (OFFVBH--,36715,41.118110,-104.889282,99.000000)
+[170613 12:30:47.057670] [info] BSM [RETAINED]: (OFFVGMID,36716,41.141742,-105.361760,9.000000)
+[170613 12:30:47.057705] [info] BSM [RETAINED]: (ON-VGTOP,36717,41.143138,-105.361470,9.000000)
+[170613 12:30:47.058086] [info] BSM [SUPPRESSED-speed]: (ON-VBTOP,36718,41.143138,-105.361470,1.000000)
+[170613 12:30:47.058126] [info] BSM [RETAINED]: (ON-VGBOT,36719,41.140537,-105.362255,9.000000)
+[170613 12:30:47.058147] [info] BSM [SUPPRESSED-speed]: (ON-VBBOT,36720,41.140537,-105.362255,50.000000)
+[170613 12:30:47.058178] [info] BSM [RETAINED]: (ON-VG---,36721,41.411728,-110.137350,9.000000)
+[170613 12:30:47.058213] [info] BSM [RETAINED]: (ON-VG-99,36722,41.411728,-110.137350,9.000000)
+[170613 12:30:47.058293] [info] BSM [RETAINED]: (OFFVG---,36723,41.628687,-109.089771,9.000000)
+[170613 12:30:47.058451] [info] BSM [RETAINED]: (OFFVG---,36724,41.627758,-109.091004,9.000000)
+[170613 12:30:47.058494] [info] BSM [RETAINED]: (O??VG---,36725,41.627672,-109.089390,9.000000)
+[170613 12:30:47.064880] [info] BSM [RETAINED]: (ON-VG---,36726,41.627467,-109.089251,9.000000)
+[170613 12:30:47.064940] [info] BSM [RETAINED]: (OFFVG---,36727,43.313653,-111.799675,9.000000)
 ```
+
 - The above output will vary depending on which configuration file you use.
 
 ## Unit Testing

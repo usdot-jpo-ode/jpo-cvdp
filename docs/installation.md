@@ -144,6 +144,8 @@ $ make
 ## Additional information
 
 - The PPM uses [RapidJSON](https://github.com/miloyip/rapidjson), but it is a header-only library included in the repository.
+- The PPM uses [spdlog](https://github.com/gabime/spdlog) for logging; it is a header-only library and the headers are included in the repository.
+- The PPM uses [Catch](https://github.com/philsquared/Catch) for unit testing, but it is a header-only library included in the repository.
 
 # Integrating with the ODE
 
