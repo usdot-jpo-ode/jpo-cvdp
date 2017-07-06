@@ -1098,7 +1098,7 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
     // FOR EACH SECTION THE TEST CASE IS EXECUTED FROM THE START.
 
     SECTION( "Handler Instantiation" ) {
-        CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
         CHECK( handler.get_result_string() == "success" );
         CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
@@ -1132,7 +1132,7 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         // here we explicitly check that it is working.
         CHECK( handler.process( json_good[0] ) );
         handler.reset();
-        CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
         CHECK( handler.get_result_string() == "success" );
         CHECK( handler.get_current_key().size() == 0 );
         CHECK( handler.get_object_stack().size() == 0 );
@@ -1145,7 +1145,8 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         for ( auto& bsm : json_malformed ) {
             // fails processing and has a parse status.
             CHECK_FALSE( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::PARSE );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::PARSE );
+            CHECK( handler.get_result_string() == "parse" );
         }
     }
 
@@ -1161,30 +1162,35 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
 
         for ( auto& bsm : json_good ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( auto& bsm : json_bad_id ) {
             // bad ids parse fine and return success status, but their id value changes.
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
             // check for change.
             CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_speed ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( auto& bsm : json_inside_fence ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( auto& bsm : json_outside_fence ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
     }
 
@@ -1203,31 +1209,36 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         for ( int i=0; i < json_inside_fence.size()-2; ++i ) {
             // geofence is inactive; complete and success
             CHECK( handler.process( json_inside_fence[i] ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( int i=json_inside_fence.size()-2; i < json_inside_fence.size(); ++i ) {
             // kick out of parsing and set status correctly.
             CHECK_FALSE( handler.process( json_inside_fence[i] ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            CHECK( handler.get_result_string() == "speed" );
         }
 
         for ( int i=0; i < json_outside_fence.size()-3; ++i ) {
             // geofence is inactive; complete and success
             CHECK( handler.process( json_outside_fence[i] ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( int i=json_outside_fence.size()-3; i < json_outside_fence.size(); ++i ) {
             // kick out of parsing and set status correctly.
             CHECK_FALSE( handler.process(json_outside_fence[i]) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            CHECK( handler.get_result_string() == "speed" );
         }
 
         for ( auto& bsm : json_bad_speed ) {
             // kick out of parsing and set status correctly.
             CHECK_FALSE( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            CHECK( handler.get_result_string() == "speed" );
         }
 
     }
@@ -1245,19 +1256,22 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         for ( auto& bsm : json_inside_fence ) {
             // complete parsing and return success status.
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( auto& bsm : json_outside_fence ) {
             // kick out of parsing and set status correctly.
             CHECK_FALSE( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );
+            CHECK( handler.get_result_string() == "geoposition" );
         }
 
         for ( auto& bsm : json_bad_speed ) {
             // bad speeds should not be filtered.
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
     }
 
@@ -1272,21 +1286,24 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
 
         for ( auto& bsm : json_good ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
             // check for no change.
             CHECK( handler.get_bsm().get_id() == handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_id ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
             // check for change.
             CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_speed ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
     }
 
@@ -1298,39 +1315,45 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
 
         for ( auto& bsm : json_good ) {
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( auto& bsm : json_bad_id ) {
             // bad ids parse fine and return success status, but their id value changes.
             CHECK( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
             // check for change.
             CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         }
 
         for ( auto& bsm : json_bad_speed ) {
             CHECK_FALSE( handler.process( bsm ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            CHECK( handler.get_result_string() == "speed" );
         }
 
         for ( int i=0; i < json_inside_fence.size()-2; ++i ) {
             // geofence is active; complete and success
             CHECK( handler.process( json_inside_fence[i] ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
+            CHECK( handler.get_result_string() == "success" );
         }
 
         for ( int i=json_inside_fence.size()-2; i < json_inside_fence.size(); ++i ) {
             // kick out of parsing and set status correctly.
             CHECK_FALSE( handler.process( json_inside_fence[i] ) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
+            CHECK( handler.get_result_string() == "speed" );
         }
 
         for ( auto& bsm : json_outside_fence ) {
             // geofence is active; kick out and set status correctly.
             // geoposition is FIRST in the JSON, so it will trigger first.
             CHECK_FALSE( handler.process(bsm) );
-            CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );
+            //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );
+            CHECK( handler.get_result_string() == "geoposition" );
         }
     }
 
