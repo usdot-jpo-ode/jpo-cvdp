@@ -215,7 +215,7 @@ TEST_CASE("Entity", "[entity test]") {
     ss << *phss_area;
     
     SECTION("Area") {
-        CHECK(ss.str() == "[35.95255324700415,-83.93236639356081, 35.94893124700415,-83.92801339666028, 35.94882475295794,-83.92814860324864, 35.95244675295794,-83.93250160634807, ]");
+        CHECK(ss.str() == "[35.95255324700415,-83.93236639356081, 35.94893124700415,-83.92801339666028, 35.94882475295794,-83.92814860324864, 35.95244675295795,-83.93250160634807, ]");
         CHECK_THROWS(phss->to_area(0.0, 10));
         CHECK_THROWS(phss->to_area(-1.0, 10));
         CHECK_NOTHROW(phss->to_area(10.0, 5));
@@ -1453,7 +1453,8 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
 
         CHECK( handler.get_object_stack().back() == "position" );       // completed the position object.
         CHECK_FALSE( handler.EndObject(2) );                            // here is the first failure that would result in suppression.
-        CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );  // failure status, but we will continue to force parse.
+        //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );  // failure status, but we will continue to force parse.
+        CHECK( handler.get_result_string() == "geoposition" );  // failure status, but we will continue to force parse.
         CHECK( handler.get_object_stack().back() == "coreData" );
 
         CHECK_FALSE( handler.starting_new_object() );
@@ -1464,7 +1465,8 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         CHECK( handler.get_current_key() == "speed" );
         CHECK_FALSE( handler.RawNumber( "99.9", 4, false ) );
         CHECK( handler.get_bsm().get_velocity() == Approx( 99.9 ) );    // bsm instance updated.
-        CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );   // failure status has changed now.
+        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );   // failure status has changed now.
+        CHECK( handler.get_result_string() == "speed" );   // failure status has changed now.
         CHECK_FALSE( handler.get_next_value() );
 
         CHECK_FALSE( handler.starting_new_object() );
@@ -1476,15 +1478,18 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         CHECK( handler.get_object_stack().back() == "F6" );
 
         CHECK_FALSE( handler.EndObject(0) );
-        CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+        CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
         CHECK( handler.get_object_stack().back() == "coreData" );
 
         CHECK_FALSE( handler.EndObject(6) );
-        CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+        CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
         CHECK( handler.get_object_stack().back() == "" );
 
         CHECK_FALSE( handler.EndObject(0) );
-        CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+        CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
         CHECK( handler.get_object_stack().empty() );
 
         CHECK( json_geo == handler.get_json() );                          // check we reconstructed the original JSON.
