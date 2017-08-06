@@ -67,16 +67,19 @@ set(BSM_DATA_DIR $<TARGET_FILE_DIR:ppm>/data)
 set(BSM_CONFIG_DIR $<TARGET_FILE_DIR:ppm>/config)
 
 # Make the base data directory.
-add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
+add_custom_command(TARGET ppm PRE_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E make_directory ${BSM_DATA_DIR})
 # Copy the data files.
-add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
+add_custom_command(TARGET ppm PRE_BUILD COMMAND echo "Copying the data directory")
+add_custom_command(TARGET ppm PRE_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E copy_directory ${PROJECT_SOURCE_DIR}/data 
                    ${BSM_DATA_DIR})
+
 # Make the base data directory.
 add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E make_directory ${BSM_CONFIG_DIR})
 # Copy the data files.
+add_custom_command(TARGET ppm POST_BUILD COMMAND echo "Copying the config directory")
 add_custom_command(TARGET ppm POST_BUILD COMMAND ${CMAKE_COMMAND} 
                    -E copy_directory ${PROJECT_SOURCE_DIR}/config
                    ${BSM_CONFIG_DIR})
