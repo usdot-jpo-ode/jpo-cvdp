@@ -1,15 +1,415 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
+// NOTE: The test file OPERAND is a <test-spec> (see github.com/philsquared/Catch/blob/master/docs/command-line.md) 
+// <test-spec> is defined as below.
+// NOTE: Tests can be hidden by starting the tag with a '.' character.
+// NOTE: Test specifiers are insensitive.
+// NOTE: Test specifiers can include * as a wildcard.
+// NOTE: Test specifiers can include ~ as a negation operator, e.g., ~testa = all test cases except testa.
+// NOTE: If test specifier includes spaces, quote the specifier on the CL.
+// NOTE: specifiers in square brackets can be used to develop predicates: [one][two],[three].  All tests tagged with one AND two OR tagged with three.
+
 #include <memory>
 #include <bitset>
 #include <sstream>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+// #include <iterator>
+// #include <algorithm>
+#include <regex>
 
 #include "cvlib.hpp"
-
 #include "bsmfilter.hpp"
 
-TEST_CASE("Entity", "[entity test]") {
+/**
+ * @brief Load the test case JSON data from case_file and return that data in case_data.
+ *
+ * @param case_file relative or absolute path to case data.
+ * @param case_data vector of strings that will be loaded with the cases.
+ * @return true if all is loaded, false if some failure occurs.
+ */
+bool loadTestCases( const std::string& case_file, StrVector& case_data ) {
+
+    std::string line;
+    std::ifstream file{ case_file };
+
+    if ( file.good() ) {
+        while ( std::getline( file, line ) ) {
+            string_utilities::strip( line ); 
+            if ( line.length() > 0 && line[0] != '#' ) {
+                // skip empty lines and comments.
+                case_data.push_back( line );
+            }
+        }
+
+    } else {
+        return false;
+    }
+
+    return( !case_data.empty() );
+}
+
+
+bool buildBaseConfiguration( ConfigMap& conf ) {
+    conf.clear();
+
+    conf["privacy.filter.velocity"]            = "ON";
+    conf["privacy.redaction.id"]               = "ON";
+    conf["privacy.redaction.id.inclusions"]    = "ON";
+    conf["privacy.filter.geofence"]            = "ON";
+    conf["privacy.filter.velocity.min"]        = "2.235";
+    conf["privacy.filter.velocity.max"]        = "35.763";
+    conf["privacy.redaction.id.value"]         = "FFFFFFFF";
+    conf["privacy.redaction.id.included"]      = "B1,B2";
+    conf["privacy.filter.geofence.extension"]  = "5.2";
+
+    return true;
+}
+
+Quad::Ptr buildTestQuadTree( void ) {
+
+    // Build a small road network on the UT campus.
+    geo::Vertex::Ptr v_a = std::make_shared<geo::Vertex>(35.952500, -83.932434, 1);
+    geo::Vertex::Ptr v_b = std::make_shared<geo::Vertex>(35.948878, -83.928081, 2);
+    geo::Vertex::Ptr v_c = std::make_shared<geo::Vertex>(35.950715, -83.934971, 3);
+    geo::Vertex::Ptr v_d = std::make_shared<geo::Vertex>(35.953302, -83.931344, 4);
+    geo::Vertex::Ptr v_e = std::make_shared<geo::Vertex>(35.952175, -83.936688, 5);
+    geo::Vertex::Ptr v_f = std::make_shared<geo::Vertex>(35.949813, -83.936214, 6);
+    geo::Vertex::Ptr v_g = std::make_shared<geo::Vertex>(35.948272, -83.934421, 7);
+
+    // secondaries have 17 meters side to side.
+    geo::EdgePtr r1 = std::make_shared<geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
+    geo::EdgePtr r2 = std::make_shared<geo::Edge>(v_c, v_a, osm::Highway::SECONDARY, 2);
+    geo::EdgePtr r3 = std::make_shared<geo::Edge>(v_d, v_a, osm::Highway::SECONDARY, 3);
+    geo::EdgePtr r4 = std::make_shared<geo::Edge>(v_e, v_c, osm::Highway::SECONDARY, 4);
+    geo::EdgePtr r5 = std::make_shared<geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
+    geo::EdgePtr r6 = std::make_shared<geo::Edge>(v_f, v_c, osm::Highway::SECONDARY, 6);
+
+    // Setup the quad.
+    geo::Point sw{ 35.946920, -83.938486 };
+    geo::Point ne{ 35.955526, -83.926738 };
+
+    // Declare a quad with the given bounds.
+    Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
+
+    Quad::insert( qptr, r1);
+    Quad::insert( qptr, r2);
+    Quad::insert( qptr, r3);
+    Quad::insert( qptr, r4);
+    Quad::insert( qptr, r5);
+    Quad::insert( qptr, r6);
+
+    return qptr;
+}
+
+bool validateSanitizedProperty( const std::string& json ) {
+    static const std::regex re_sanitized{ "\"sanitized\"[ ]*:[ ]*true", std::regex::icase | std::regex::extended };
+    return ( std::regex_search( json, re_sanitized ) );
+}
+
+TEST_CASE( "Parse Shape File Data", "[quad][shapefile]" ) {
+
+    // Edge Specification:
+    // - line_parts[0] : "edge"
+    // - line_parts[1] : unique 64-bit integer identifier
+    // - line_parts[2] : A sequence of two colon-split points; 
+    //      - each point is semi-colon split.
+    //      - Point: <uid>;latitude;longitude
+    // - line_parts[3] : A sequence of colon-split key=value attributes.
+    //      - Attribute Pair: <attribute>=<value>
+    //
+    // Circle Specification:
+    // - line_parts[0] : "circle"
+    // - line_parts[1] : unique 64-bit integer identifier
+    // - line_parts[2] : A sequence of colon-split elements that define the center.
+    //      - Center: <lat>:<lon>:<radius in meters>
+    // 
+    // Grid Specification:
+    // - line_parts[0] : "grid"
+    // - line_parts[1] : A '_' split row-column pair.
+    // - line_parts[2] : A sequence of 4 colon-split elements defining the grid position.
+    //      - Point: <sw lat>:<sw lon>:<ne lat>:<ne lon>
+    //
+    
+
+    std::vector<std::string> argnum_tests {
+        "",
+        "edge, 11",
+        // too many edge points or not enough points to define edge.
+        "edge, 12, 0;0;0:1;1;1:2;2;2",
+        "edge, 13, 0;0;0:1;1",
+        "edge, 14, 0;0 : 1;1;1"
+    };
+
+    std::vector<std::string> argnum_grid_tests {
+        "",
+        "grid,0_0,-83.91:42.431661:-83.89782906874559",
+        "grid,0_0,42.431661:-83.89782906874559",
+        "grid,0_0,-83.89782906874559"
+    };
+
+    std::vector<std::string> argnum_circle_tests {
+        "",
+        "circle,0,-83.735670:22.0",
+        "circle,0,22.0"
+    };
+
+    // data type problems.
+    std::vector<std::string> datatype_tests {
+        "edge, X , 3;0;0 : 4;1;1",
+        "edge, 21, X;0;0 : 5;1;1",
+        "edge, 22, 6;0;0 : X;1;1",
+        "edge, 23, 7;a;- : 8;1;1",
+        "edge, 24, 9;0;0 : 10;x;*"
+    };
+
+    std::vector<std::string> datatype_grid_tests {
+        "grid,X,42.42267784715881:-83.91:42.431661:-83.89782906874559",
+        "grid,0_0,X:-83.91:42.431661:-83.89782906874559",
+        "grid,0_0,42.42267784715881:X:42.431661:-83.89782906874559"
+        "grid,0_0,42.42267784715881:-83.91:X:-83.89782906874559",
+        "grid,0_0,42.42267784715881:-83.91:42.431661:X"
+    };
+
+    std::vector<std::string> datatype_circle_tests {
+        "circle,X,42.283135:-83.735670:22.0",
+        "circle,0,X:-83.735670:22.0",
+        "circle,0,42.283135:X:22.0",
+        "circle,0,42.283135:-83.735670:X"
+    };
+
+    // TODO: what to do about points with same ID but different position. We are writing an error message but proceeding.
+    
+    // out of lat/lon range problems; in a loop so one point check is sufficient.
+    std::vector<std::string> badposition_tests {
+        "edge,31, 11; 80.1;0       :15;1;1",
+        "edge,32, 12;-84.1;0       :16;1;1",
+        "edge,33, 13; 0    ; 180.1 :17;1;1",
+        "edge,34, 14; 0    ;-180.1 :18;1;1"
+    };
+
+    std::vector<std::string> badposition_grid_tests {
+        "grid,0_0,80.1:0:1:1",
+        "grid,0_0,-84.1:0:1:1",
+        "grid,0_0,0:180.1:1:1",
+        "grid,0_0,0:-180.1:1:1"
+        "grid,0_0,0:0,80.1:0:",
+        "grid,0_0,0:0:-84.1:0",
+        "grid,0_0,0:0:0:180",
+        "grid,0_0,0:0:0:-180"
+    };
+
+    std::vector<std::string> badposition_circle_tests {
+        "circle,0,80.1:0:22.0",
+        "circle,0,-84.1:0:22.0",
+        "circle,0,0:180:22.0",
+        "circle,0,0:-180:22.0",
+        "circle,0,42.283135:-83.735670:-22.0"
+    };
+
+    // TODO: what to do about edges with the same IDs? We are throwing an exception now.
+
+    std::vector<std::string> badedge_tests {
+        // same id for points.
+        "edge,41, 19;0;0       :19;0;0"
+    };
+
+    // make sure SERVICE is in there for testing the invalid_way_exception
+    osm::highway_blacklist.insert( osm::Highway::SERVICE );
+    // this also tests strip and caps business.
+    std::vector<std::string> waytype_tests {
+        "edge,58, 31 ; 41.24 ; -83.74 : 61 ; 41.25 ; -84.04 , way_type = SERVICE",
+        "edge,59, 31 ; 41.24 ; -83.74 : 62 ; 41.25 ; -84.04 , way_type = servicE",
+        "edge,60, 31 ; 41.24 ; -83.74 : 63 ; 41.25 ; -84.04 , way_type = service"
+    };
+
+    std::vector<std::string> good_grid_tests {
+        "grid,0_0,42.42267784715881:-83.91:42.431661:-83.89782906874559",
+        "grid,0_1,42.42267784715881:-83.89782906874559:42.431661:-83.88565813749122",
+        "grid,0_2,42.42267784715881:-83.88565813749122:42.431661:-83.87348720623683",
+        "grid,0_3,42.42267784715881:-83.87348720623683:42.431661:-83.86131627498244"
+    };
+
+    std::vector<std::string> good_circle_tests {
+        "circle,0,42.283135:-83.735670:22.0",
+        "circle,1,42.297902:-83.720502:32.0",
+        "circle,2,42.304978:-83.692901:32.0",
+        "circle,3,42.302505:-83.707290:22.0"
+    };
+
+    std::vector<std::string> good_tests {
+       "edge,71, 51 ; 41.1 ; -83.1 : 52 ; 41.2 ; -84.2 , way_type = primary : way_id=80",
+       "edge,73, 53 ; 41.3 ; -83.3 : 54 ; 41.4 ; -84.4 , way_type = primary : way_id=80",
+       "edge,75, 55 ; 41.5 ; -83.5 : 56 ; 41.6 ; -84.6 , way_type = primary : way_id=80"
+    };
+
+    // checks that we pull from a previously defined vertices.
+    std::vector<std::string> bad_tests {
+       "edge,77, 55 ; 41.7 ; -83.7 : 56 ; 41.8 ; -84.8 , way_type = primary : way_id=80"
+    };
+
+
+    shapes::CSVInputFactory sf{};
+
+    for ( auto& testline : argnum_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : datatype_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : badposition_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : badedge_tests  ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
+    }
+
+    int j = 0;
+
+    for ( auto& testline : waytype_tests  ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_edge( parts ), osm::invalid_way_exception );
+       
+        // Exception checking.
+        try {
+            sf.make_edge( parts );
+        } catch (const osm::invalid_way_exception& e) {
+            std::string msg{ e.what() };
+            
+            switch (j) {
+            case 0:
+                CHECK( msg == "way type excluded from use in quad map [2] : 7");
+                CHECK(e.occurrences() == 2);
+                break;
+            case 1:
+                CHECK( msg == "way type excluded from use in quad map [4] : 7");
+                CHECK(e.occurrences() == 4);
+                break;
+            case 2:
+                CHECK( msg == "way type excluded from use in quad map [6] : 7");
+                CHECK(e.occurrences() == 6);
+                break;
+            default:
+                break;
+            }
+        }
+
+        j++;
+    }
+    
+    for ( auto& testline : argnum_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : argnum_circle_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : datatype_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : datatype_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : badposition_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : badposition_circle_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
+    }
+
+    for ( auto& testline : good_grid_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_NOTHROW( sf.make_grid( parts ) );
+    }
+
+    for ( auto& testline : good_circle_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        CHECK_NOTHROW( sf.make_circle( parts ) );
+    }
+
+    int i = 1;
+    for ( auto& testline : good_tests  ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        // check lat/lon range.
+        CHECK_NOTHROW( sf.make_edge( parts ) );
+        CHECK( sf.get_edges().back()->get_uid() == 70+i  );
+
+        CHECK( sf.get_edges().back()->get_way_type() == osm::Highway::PRIMARY  );
+
+        CHECK( sf.get_edges().back()->v1->uid == 50+i );
+        CHECK( sf.get_edges().back()->v2->uid == 51+i );
+
+        CHECK( sf.get_edges().back()->v1->lat == Approx(41.0 + (i/10.0)) );
+        CHECK( sf.get_edges().back()->v2->lat == Approx(41.1 + (i/10.0)) );
+
+        CHECK( sf.get_edges().back()->v1->lon == Approx(-83.0 - (i/10.0)) );
+        CHECK( sf.get_edges().back()->v2->lon == Approx(-84.1 - (i/10.0)) );
+
+        i+=2; 
+    }
+
+    i = 7;
+    for ( auto& testline : bad_tests ) {
+        StrVector parts = string_utilities::split(testline, ',');
+        // check lat/lon range.
+        CHECK_NOTHROW( sf.make_edge( parts ) );
+        CHECK_FALSE( sf.get_edges().back()->v1->uid == 50+i );
+        CHECK_FALSE( sf.get_edges().back()->v2->uid == 51+i );
+        CHECK_FALSE( sf.get_edges().back()->v1->lat == Approx(41.0 + (i/10.0)) );
+        CHECK_FALSE( sf.get_edges().back()->v2->lat == Approx(41.1 + (i/10.0)) );
+        CHECK_FALSE( sf.get_edges().back()->v1->lon == Approx(-83.0 - (i/10.0)) );
+        CHECK_FALSE( sf.get_edges().back()->v2->lon == Approx(-84.1 - (i/10.0)) );
+    }
+
+    // Do quick read/write file tests.
+    shapes::CSVInputFactory input_factory_bad_1("data/test-data/test.shapes.bad1");
+    input_factory_bad_1.make_shapes();
+    shapes::CSVInputFactory input_factory_bad_2("data/test-data/test.shapes.bad2");
+    CHECK_THROWS_AS(input_factory_bad_2.make_shapes(), std::invalid_argument);
+    shapes::CSVInputFactory input_factory_bad_3("data/test-data/test.shapes.bad3");
+    CHECK_THROWS_AS(input_factory_bad_3.make_shapes(), std::invalid_argument);
+    shapes::CSVInputFactory input_factory("data/test-data/test.shapes");
+    CHECK_NOTHROW(input_factory.make_shapes());
+    shapes::CSVOutputFactory output_factory_1("data/empty/test.shapes.out");
+    CHECK_THROWS_AS(output_factory_1.write_shapes(), std::invalid_argument);
+    shapes::CSVOutputFactory output_factory("data/test-data/test.shapes.out");
+
+    for ( auto& eptr : input_factory.get_edges() ) {
+        output_factory.add_edge(eptr);
+    }
+
+    for ( auto& gptr : input_factory.get_grids() ) {
+        output_factory.add_grid(gptr);
+    }
+
+    for ( auto& cptr : input_factory.get_circles() ) {
+        output_factory.add_circle(cptr);
+    }
+
+    CHECK_NOTHROW(output_factory.write_shapes());
+}
+
+TEST_CASE("Entity", "[quad][entity]") {
     SECTION("Conversions") {
         CHECK(geo::to_degrees(0.0) == Approx(0.0));
         CHECK(geo::to_degrees(.5 * geo::kPi) == Approx(90.0));
@@ -524,7 +924,9 @@ TEST_CASE("Quad Tree", "[quad]") {
     }
 }
 
-TEST_CASE( "Redactor Checks", "[redactor]" ) {
+/** PPM tests below **/
+
+TEST_CASE( "Redactor Checks", "[ppm][redactor]" ) {
 
     ConfigMap conf{ 
         { "privacy.redaction.id.inclusions", "ON" },
@@ -616,7 +1018,7 @@ TEST_CASE( "Redactor Checks", "[redactor]" ) {
     }
 }
 
-TEST_CASE( "Velocity Filter", "[velocity filter]" ) {
+TEST_CASE( "Velocity Filter", "[ppm][velocity]" ) {
 
     ConfigMap conf{ 
         { "privacy.filter.velocity.min", "5" },
@@ -660,7 +1062,7 @@ TEST_CASE( "Velocity Filter", "[velocity filter]" ) {
     }
 }
 
-TEST_CASE( "BSM Checks", "[bsm]" ) {
+TEST_CASE( "BSM Checks", "[ppm][bsm]" ) {
 
     BSM bsm;
 
@@ -701,407 +1103,17 @@ TEST_CASE( "BSM Checks", "[bsm]" ) {
     }
 }
 
-TEST_CASE( "Parse Shape File Data", "[quadtree]" ) {
-
-    // Edge Specification:
-    // - line_parts[0] : "edge"
-    // - line_parts[1] : unique 64-bit integer identifier
-    // - line_parts[2] : A sequence of two colon-split points; 
-    //      - each point is semi-colon split.
-    //      - Point: <uid>;latitude;longitude
-    // - line_parts[3] : A sequence of colon-split key=value attributes.
-    //      - Attribute Pair: <attribute>=<value>
-    //
-    // Circle Specification:
-    // - line_parts[0] : "circle"
-    // - line_parts[1] : unique 64-bit integer identifier
-    // - line_parts[2] : A sequence of colon-split elements that define the center.
-    //      - Center: <lat>:<lon>:<radius in meters>
-    // 
-    // Grid Specification:
-    // - line_parts[0] : "grid"
-    // - line_parts[1] : A '_' split row-column pair.
-    // - line_parts[2] : A sequence of 4 colon-split elements defining the grid position.
-    //      - Point: <sw lat>:<sw lon>:<ne lat>:<ne lon>
-    //
-    
-
-    std::vector<std::string> argnum_tests {
-        "",
-        "edge, 11",
-        // too many edge points or not enough points to define edge.
-        "edge, 12, 0;0;0:1;1;1:2;2;2",
-        "edge, 13, 0;0;0:1;1",
-        "edge, 14, 0;0 : 1;1;1"
-    };
-
-    std::vector<std::string> argnum_grid_tests {
-        "",
-        "grid,0_0,-83.91:42.431661:-83.89782906874559",
-        "grid,0_0,42.431661:-83.89782906874559",
-        "grid,0_0,-83.89782906874559"
-    };
-
-    std::vector<std::string> argnum_circle_tests {
-        "",
-        "circle,0,-83.735670:22.0",
-        "circle,0,22.0"
-    };
-
-    // data type problems.
-    std::vector<std::string> datatype_tests {
-        "edge, X , 3;0;0 : 4;1;1",
-        "edge, 21, X;0;0 : 5;1;1",
-        "edge, 22, 6;0;0 : X;1;1",
-        "edge, 23, 7;a;- : 8;1;1",
-        "edge, 24, 9;0;0 : 10;x;*"
-    };
-
-    std::vector<std::string> datatype_grid_tests {
-        "grid,X,42.42267784715881:-83.91:42.431661:-83.89782906874559",
-        "grid,0_0,X:-83.91:42.431661:-83.89782906874559",
-        "grid,0_0,42.42267784715881:X:42.431661:-83.89782906874559"
-        "grid,0_0,42.42267784715881:-83.91:X:-83.89782906874559",
-        "grid,0_0,42.42267784715881:-83.91:42.431661:X"
-    };
-
-    std::vector<std::string> datatype_circle_tests {
-        "circle,X,42.283135:-83.735670:22.0",
-        "circle,0,X:-83.735670:22.0",
-        "circle,0,42.283135:X:22.0",
-        "circle,0,42.283135:-83.735670:X"
-    };
-
-    // TODO: what to do about points with same ID but different position. We are writing an error message but proceeding.
-    
-    // out of lat/lon range problems; in a loop so one point check is sufficient.
-    std::vector<std::string> badposition_tests {
-        "edge,31, 11; 80.1;0       :15;1;1",
-        "edge,32, 12;-84.1;0       :16;1;1",
-        "edge,33, 13; 0    ; 180.1 :17;1;1",
-        "edge,34, 14; 0    ;-180.1 :18;1;1"
-    };
-
-    std::vector<std::string> badposition_grid_tests {
-        "grid,0_0,80.1:0:1:1",
-        "grid,0_0,-84.1:0:1:1",
-        "grid,0_0,0:180.1:1:1",
-        "grid,0_0,0:-180.1:1:1"
-        "grid,0_0,0:0,80.1:0:",
-        "grid,0_0,0:0:-84.1:0",
-        "grid,0_0,0:0:0:180",
-        "grid,0_0,0:0:0:-180"
-    };
-
-    std::vector<std::string> badposition_circle_tests {
-        "circle,0,80.1:0:22.0",
-        "circle,0,-84.1:0:22.0",
-        "circle,0,0:180:22.0",
-        "circle,0,0:-180:22.0",
-        "circle,0,42.283135:-83.735670:-22.0"
-    };
-
-    // TODO: what to do about edges with the same IDs? We are throwing an exception now.
-
-    std::vector<std::string> badedge_tests {
-        // same id for points.
-        "edge,41, 19;0;0       :19;0;0"
-    };
-
-    // make sure SERVICE is in there for testing the invalid_way_exception
-    osm::highway_blacklist.insert( osm::Highway::SERVICE );
-    // this also tests strip and caps business.
-    std::vector<std::string> waytype_tests {
-        "edge,58, 31 ; 41.24 ; -83.74 : 61 ; 41.25 ; -84.04 , way_type = SERVICE",
-        "edge,59, 31 ; 41.24 ; -83.74 : 62 ; 41.25 ; -84.04 , way_type = servicE",
-        "edge,60, 31 ; 41.24 ; -83.74 : 63 ; 41.25 ; -84.04 , way_type = service"
-    };
-
-    std::vector<std::string> good_grid_tests {
-        "grid,0_0,42.42267784715881:-83.91:42.431661:-83.89782906874559",
-        "grid,0_1,42.42267784715881:-83.89782906874559:42.431661:-83.88565813749122",
-        "grid,0_2,42.42267784715881:-83.88565813749122:42.431661:-83.87348720623683",
-        "grid,0_3,42.42267784715881:-83.87348720623683:42.431661:-83.86131627498244"
-    };
-
-    std::vector<std::string> good_circle_tests {
-        "circle,0,42.283135:-83.735670:22.0",
-        "circle,1,42.297902:-83.720502:32.0",
-        "circle,2,42.304978:-83.692901:32.0",
-        "circle,3,42.302505:-83.707290:22.0"
-    };
-
-    std::vector<std::string> good_tests {
-       "edge,71, 51 ; 41.1 ; -83.1 : 52 ; 41.2 ; -84.2 , way_type = primary : way_id=80",
-       "edge,73, 53 ; 41.3 ; -83.3 : 54 ; 41.4 ; -84.4 , way_type = primary : way_id=80",
-       "edge,75, 55 ; 41.5 ; -83.5 : 56 ; 41.6 ; -84.6 , way_type = primary : way_id=80"
-    };
-
-    // checks that we pull from a previously defined vertices.
-    std::vector<std::string> bad_tests {
-       "edge,77, 55 ; 41.7 ; -83.7 : 56 ; 41.8 ; -84.8 , way_type = primary : way_id=80"
-    };
-
-
-    shapes::CSVInputFactory sf{};
-
-    for ( auto& testline : argnum_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : datatype_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : badposition_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : badedge_tests  ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_edge( parts ), std::logic_error );
-    }
-
-    int j = 0;
-
-    for ( auto& testline : waytype_tests  ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_edge( parts ), osm::invalid_way_exception );
-       
-        // Exception checking.
-        try {
-            sf.make_edge( parts );
-        } catch (const osm::invalid_way_exception& e) {
-            std::string msg{ e.what() };
-            
-            switch (j) {
-            case 0:
-                CHECK( msg == "way type excluded from use in quad map [2] : 7");
-                CHECK(e.occurrences() == 2);
-                break;
-            case 1:
-                CHECK( msg == "way type excluded from use in quad map [4] : 7");
-                CHECK(e.occurrences() == 4);
-                break;
-            case 2:
-                CHECK( msg == "way type excluded from use in quad map [6] : 7");
-                CHECK(e.occurrences() == 6);
-                break;
-            default:
-                break;
-            }
-        }
-
-        j++;
-    }
-    
-    for ( auto& testline : argnum_grid_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : argnum_circle_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : datatype_grid_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : datatype_grid_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : badposition_grid_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_grid( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : badposition_circle_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_THROWS_AS( sf.make_circle( parts ), std::logic_error );
-    }
-
-    for ( auto& testline : good_grid_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_NOTHROW( sf.make_grid( parts ) );
-    }
-
-    for ( auto& testline : good_circle_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        CHECK_NOTHROW( sf.make_circle( parts ) );
-    }
-
-    int i = 1;
-    for ( auto& testline : good_tests  ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        // check lat/lon range.
-        CHECK_NOTHROW( sf.make_edge( parts ) );
-        CHECK( sf.get_edges().back()->get_uid() == 70+i  );
-
-        CHECK( sf.get_edges().back()->get_way_type() == osm::Highway::PRIMARY  );
-
-        CHECK( sf.get_edges().back()->v1->uid == 50+i );
-        CHECK( sf.get_edges().back()->v2->uid == 51+i );
-
-        CHECK( sf.get_edges().back()->v1->lat == Approx(41.0 + (i/10.0)) );
-        CHECK( sf.get_edges().back()->v2->lat == Approx(41.1 + (i/10.0)) );
-
-        CHECK( sf.get_edges().back()->v1->lon == Approx(-83.0 - (i/10.0)) );
-        CHECK( sf.get_edges().back()->v2->lon == Approx(-84.1 - (i/10.0)) );
-
-        i+=2; 
-    }
-
-    i = 7;
-    for ( auto& testline : bad_tests ) {
-        StrVector parts = string_utilities::split(testline, ',');
-        // check lat/lon range.
-        CHECK_NOTHROW( sf.make_edge( parts ) );
-        CHECK_FALSE( sf.get_edges().back()->v1->uid == 50+i );
-        CHECK_FALSE( sf.get_edges().back()->v2->uid == 51+i );
-        CHECK_FALSE( sf.get_edges().back()->v1->lat == Approx(41.0 + (i/10.0)) );
-        CHECK_FALSE( sf.get_edges().back()->v2->lat == Approx(41.1 + (i/10.0)) );
-        CHECK_FALSE( sf.get_edges().back()->v1->lon == Approx(-83.0 - (i/10.0)) );
-        CHECK_FALSE( sf.get_edges().back()->v2->lon == Approx(-84.1 - (i/10.0)) );
-    }
-
-    // Do quick read/write file tests.
-    shapes::CSVInputFactory input_factory_bad_1("data/test-data/test.shapes.bad1");
-    input_factory_bad_1.make_shapes();
-    shapes::CSVInputFactory input_factory_bad_2("data/test-data/test.shapes.bad2");
-    CHECK_THROWS_AS(input_factory_bad_2.make_shapes(), std::invalid_argument);
-    shapes::CSVInputFactory input_factory_bad_3("data/test-data/test.shapes.bad3");
-    CHECK_THROWS_AS(input_factory_bad_3.make_shapes(), std::invalid_argument);
-    shapes::CSVInputFactory input_factory("data/test-data/test.shapes");
-    CHECK_NOTHROW(input_factory.make_shapes());
-    shapes::CSVOutputFactory output_factory_1("data/empty/test.shapes.out");
-    CHECK_THROWS_AS(output_factory_1.write_shapes(), std::invalid_argument);
-    shapes::CSVOutputFactory output_factory("data/test-data/test.shapes.out");
-
-    for ( auto& eptr : input_factory.get_edges() ) {
-        output_factory.add_edge(eptr);
-    }
-
-    for ( auto& gptr : input_factory.get_grids() ) {
-        output_factory.add_grid(gptr);
-    }
-
-    for ( auto& cptr : input_factory.get_circles() ) {
-        output_factory.add_circle(cptr);
-    }
-
-    CHECK_NOTHROW(output_factory.write_shapes());
-}
-
-TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
+TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
+// designed to NOT trigger the quadtree code; we just checking basic functions of
+// state process within the BSMHandler.
 
     ConfigMap pconf;
-
-    pconf["privacy.filter.velocity"]         = "ON";
-    pconf["privacy.redaction.id"]            = "ON";
-    pconf["privacy.redaction.id.inclusions"] = "ON";
-    pconf["privacy.filter.geofence"]         = "ON";
-
-    pconf["privacy.filter.velocity.min"]     = "2.235";
-    pconf["privacy.filter.velocity.max"]     = "35.763";
-
-    pconf["privacy.redaction.id.value"]      = "FFFFFFFF";
-    pconf["privacy.redaction.id.included"]   = "B1,B2";
-    
-    pconf["privacy.filter.geofence.extension"] = "5.2";
-
-    StrVector json_malformed{
-        "",
-        "kasjdflajsl\":dfjsl",
-        "{:{},{:},{{},:}}",
-        "{\x00\x01\x03}"
-    };
-
-    // last 3 have bad speeds.
-    StrVector json_outside_fence{
-        "{\"coreData\":{\"msgCnt\":8,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.9493,\"longitude\":-83.927489,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
-        "{\"coreData\":{\"msgCnt\":11,\"id\":\"B2\",\"secMark\":36799,\"position\":{\"latitude\":35.950668,\"longitude\":-83.931295,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":12,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.962259,\"longitude\":-83.914569,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":9,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.949271,\"longitude\":-83.928893,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":0.5,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
-        "{\"coreData\":{\"msgCnt\":10,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.948337,\"longitude\":-83.928826,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":99.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":13,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.953634,\"longitude\":-83.931646,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":2.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}"
-    };
-
-
-    // last 2 have bad speeds.
-    StrVector json_inside_fence{
-        "{\"coreData\":{\"msgCnt\":1,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.94911,\"longitude\":-83.928343,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
-        "{\"coreData\":{\"msgCnt\":4,\"id\":\"B2\",\"secMark\":36799,\"position\":{\"latitude\":35.952555,\"longitude\":-83.932468,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":5,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949821,\"longitude\":-83.936279,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":7,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.951501,\"longitude\":-83.935851,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":6,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949915,\"longitude\":-83.936186,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":2,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.949811,\"longitude\":-83.92909,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":0.5,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
-        "{\"coreData\":{\"msgCnt\":3,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.951084,\"longitude\":-83.930725,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":99.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}"
-    };
-
-    // all good speeds.
-    StrVector json_bad_id{
-        "{\"coreData\":{\"msgCnt\":3,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.951084,\"longitude\":-83.930725,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":10.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":4,\"id\":\"B2\",\"secMark\":36799,\"position\":{\"latitude\":35.952555,\"longitude\":-83.932468,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":10.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-    };
-
-    // all inside geofence
-    StrVector json_bad_speed{
-        "{\"coreData\":{\"msgCnt\":2,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.949811,\"longitude\":-83.92909,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":0.5,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
-        "{\"coreData\":{\"msgCnt\":3,\"id\":\"B1\",\"secMark\":36799,\"position\":{\"latitude\":35.951084,\"longitude\":-83.930725,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":99.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":6,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949915,\"longitude\":-83.936186,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":2.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-    };
-
-    // everything is good.
-    StrVector json_good{
-        "{\"coreData\":{\"msgCnt\":1,\"id\":\"G0\",\"secMark\":36799,\"position\":{\"latitude\":35.94911,\"longitude\":-83.928343,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}},\"partII\":[{\"id\":\"vehicleSafetyExt\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":9.5,\"latOffset\":0.0000035,\"lonOffset\":0.0131071,\"timeOffset\":33.20},{\"elevationOffset\":4.6,\"latOffset\":0.0000740,\"lonOffset\":0.0131071,\"timeOffset\":44.60}]},\"pathPrediction\":{\"confidence\":0.0,\"radiusOfCurve\":0.0}}}]}",
-        "{\"coreData\":{\"msgCnt\":5,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.949821,\"longitude\":-83.936279,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}",
-        "{\"coreData\":{\"msgCnt\":7,\"id\":\"G2\",\"secMark\":36799,\"position\":{\"latitude\":35.951501,\"longitude\":-83.935851,\"elevation\":1896.9},\"accelSet\":{\"accelYaw\":0.00},\"accuracy\":{},\"speed\":22.00,\"heading\":321.0125,\"brakes\":{\"wheelBrakes\":{\"leftFront\":false,\"rightFront\":false,\"unavailable\":false,\"leftRear\":false,\"rightRear\":true},\"traction\":\"unavailable\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"auxBrakes\":\"unavailable\"},\"size\":{}}}"
-    };
-
-    // Build a small road network on the UT campus.
-    geo::Vertex::Ptr v_a = std::make_shared<geo::Vertex>(35.952500, -83.932434, 1);
-    geo::Vertex::Ptr v_b = std::make_shared<geo::Vertex>(35.948878, -83.928081, 2);
-    geo::Vertex::Ptr v_c = std::make_shared<geo::Vertex>(35.950715, -83.934971, 3);
-    geo::Vertex::Ptr v_d = std::make_shared<geo::Vertex>(35.953302, -83.931344, 4);
-    geo::Vertex::Ptr v_e = std::make_shared<geo::Vertex>(35.952175, -83.936688, 5);
-    geo::Vertex::Ptr v_f = std::make_shared<geo::Vertex>(35.949813, -83.936214, 6);
-    geo::Vertex::Ptr v_g = std::make_shared<geo::Vertex>(35.948272, -83.934421, 7);
-
-    // secondaries have 17 meters side to side.
-    geo::EdgePtr r1 = std::make_shared<geo::Edge>(v_a, v_b, osm::Highway::SECONDARY, 1);
-    geo::EdgePtr r2 = std::make_shared<geo::Edge>(v_c, v_a, osm::Highway::SECONDARY, 2);
-    geo::EdgePtr r3 = std::make_shared<geo::Edge>(v_d, v_a, osm::Highway::SECONDARY, 3);
-    geo::EdgePtr r4 = std::make_shared<geo::Edge>(v_e, v_c, osm::Highway::SECONDARY, 4);
-    geo::EdgePtr r5 = std::make_shared<geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
-    geo::EdgePtr r6 = std::make_shared<geo::Edge>(v_f, v_c, osm::Highway::SECONDARY, 6);
-
-    // Setup the quad.
-    geo::Point sw{ 35.946920, -83.938486 };
-    geo::Point ne{ 35.955526, -83.926738 };
-
-    // Declare a quad with the given bounds.
-    Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
-    Quad::insert( qptr, r1);
-    Quad::insert( qptr, r2);
-    Quad::insert( qptr, r3);
-    Quad::insert( qptr, r4);
-    Quad::insert( qptr, r5);
-    Quad::insert( qptr, r6);
-
-    BSMHandler handler{qptr, pconf};
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ nullptr, pconf };
 
     // FOR EACH SECTION THE TEST CASE IS EXECUTED FROM THE START.
 
     SECTION( "Handler Instantiation" ) {
-        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
         CHECK( handler.get_result_string() == "success" );
         CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
@@ -1131,11 +1143,14 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
     }
 
     SECTION( "Check Handler State Reset" ) {
+
+        // this string CANNOT have position in it soas not to trigger isWithinEntity in the parser.
+        std::string state_test{"{\"test\":{\"A\":\"string\",\"B\":{\"B1\":1.1,\"B2\":2.2},\"C\":99.9,\"D\":{}}}"};
+
         // resetting automatically occurs prior to processing.
         // here we explicitly check that it is working.
-        CHECK( handler.process( json_good[0] ) );
+        CHECK( handler.process( state_test ) );
         handler.reset();
-        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
         CHECK( handler.get_result_string() == "success" );
         CHECK( handler.get_current_key().size() == 0 );
         CHECK( handler.get_object_stack().size() == 0 );
@@ -1143,359 +1158,361 @@ TEST_CASE( "BSMHandler Checks", "[bsm handler]" ) {
         CHECK( handler.get_json().size() == 0 );
         CHECK( handler.get_box_extension() == Approx(5.2) );
     }
+}
 
-    SECTION( "Check Malformed JSON" ) {
-        for ( auto& bsm : json_malformed ) {
-            // fails processing and has a parse status.
-            CHECK_FALSE( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::PARSE );
-            CHECK( handler.get_result_string() == "parse" );
-        }
-    }
+TEST_CASE( "BSMHandler JSON Malformed Parsing", "[ppm][filtering][parsing]" ) {
 
-    SECTION( "No Flags Set" ) {
+    ConfigMap pconf;
 
-        handler.deactivate<BSMHandler::kVelocityFilterFlag>();
-        handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
-        handler.deactivate<BSMHandler::kIdRedactFlag>();
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
 
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "data/test-case.malformed.json", json_test_cases ) );
 
-        for ( auto& bsm : json_good ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( auto& bsm : json_bad_id ) {
-            // bad ids parse fine and return success status, but their id value changes.
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-            // check for change.
-            CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
-        }
-
-        for ( auto& bsm : json_bad_speed ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( auto& bsm : json_inside_fence ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( auto& bsm : json_outside_fence ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-    }
-
-    SECTION( "Speed Filter On" ) {
-
-        //handler.activate<BSMHandler::kVelocityFilterFlag>();
-
-        handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
-        handler.deactivate<BSMHandler::kIdRedactFlag>();
-
-        REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-
-
-        for ( int i=0; i < json_inside_fence.size()-2; ++i ) {
-            // geofence is inactive; complete and success
-            CHECK( handler.process( json_inside_fence[i] ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( int i=json_inside_fence.size()-2; i < json_inside_fence.size(); ++i ) {
-            // kick out of parsing and set status correctly.
-            CHECK_FALSE( handler.process( json_inside_fence[i] ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
-            CHECK( handler.get_result_string() == "speed" );
-        }
-
-        for ( int i=0; i < json_outside_fence.size()-3; ++i ) {
-            // geofence is inactive; complete and success
-            CHECK( handler.process( json_outside_fence[i] ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( int i=json_outside_fence.size()-3; i < json_outside_fence.size(); ++i ) {
-            // kick out of parsing and set status correctly.
-            CHECK_FALSE( handler.process(json_outside_fence[i]) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
-            CHECK( handler.get_result_string() == "speed" );
-        }
-
-        for ( auto& bsm : json_bad_speed ) {
-            // kick out of parsing and set status correctly.
-            CHECK_FALSE( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
-            CHECK( handler.get_result_string() == "speed" );
-        }
-
-    }
-
-    SECTION( "Geofence Filter On" ) {
-
-        handler.deactivate<BSMHandler::kVelocityFilterFlag>();
-        handler.deactivate<BSMHandler::kIdRedactFlag>();
-
-        REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-
-
-        for ( auto& bsm : json_inside_fence ) {
-            // complete parsing and return success status.
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( auto& bsm : json_outside_fence ) {
-            // kick out of parsing and set status correctly.
-            CHECK_FALSE( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );
-            CHECK( handler.get_result_string() == "geoposition" );
-        }
-
-        for ( auto& bsm : json_bad_speed ) {
-            // bad speeds should not be filtered.
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-    }
-
-    SECTION( "Id Redaction On" ) {
-
-        handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
-        handler.deactivate<BSMHandler::kVelocityFilterFlag>();
-
-        REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-        REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-
-        for ( auto& bsm : json_good ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-            // check for no change.
-            CHECK( handler.get_bsm().get_id() == handler.get_bsm().get_original_id() );
-        }
-
-        for ( auto& bsm : json_bad_id ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-            // check for change.
-            CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
-        }
-
-        for ( auto& bsm : json_bad_speed ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-    }
-
-    SECTION( "Everything On" ) {
-
-        REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-        REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-        REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-
-        for ( auto& bsm : json_good ) {
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( auto& bsm : json_bad_id ) {
-            // bad ids parse fine and return success status, but their id value changes.
-            CHECK( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-            // check for change.
-            CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
-        }
-
-        for ( auto& bsm : json_bad_speed ) {
-            CHECK_FALSE( handler.process( bsm ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
-            CHECK( handler.get_result_string() == "speed" );
-        }
-
-        for ( int i=0; i < json_inside_fence.size()-2; ++i ) {
-            // geofence is active; complete and success
-            CHECK( handler.process( json_inside_fence[i] ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SUCCESS );
-            CHECK( handler.get_result_string() == "success" );
-        }
-
-        for ( int i=json_inside_fence.size()-2; i < json_inside_fence.size(); ++i ) {
-            // kick out of parsing and set status correctly.
-            CHECK_FALSE( handler.process( json_inside_fence[i] ) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );
-            CHECK( handler.get_result_string() == "speed" );
-        }
-
-        for ( auto& bsm : json_outside_fence ) {
-            // geofence is active; kick out and set status correctly.
-            // geoposition is FIRST in the JSON, so it will trigger first.
-            CHECK_FALSE( handler.process(bsm) );
-            //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );
-            CHECK( handler.get_result_string() == "geoposition" );
-        }
-    }
-
-    SECTION( "Individual Shape Containment Tests" ) {
-        BSM bsm[4];
-
-        // On A - B
-        bsm[0].set_latitude(35.951090);
-        bsm[0].set_longitude(-83.930716);
-
-        // On C - E
-        bsm[1].set_latitude(35.951181);
-        bsm[1].set_longitude(-83.935486);
-
-        // On Edge of C - E
-        bsm[2].set_latitude(35.951181);
-        bsm[2].set_longitude(-83.935456);
-
-        // Outside of main box.
-        bsm[3].set_latitude(35.964);
-        bsm[3].set_longitude(-83.926);
-
-        CHECK( handler.isWithinEntity( bsm[0] ) );
-        CHECK( handler.isWithinEntity( bsm[1] ) );
-        // Aaron's checking on this one.
-        CHECK( handler.isWithinEntity( bsm[2] ) );
-        CHECK_FALSE( handler.isWithinEntity( bsm[3] ) );
-
-        geo::Location l2(35.951181, -83.935456);
-        geo::Entity::PtrList element_list = qptr->retrieve_elements(bsm[2]);
-    }
-
-    SECTION( "JSON Tokenizing Checks" ) {
-
-        std::string json_geo{"{\"coreData\":{\"id\":\"string\",\"position\":{\"latitude\":1.1,\"longitude\":2.2},\"speed\":99.9,\"F6\":{}}}"};
-        std::string json_spd{"{\"coreData\":{\"id\":\"string\",\"speed\":99.9,\"position\":{\"latitude\":1.1,\"longitude\":2.2},\"F6\":{}}}"};
-
-        // should fail because of the position (first in the json), so the string is only a partial string.
-        CHECK_FALSE( handler.process( json_geo ) );
-        CHECK( json_geo.substr(0,70) == handler.get_json() );
-
-        // should fail because of the speed (first in the json), so the string is only a partial string.
-        CHECK_FALSE( handler.process( json_spd ) );
-        CHECK( json_spd.substr(0,39) == handler.get_json() );
-
-        handler.reset();
-
-        CHECK( handler.StartObject() );
-        CHECK( handler.starting_new_object() );
-        CHECK( handler.get_object_stack().size() == 1 );    // top-level has the empty string name.
-        CHECK( handler.get_object_stack().back() == "" );
-
-        // create the top-level key - an object is the value not a number or string.
-        CHECK( handler.Key( "coreData", 8, false ) );
-        CHECK( handler.get_current_key() == "coreData" );               // key setting check complete.
-        CHECK_FALSE( handler.get_next_value() );
-
-        
-        CHECK_FALSE( handler.finished_current_object() );               // just started.
-        CHECK( handler.StartObject() );
-        CHECK( handler.get_object_stack().back() == "coreData" );       // working on coreData.
-
-        CHECK( handler.starting_new_object() );                         // just saw a {
-        CHECK( handler.Key( "id", 2, false ) );
-        CHECK( handler.get_next_value() );                              // must get the actual id.
-
-        CHECK( handler.String( "string", 6, false ) );
-        CHECK( handler.get_tokens().back() == "\"string\"" );
-        CHECK( handler.get_bsm().get_id() == "string" );                // make sure it got assigned.
-        CHECK_FALSE( handler.get_next_value() );                        // we just got the value, no next value.
-
-        CHECK_FALSE( handler.starting_new_object() );     
-        CHECK( handler.Key( "position", 8, false ) );
-        CHECK_FALSE( handler.get_next_value() );
-
-        CHECK_FALSE( handler.finished_current_object() );
-        CHECK( handler.StartObject() );
-        CHECK( handler.get_object_stack().back() == "position" );
-
-        CHECK( handler.starting_new_object() );
-        CHECK( handler.Key( "latitude", 8, false ) );
-        CHECK( handler.get_next_value() );                              // must get latitude.
-
-        CHECK( handler.get_current_key() == "latitude" );
-        CHECK( handler.RawNumber( "1.1", 3, false ) );
-        CHECK( handler.get_bsm().lat == Approx( 1.1 ) );                // check bsm instance update.
-        CHECK_FALSE( handler.get_next_value() );
-
-        CHECK_FALSE( handler.starting_new_object() );
-        CHECK( handler.Key( "longitude", 9, false ) );
-        CHECK( handler.get_next_value() );                              // must get longitude.
-
-        CHECK( handler.get_current_key() == "longitude" );
-        CHECK( handler.RawNumber( "2.2", 3, false ) );
-        CHECK( handler.get_bsm().lon == Approx( 2.2 ) );                // check bsm instance update.
-        CHECK_FALSE( handler.get_next_value() );                        // done with next values.
-
-        CHECK( handler.get_object_stack().back() == "position" );       // completed the position object.
-        CHECK_FALSE( handler.EndObject(2) );                            // here is the first failure that would result in suppression.
-        //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );  // failure status, but we will continue to force parse.
-        CHECK( handler.get_result_string() == "geoposition" );  // failure status, but we will continue to force parse.
-        CHECK( handler.get_object_stack().back() == "coreData" );
-
-        CHECK_FALSE( handler.starting_new_object() );
-        CHECK( handler.get_object_stack().back() == "coreData" );       // back in the coreData object.
-        CHECK_FALSE( handler.Key( "speed", 5, false ) );                // all of these checks will fail because the position latched the status.
-        CHECK( handler.get_next_value() );                              // speed must be retreived.
-
-        CHECK( handler.get_current_key() == "speed" );
-        CHECK_FALSE( handler.RawNumber( "99.9", 4, false ) );
-        CHECK( handler.get_bsm().get_velocity() == Approx( 99.9 ) );    // bsm instance updated.
-        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );   // failure status has changed now.
-        CHECK( handler.get_result_string() == "speed" );   // failure status has changed now.
-        CHECK_FALSE( handler.get_next_value() );
-
-        CHECK_FALSE( handler.starting_new_object() );
-        CHECK_FALSE( handler.Key( "F6", 2, false ) );                   // always going to fail because of speed now.
-        CHECK_FALSE( handler.get_next_value() );
-        
-        CHECK_FALSE( handler.finished_current_object() );
-        CHECK_FALSE( handler.StartObject() );                           // always going to fail see above.
-        CHECK( handler.get_object_stack().back() == "F6" );
-
-        CHECK_FALSE( handler.EndObject(0) );
-        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
-        CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
-        CHECK( handler.get_object_stack().back() == "coreData" );
-
-        CHECK_FALSE( handler.EndObject(6) );
-        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
-        CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
-        CHECK( handler.get_object_stack().back() == "" );
-
-        CHECK_FALSE( handler.EndObject(0) );
-        //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
-        CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
-        CHECK( handler.get_object_stack().empty() );
-
-        CHECK( json_geo == handler.get_json() );                          // check we reconstructed the original JSON.
+    for ( auto& test_case : json_test_cases ) {
+        CHECK_FALSE( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "parse" );
     }
 }
 
+TEST_CASE( "BSMHandler JSON No Filtering", "[ppm][filtering][alloff]" ) {
+    // Should just flip the sanitized flag.
+
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    handler.deactivate<BSMHandler::kVelocityFilterFlag>();
+    handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
+    handler.deactivate<BSMHandler::kIdRedactFlag>();
+
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+
+    // load up all the test cases.
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+
+    for ( auto& test_case : json_test_cases ) {
+        CHECK( handler.process( test_case ) );
+        // without any flag set, all JSON data files should pass through the PPM with the following modifications:
+        // 1. the santized field should be set.
+        // 2. the PPM process id should be added.
+        CHECK( handler.get_result_string() == "success" );
+        CHECK( validateSanitizedProperty( handler.get_json() ) );
+    }
+}
+
+TEST_CASE( "BSMHandler JSON Full Filtering", "[ppm][filtering][allon]" ) {
+
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    // should redact everything independent of how the set is set.
+    pconf["privacy.redaction.id.inclusions"]    = "OFF";
+
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    // without any flag set, all JSON data files should pass through the PPM with the following modifications:
+    // 1. the santized field should be set.
+    // 2. the PPM process id should be added.
+
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "success" );
+        CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
+        CHECK( validateSanitizedProperty( handler.get_json() ) );
+    }
+
+    // get rid of previous cases.
+    json_test_cases.clear();
+    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "success" );
+        CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
+        CHECK( validateSanitizedProperty( handler.get_json() ) );
+    }
+
+    // get rid of previous cases.
+    json_test_cases.clear();
+    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK_FALSE( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "speed" );
+        CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
+        CHECK( validateSanitizedProperty( handler.get_json() ) );
+    }
+
+    // get rid of previous cases.
+    json_test_cases.clear();
+    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK_FALSE( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "geoposition" );
+        CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
+        CHECK( validateSanitizedProperty( handler.get_json() ) );
+    }
+}
+
+TEST_CASE( "BSMHandler JSON Id Redaction Only", "[ppm][filtering][idonly]" ) {
+
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    handler.deactivate<BSMHandler::kVelocityFilterFlag>();
+    handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
+    //handler.activate<BSMHandler::kIdRedactFlag>();
+
+    REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "success" );
+        CHECK( handler.get_bsm().get_id() == handler.get_bsm().get_original_id() );
+    }
+
+    // get rid of previous cases.
+    json_test_cases.clear();
+    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "success" );
+        CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
+    }
+}
+
+TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]" ) {
+
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
+    handler.deactivate<BSMHandler::kIdRedactFlag>();
+    //handler.activate<BSMHandler::kVelocityFilterFlag>();
+
+    REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "success" );
+    }
+
+    // get rid of previous cases.
+    json_test_cases.clear();
+    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK_FALSE( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "speed" );
+    }
+}
+
+TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofenceonly]" ) {
+
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    handler.deactivate<BSMHandler::kVelocityFilterFlag>();
+    handler.deactivate<BSMHandler::kIdRedactFlag>();
+
+    REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+
+    BSM bsm[4];
+
+    // On A - B
+    bsm[0].set_latitude(35.951090);
+    bsm[0].set_longitude(-83.930716);
+
+    // On C - E
+    bsm[1].set_latitude(35.951181);
+    bsm[1].set_longitude(-83.935486);
+
+    // On Edge of C - E
+    bsm[2].set_latitude(35.951181);
+    bsm[2].set_longitude(-83.935456);
+
+    // Outside of main box.
+    bsm[3].set_latitude(35.964);
+    bsm[3].set_longitude(-83.926);
+
+    CHECK( handler.isWithinEntity( bsm[0] ) );
+    CHECK( handler.isWithinEntity( bsm[1] ) );
+    // Aaron's checking on this one.
+    CHECK( handler.isWithinEntity( bsm[2] ) );
+    CHECK_FALSE( handler.isWithinEntity( bsm[3] ) );
+
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "success" );
+    }
+
+    // get rid of previous cases.
+    json_test_cases.clear();
+    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        CHECK_FALSE( handler.process( test_case ) );
+        CHECK( handler.get_result_string() == "geoposition" );
+    }
+}
+
+/**
+* This test requires the quad tree because we have to check the position parsing.
+*/
+TEST_CASE( "JSON Tokenizing Checks", "[ppm][handler][parsing]" ) {
+
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+
+    // Setup the quad.
+    geo::Point sw{ 35.946920, -83.938486 };
+    geo::Point ne{ 35.955526, -83.926738 };
+
+    // Declare a quad with the given bounds.
+    Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
+
+    BSMHandler handler{qptr, pconf};
+
+    std::string json_geo{"{\"coreData\":{\"id\":\"string\",\"position\":{\"latitude\":1.1,\"longitude\":2.2},\"speed\":99.9,\"F6\":{}}}"};
+    std::string json_spd{"{\"coreData\":{\"id\":\"string\",\"speed\":99.9,\"position\":{\"latitude\":1.1,\"longitude\":2.2},\"F6\":{}}}"};
+
+    // should fail because of the position (first in the json), so the string is only a partial string.
+    CHECK_FALSE( handler.process( json_geo ) );
+    CHECK( json_geo.substr(0,70) == handler.get_json() );
+
+    // should fail because of the speed (first in the json), so the string is only a partial string.
+    CHECK_FALSE( handler.process( json_spd ) );
+    CHECK( json_spd.substr(0,39) == handler.get_json() );
+
+    handler.reset();
+
+    CHECK( handler.StartObject() );
+    CHECK( handler.starting_new_object() );
+    CHECK( handler.get_object_stack().size() == 1 );    // top-level has the empty string name.
+    CHECK( handler.get_object_stack().back() == "" );
+
+    // create the top-level key - an object is the value not a number or string.
+    CHECK( handler.Key( "coreData", 8, false ) );
+    CHECK( handler.get_current_key() == "coreData" );               // key setting check complete.
+    CHECK_FALSE( handler.get_next_value() );
+
+
+    CHECK_FALSE( handler.finished_current_object() );               // just started.
+    CHECK( handler.StartObject() );
+    CHECK( handler.get_object_stack().back() == "coreData" );       // working on coreData.
+
+    CHECK( handler.starting_new_object() );                         // just saw a start bracket
+    CHECK( handler.Key( "id", 2, false ) );
+    CHECK( handler.get_next_value() );                              // must get the actual id.
+
+    CHECK( handler.String( "string", 6, false ) );
+    CHECK( handler.get_tokens().back() == "\"string\"" );
+    CHECK( handler.get_bsm().get_id() == "string" );                // make sure it got assigned.
+    CHECK_FALSE( handler.get_next_value() );                        // we just got the value, no next value.
+
+    CHECK_FALSE( handler.starting_new_object() );     
+    CHECK( handler.Key( "position", 8, false ) );
+    CHECK_FALSE( handler.get_next_value() );
+
+    CHECK_FALSE( handler.finished_current_object() );
+    CHECK( handler.StartObject() );
+    CHECK( handler.get_object_stack().back() == "position" );
+
+    CHECK( handler.starting_new_object() );
+    CHECK( handler.Key( "latitude", 8, false ) );
+    CHECK( handler.get_next_value() );                              // must get latitude.
+
+    CHECK( handler.get_current_key() == "latitude" );
+    CHECK( handler.RawNumber( "1.1", 3, false ) );
+    CHECK( handler.get_bsm().lat == Approx( 1.1 ) );                // check bsm instance update.
+    CHECK_FALSE( handler.get_next_value() );
+
+    CHECK_FALSE( handler.starting_new_object() );
+    CHECK( handler.Key( "longitude", 9, false ) );
+    CHECK( handler.get_next_value() );                              // must get longitude.
+
+    CHECK( handler.get_current_key() == "longitude" );
+    CHECK( handler.RawNumber( "2.2", 3, false ) );
+    CHECK( handler.get_bsm().lon == Approx( 2.2 ) );                // check bsm instance update.
+    CHECK_FALSE( handler.get_next_value() );                        // done with next values.
+
+    CHECK( handler.get_object_stack().back() == "position" );       // completed the position object.
+    CHECK_FALSE( handler.EndObject(2) );                            // here is the first failure that would result in suppression.
+    //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );  // failure status, but we will continue to force parse.
+    CHECK( handler.get_result_string() == "geoposition" );  // failure status, but we will continue to force parse.
+    CHECK( handler.get_object_stack().back() == "coreData" );
+
+    CHECK_FALSE( handler.starting_new_object() );
+    CHECK( handler.get_object_stack().back() == "coreData" );       // back in the coreData object.
+    CHECK_FALSE( handler.Key( "speed", 5, false ) );                // all of these checks will fail because the position latched the status.
+    CHECK( handler.get_next_value() );                              // speed must be retreived.
+
+    CHECK( handler.get_current_key() == "speed" );
+    CHECK_FALSE( handler.RawNumber( "99.9", 4, false ) );
+    CHECK( handler.get_bsm().get_velocity() == Approx( 99.9 ) );    // bsm instance updated.
+    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );   // failure status has changed now.
+    CHECK( handler.get_result_string() == "speed" );   // failure status has changed now.
+    CHECK_FALSE( handler.get_next_value() );
+
+    CHECK_FALSE( handler.starting_new_object() );
+    CHECK_FALSE( handler.Key( "F6", 2, false ) );                   // always going to fail because of speed now.
+    CHECK_FALSE( handler.get_next_value() );
+
+    CHECK_FALSE( handler.finished_current_object() );
+    CHECK_FALSE( handler.StartObject() );                           // always going to fail see above.
+    CHECK( handler.get_object_stack().back() == "F6" );
+
+    CHECK_FALSE( handler.EndObject(0) );
+    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+    CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
+    CHECK( handler.get_object_stack().back() == "coreData" );
+
+    CHECK_FALSE( handler.EndObject(6) );
+    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+    CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
+    CHECK( handler.get_object_stack().back() == "" );
+
+    CHECK_FALSE( handler.EndObject(0) );
+    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
+    CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
+    CHECK( handler.get_object_stack().empty() );
+
+    CHECK( json_geo == handler.get_json() );                          // check we reconstructed the original JSON.
+}

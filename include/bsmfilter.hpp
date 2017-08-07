@@ -636,6 +636,10 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         const StrVector& get_tokens() const; 
         const VelocityFilter& get_velocity_filter() const;
         const IdRedactor& get_id_redactor() const;
+
+        /**
+         * @brief for unit testing only.
+         */
         const double get_box_extension() const;
         
     private:

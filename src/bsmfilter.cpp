@@ -36,6 +36,8 @@
 #include "bsmfilter.hpp"
 #include "spdlog/spdlog.h"
 
+/** Start IdRedactor */
+
 IdRedactor::IdRedactor() :
     inclusion_set_{},
     redacted_value_{"FFFFFFFF"},                    // default value.
@@ -148,6 +150,8 @@ const std::string& IdRedactor::redaction_value() const
     return redacted_value_;
 }
 
+/** Start VelocityFilter */
+
 VelocityFilter::VelocityFilter() :
     min_{kDefaultMinVelocity},
     max_{kDefaultMaxVelocity}
@@ -187,6 +191,8 @@ bool VelocityFilter::suppress( double v ) {
 bool VelocityFilter::retain( double v ) {
     return !(*this)(v);
 }
+
+/** Start BSM */
 
 BSM::BSM() :
     geo::Point{90.0, 180.0},
@@ -265,6 +271,8 @@ std::ostream& operator<<( std::ostream& os, const BSM& bsm )
     os  << "Id: "  <<  bsm.id_;
     return os;
 }
+
+/** Start BSMHandler */
 
 BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::SUCCESS, "success" },
@@ -375,7 +383,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         result_ = ResultStatus::PARSE;
     }
  
-    // successful processing is no parse errors; result carries filter/redaction results.
+    // No JSON parse errors is successful processing.
+    // PPM Effects are in filter/redaction results; those could vary.
     return (r.Code() == rapidjson::kParseErrorNone );
 }
 
@@ -448,6 +457,8 @@ bool BSMHandler::get_next_value() const
 }
 
 bool BSMHandler::starting_new_object() const {
+    // new JSON objects have a KEY and start with a brace.
+    // The key and brack should be in the tokens; the brace should be the last thing added.
     return !tokens_.empty() && tokens_.back() == "{";
 }
 
@@ -465,13 +476,18 @@ bool BSMHandler::Null()
 
 bool BSMHandler::Bool(bool b) 
 { 
+    if (get_value_) {
+        get_value_ = false;
+        // if looking at the sanitized key, we set it to TRUE; otherwise
+        // set it to false.
+        b = ("sanitized" == current_key_);
+    } 
+
     if (b) {
         tokens_.push_back("true"); 
     } else {
         tokens_.push_back("false");
     }
-
-    get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
 }
@@ -511,9 +527,6 @@ bool BSMHandler::Uint64(uint64_t u)
 bool BSMHandler::Double(double d) 
 {
     tokens_.push_back( std::to_string(d) );
-    if (get_value_) {
-        std::cout << d << '\n';
-    }
     get_value_ = false;
 
     return result_ == ResultStatus::SUCCESS;
@@ -545,7 +558,8 @@ bool BSMHandler::RawNumber(const char* str, rapidjson::SizeType length, bool cop
 
         } else if ( "secMark" == current_key_ ) {
             // This is only set for bookeeping and logging purposes.
-            uint16_t v = 65535;  // default for j2735 unavailable value in range.
+            
+            uint16_t v = 65535;  // assume the default for j2735 unavailable value in range.
 
             try {
                 v = static_cast<uint16_t>( std::stoi(str) );
@@ -567,20 +581,23 @@ bool BSMHandler::String(const char* str, rapidjson::SizeType length, bool copy) 
     std::string s{ str, length };
 
     if ( get_value_ ) {
+        // the previously seen key signaled the need to extract/use/modify this value.
+
+        // reset state flag.
         get_value_ = false;
-        // the previously seen key indicated we need to use this value.
     
         if ( current_key_ == "id" ) {
             if ( is_active<kIdRedactFlag>() ) {
+                // ID redaction is required.
                 bsm_.set_original_id(s);        // for unit testing.
                 idr_(s);                        // use the redactor.
             }
 
-            // This is set no matter what for logging and bookeeping; it may not have changed and it is not needed for
-            // the output json since that is retained in the stack.
+            // This is set no matter what for logging and bookeeping; it may not have changed 
+            // as a result of redaction (above) and it is not needed for the output json since 
+            // the output JSON is retained in the stack.
             bsm_.set_id(s);
-
-        } 
+        }
     }
 
     tokens_.push_back( "\"" + s + "\"" );
@@ -613,10 +630,15 @@ bool BSMHandler::EndObject(rapidjson::SizeType memberCount)
     return result_ == ResultStatus::SUCCESS;
 }
 
+/**
+ * This method detects the elements within the JSON that require:
+ * 1. recording to determine whether or not to modify or use for suppression.
+ * 2. recording to modify or retain for bookeeping / logging.
+ */
 bool BSMHandler::Key(const char* str, rapidjson::SizeType length, bool copy) {
 
     if (!starting_new_object()) {
-        // commas separate elements within a JSON object.
+        // We are ending a JSON object and commas separate elements within a JSON object.
         tokens_.push_back(",");
     }
 
@@ -628,10 +650,21 @@ bool BSMHandler::Key(const char* str, rapidjson::SizeType length, bool copy) {
     // sets state, so we can handle the data correctly.
     current_key_ = str;
 
-    if ( top == "position" ) {
-        get_value_ = ("latitude"==current_key_ ||  "longitude"==current_key_);
+    // set state flag that signals the need to capture the value that corresponds with this key.
+    // for the PPM we are interested in position (geofencing), id (redaction), speed (filtering), secMark (bookeeping)
+    if ( top == "metadata" ) {
+
+        // Added for ODE-453 for the new JSON format.
+        get_value_ = ("sanitized"==current_key_ );
+
     } else if ( top == "coreData" ) {
+
         get_value_ = ("id"==current_key_ || "speed"==current_key_ || "secMark"==current_key_ );
+
+    } else if ( top == "position" ) {
+
+        get_value_ = ("latitude"==current_key_ ||  "longitude"==current_key_);
+
     }
 
     return result_ == ResultStatus::SUCCESS;
