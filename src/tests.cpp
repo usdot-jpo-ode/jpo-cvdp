@@ -1228,51 +1228,40 @@ TEST_CASE( "BSMHandler JSON Full Filtering", "[ppm][filtering][allon]" ) {
     REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
-        std::cout << test_case << '\n';
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
         CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         CHECK( validateSanitizedProperty( handler.get_json() ) );
-        std::cout << handler.get_json() << '\n';
     }
 
     // get rid of previous cases.
     json_test_cases.clear();
     REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
-        std::cout << test_case << '\n';
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
         CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         CHECK( validateSanitizedProperty( handler.get_json() ) );
-        std::cout << "BAD ID" << '\n';
-        std::cout << handler.get_json() << '\n';
     }
 
     // get rid of previous cases.
     json_test_cases.clear();
     REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
-        std::cout << test_case << '\n';
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "speed" );
         CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         CHECK( validateSanitizedProperty( handler.get_json() ) );
-        std::cout << "BAD SPEED" << '\n';
-        std::cout << handler.get_json() << '\n';
     }
 
     // get rid of previous cases.
     json_test_cases.clear();
     REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
-        std::cout << test_case << '\n';
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "geoposition" );
         CHECK( handler.get_bsm().get_id() != handler.get_bsm().get_original_id() );
         CHECK( validateSanitizedProperty( handler.get_json() ) );
-        std::cout << "BAD GEOPOSITION" << '\n';
-        std::cout << handler.get_json() << '\n';
     }
 }
 
