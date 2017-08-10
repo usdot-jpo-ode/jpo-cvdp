@@ -105,6 +105,26 @@ Example configuration files can be found in the [jpo-cvdp/config](../config) dir
 
 The details of the settings and how they affect the function of the PPM follow:
 
+## Sanitization Flag
+
+The current JSON data object sent to the PPM and published by the PPM contains the following three named components:
+parts:
+
+- `metadata`
+- `payload`
+- `schemaVersion`
+
+The PPM uses the `payload` portion to determine how the BSM will be treated (modified or suppressed), and it modifies
+the `metadata` portion if the BSM is published. The `sanitized` element within the `payload` object has a boolean value;
+this value is changed to `true` if the PPM publishes the BSM. In other words, all BSMs published by the PPM should have
+a `sanitized` value of `true`.
+
+The `payload` component of the BSM has a `datatype` component and a `data` object. The `data` object contains the
+`coreData` object that is analyzed by the PPM for features that may cause it to be suppressed.
+
+The JSON format published by the PPM follows the format received. It may be completely suppressed or certain fields may
+be modifed as described in this second and the sections that follow.
+
 ## Velocity Filtering
 
 - `privacy.filter.velocity` : enables or disables BSM filtering based on the speed within the BSM.

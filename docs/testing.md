@@ -206,3 +206,6 @@ Unit tests are built when the PPM is compiled during installation. Those tests c
 ```bash
 $ ./ppm_tests
 ```
+
+[TODO] Need some words about how to pick out particular tests (Catch), and how to use the test case files that were
+integrated in ODE Sprint 19.
