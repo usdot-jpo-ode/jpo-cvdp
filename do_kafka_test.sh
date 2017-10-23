@@ -18,6 +18,9 @@ done
 MAP_FILE=data/I_80.edges
 DATA_FILE=data/I_80_test.json
 
+echo $MAP_FILE
+echo $DATA_FILE
+
 ./test-scripts/standalone.sh $MAP_FILE config/test/c1.properties $DATA_FILE 0
 echo ""
 echo ""

@@ -6,10 +6,10 @@ from json import loads
 import sys
 
 def print_bsm_data(d):
-    id_ = d['coreData']['id']
-    speed = d['coreData']['speed']
-    lat = d['coreData']['position']['latitude']
-    lng = d['coreData']['position']['longitude']
+    id_ = d['payload']['data']['coreData']['id']
+    speed = d['payload']['data']['coreData']['speed']
+    lat = d['payload']['data']['coreData']['position']['latitude']
+    lng = d['payload']['data']['coreData']['position']['longitude']
 
     print('Consuming BSM with ID={}, speed={}, position={}, {}'.format(id_, speed, lat, lng))
 
