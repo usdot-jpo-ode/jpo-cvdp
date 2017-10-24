@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# NOTE that this script will hang if the offsets are wrong. In other words,
+# only use this for testing/demo; NOT production.
+
 # There are three input files: ROAD_FILE, CONFIG, TEST_DATA.
 # Offset is the offset in the topic that will be consumed and displayed in the
 # output

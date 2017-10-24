@@ -42,3 +42,22 @@ echo ""
 
 sleep 1
 ./test-scripts/standalone.sh $MAP_FILE config/test/c5.properties $DATA_FILE 33
+echo ""
+echo ""
+
+DATA_FILE=data/I_80_test_TIMS.json
+
+echo $MAP_FILE
+echo $DATA_FILE
+
+./test-scripts/standalone.sh $MAP_FILE config/test/c1.properties $DATA_FILE 35
+echo ""
+echo ""
+
+sleep 1
+./test-scripts/standalone.sh $MAP_FILE config/test/c2.properties $DATA_FILE 45
+echo ""
+echo ""
+
+sleep 1
+./test-scripts/standalone.sh $MAP_FILE config/test/c3.properties $DATA_FILE 53

@@ -30,7 +30,8 @@
 #include <random>
 #include <limits>
 
-#include "rapidjson/reader.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 #include "cvlib.hpp"
 #include "bsmfilter.hpp"
@@ -279,20 +280,17 @@ BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::SPEED, "speed" },
             { ResultStatus::GEOPOSITION, "geoposition" },
             { ResultStatus::PARSE, "parse" },
+            { ResultStatus::MISSING, "missing" },
             { ResultStatus::OTHER, "other" }
         };
 
 BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
-    reader_{},
+    document_{},
     activated_{0},
     result_{ ResultStatus::SUCCESS },
     bsm_{},
     quad_ptr_{quad_ptr},
-    get_value_{ false },
     finalized_{ false },
-    current_key_{},
-    object_stack_{},
-    tokens_{},
     json_{},
     vf_{ conf },
     idr_{ conf },
@@ -358,34 +356,198 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     return false;
 }
 
-void BSMHandler::reset() {
-    tokens_.clear();
-    object_stack_.clear();
-    finalized_ = false;
-    get_value_ = false;
-    current_key_ = "";
-    json_ = "";
-    result_ = ResultStatus::SUCCESS;
-    bsm_.reset();
-}
-
 bool BSMHandler::process( const std::string& bsm_json ) {
+    double speed = 0.0;
+    double latitude = 0.0;
+    double longitude = 0.0;
+    std::string id;
 
-    reset();
-
-    // TODO: if payload could be assured to be '\0' terminated we could pass the void * cast to
-    // this ss and same the creation of the string.
-    rapidjson::StringStream ss{ bsm_json.c_str() };
-
-    rapidjson::ParseResult r = reader_.Parse<BSMHandler::flags>(ss, *this );
-    if ( result_ == ResultStatus::SUCCESS && r.Code() != rapidjson::kParseErrorNone ) {
-        // nothing triggered a change in status, but we still failed. Parse error.
+    finalized_ = false;
+    
+    // create the DOM
+    // check for errors
+    if (document_.Parse(bsm_json.c_str()).HasParseError()) {
         result_ = ResultStatus::PARSE;
+
+        return false;
     }
- 
-    // No JSON parse errors is successful processing.
-    // PPM Effects are in filter/redaction results; those could vary.
-    return (r.Code() == rapidjson::kParseErrorNone );
+
+    if (!document_.IsObject()) {
+        result_ = ResultStatus::PARSE;
+
+        return false;
+    }
+
+    if (!document_.HasMember("metadata")) {
+        result_ = ResultStatus::MISSING;
+
+        return false;
+    }
+
+    rapidjson::Value& metadata = document_["metadata"];
+
+    // get the payload type
+    if (!metadata.HasMember("payloadType")) {
+        result_ = ResultStatus::MISSING;
+
+        return false;
+    }
+
+    if (!metadata["payloadType"].IsString()) {
+        result_ = ResultStatus::OTHER;
+
+        return false;
+    }
+
+    std::string payload_type_str = metadata["payloadType"].GetString();
+
+    if (payload_type_str == "us.dot.its.jpo.ode.model.OdeBsmPayload") {
+        if (!document_.HasMember("payload")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+    
+        rapidjson::Value& payload = document_["payload"];
+
+        // handle BSM payload
+        if (!payload.HasMember("data")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        rapidjson::Value& data = payload["data"];
+
+        if (!data.HasMember("coreData")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        rapidjson::Value& core_data = data["coreData"];
+
+        if (!core_data.HasMember("speed")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+        
+        if (!core_data["speed"].IsDouble()) {
+            result_ = ResultStatus::OTHER;
+
+            return false;
+        }
+
+        speed = core_data["speed"].GetDouble();
+        bsm_.set_velocity(speed);
+
+        if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
+            result_ = ResultStatus::SPEED;
+        }
+
+        if (!core_data.HasMember("position")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        rapidjson::Value& position = core_data["position"];
+
+        if (!position.HasMember("latitude") || !position.HasMember("longitude")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        if (!position["latitude"].IsDouble() || !position["longitude"].IsDouble()) {
+            result_ = ResultStatus::OTHER;
+
+            return false;
+        }
+        
+        latitude = position["latitude"].GetDouble();
+        longitude = position["longitude"].GetDouble();
+
+        bsm_.set_latitude(latitude); 
+        bsm_.set_longitude(longitude); 
+
+        if (is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_)) {
+            result_ = ResultStatus::GEOPOSITION;
+        }
+
+        if (!core_data.HasMember("id")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        if (!core_data["id"].IsString()) {
+            result_ = ResultStatus::OTHER;
+
+            return false;
+        }
+
+        id = core_data["id"].GetString();
+        bsm_.set_id(id);
+
+        if (is_active<kIdRedactFlag>()) {
+            bsm_.set_original_id(id);
+            idr_(id);
+
+            core_data["id"].SetString(id.c_str(), static_cast<rapidjson::SizeType>(id.size()), document_.GetAllocator());
+        }
+    } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTIMPayload") {
+        if (!metadata.HasMember("receivedDetails")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        } 
+
+        rapidjson::Value& received_details = metadata["receivedDetails"];
+    
+        if (!received_details.HasMember("location")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        rapidjson::Value& location = received_details["location"];
+
+        if (!location.HasMember("latitude") || !location.HasMember("longitude") || !location.HasMember("speed")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        if (!location["latitude"].IsDouble() || !location["longitude"].IsDouble() || !location["speed"].IsDouble()) {
+            result_ = ResultStatus::OTHER;
+
+            return false;
+        }
+        
+        latitude = location["latitude"].GetDouble();
+        longitude = location["longitude"].GetDouble();
+        speed = location["speed"].GetDouble();
+
+        bsm_.set_latitude(latitude); 
+        bsm_.set_longitude(longitude); 
+        bsm_.set_velocity(speed); 
+
+        if (is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_)) {
+            result_ = ResultStatus::GEOPOSITION;
+        }
+
+        if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
+            result_ = ResultStatus::SPEED;
+        }
+    } else {
+        result_ = ResultStatus::MISSING;
+
+        return false;
+    }
+
+    return result_ == ResultStatus::SUCCESS;
 }
 
 const BSMHandler::ResultStatus BSMHandler::get_result() const {
@@ -401,48 +563,22 @@ BSM& BSMHandler::get_bsm() {
 }
 
 const std::string& BSMHandler::get_json() {
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document_.Accept(writer);
 
-    if ( !finalized_ ) {
-        std::stringstream ss;
-        for ( auto& s : tokens_ ) {
-            ss << s;
-        }
-        json_ = ss.str();
-        finalized_ = true;
-    }
+    json_ = buffer.GetString();
+
+    finalized_ = true;
 
     return json_;
 }
 
-const uint32_t BSMHandler::get_activation_flag() const {
-    return activated_;
-}
-
-const std::string& BSMHandler::get_current_key() const {
-    return current_key_;
-}
-
-const StrVector& BSMHandler::get_object_stack() const {
-    return object_stack_;
-}
-
-const StrVector& BSMHandler::get_tokens() const {
-    return tokens_;
-}
-
-const VelocityFilter& BSMHandler::get_velocity_filter() const {
-    return vf_;
-}
-
-const IdRedactor& BSMHandler::get_id_redactor() const {
-    return idr_;
-}
-
 std::string::size_type BSMHandler::get_bsm_buffer_size() {
-    
     if ( !finalized_ ) {
         get_json();
     }
+
     return json_.size();
 }
 
@@ -451,235 +587,10 @@ const double BSMHandler::get_box_extension() const
     return box_extension_;
 }
 
-bool BSMHandler::get_next_value() const
-{
-    return get_value_;
+const VelocityFilter& BSMHandler::get_velocity_filter() const {
+    return vf_;
 }
 
-bool BSMHandler::starting_new_object() const {
-    // new JSON objects have a KEY and start with a brace.
-    // The key and brack should be in the tokens; the brace should be the last thing added.
-    return !tokens_.empty() && tokens_.back() == "{";
+const uint32_t BSMHandler::get_activation_flag() const {
+    return activated_;
 }
-
-bool BSMHandler::finished_current_object() const {
-    return !tokens_.empty() && tokens_.back() == "}";
-}
-
-bool BSMHandler::Null() 
-{ 
-    tokens_.push_back("null");
-    get_value_ = false;
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::Bool(bool b) 
-{ 
-    if (get_value_) {
-        get_value_ = false;
-        // if looking at the sanitized key, we set it to TRUE; otherwise
-        // set it to false.
-        b = ("sanitized" == current_key_);
-    } 
-
-    if (b) {
-        tokens_.push_back("true"); 
-    } else {
-        tokens_.push_back("false");
-    }
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::Int(int i) 
-{
-    tokens_.push_back( std::to_string(i) );
-    get_value_ = false;
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::Uint(unsigned u) 
-{
-    tokens_.push_back( std::to_string(u) );
-    get_value_ = false;
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::Int64(int64_t i) 
-{
-    tokens_.push_back( std::to_string(i) );
-    get_value_ = false;
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::Uint64(uint64_t u) 
-{
-    tokens_.push_back( std::to_string(u) );
-    get_value_ = false;
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::Double(double d) 
-{
-    tokens_.push_back( std::to_string(d) );
-    get_value_ = false;
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::RawNumber(const char* str, rapidjson::SizeType length, bool copy) { 
-    static char* end;
-    
-    tokens_.push_back( std::string(str,length) );
-
-    if (get_value_) {
-        get_value_ = false;
-
-        if ("latitude" == current_key_) {
-            double v = std::strtod( str, &end );            // if cannot be converted 0 is returned.
-            bsm_.set_latitude( v );
-
-        } else if ("longitude" == current_key_) {
-            double v = std::strtod( str, &end );            // if cannot be converted 0 is returned.
-            bsm_.set_longitude( v );
-
-        } else if ("speed" == current_key_) {
-            double v = std::strtod( str, &end );            // if cannot be converted 0 is returned.
-            bsm_.set_velocity( v );
-            if ( is_active<kVelocityFilterFlag>() && vf_.suppress(v) ) {
-                // Velocity filtering is activated and filtering failed -> suppress.
-                result_ = ResultStatus::SPEED;
-            }
-
-        } else if ( "secMark" == current_key_ ) {
-            // This is only set for bookeeping and logging purposes.
-            
-            uint16_t v = 65535;  // assume the default for j2735 unavailable value in range.
-
-            try {
-                v = static_cast<uint16_t>( std::stoi(str) );
-            } catch ( std::logic_error& e ) {
-                // keep the default.
-            }
-
-            bsm_.set_secmark( v );
-        } 
-    }
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::String(const char* str, rapidjson::SizeType length, bool copy) { 
-    static char* end;
-    static uint16_t v;
-
-    std::string s{ str, length };
-
-    if ( get_value_ ) {
-        // the previously seen key signaled the need to extract/use/modify this value.
-
-        // reset state flag.
-        get_value_ = false;
-    
-        if ( current_key_ == "id" ) {
-            if ( is_active<kIdRedactFlag>() ) {
-                // ID redaction is required.
-                bsm_.set_original_id(s);        // for unit testing.
-                idr_(s);                        // use the redactor.
-            }
-
-            // This is set no matter what for logging and bookeeping; it may not have changed 
-            // as a result of redaction (above) and it is not needed for the output json since 
-            // the output JSON is retained in the stack.
-            bsm_.set_id(s);
-        }
-    }
-
-    tokens_.push_back( "\"" + s + "\"" );
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::StartObject() 
-{
-    if (finished_current_object()) {
-        // an array sequence.
-        tokens_.push_back(",");
-    }
-
-    tokens_.push_back("{");
-    object_stack_.push_back(current_key_);
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::EndObject(rapidjson::SizeType memberCount) 
-{
-    tokens_.push_back("}");
-    std::string top = object_stack_.back();
-
-    if ( (top=="position") && is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_) ) {
-        // Shortcircuting: Parsed core position, geofencing is needed, and inside the geofence.
-        result_ = ResultStatus::GEOPOSITION;
-    } 
-
-    object_stack_.pop_back();
-    return result_ == ResultStatus::SUCCESS;
-}
-
-/**
- * This method detects the elements within the JSON that require:
- * 1. recording to determine whether or not to modify or use for suppression.
- * 2. recording to modify or retain for bookeeping / logging.
- */
-bool BSMHandler::Key(const char* str, rapidjson::SizeType length, bool copy) {
-
-    if (!starting_new_object()) {
-        // We are ending a JSON object and commas separate elements within a JSON object.
-        tokens_.push_back(",");
-    }
-
-    // save in case we need to "produce" this bsm.
-    tokens_.push_back("\"" + std::string( str, length) + "\":");
-    // get the enclosing json object.
-    std::string top = object_stack_.back();
-
-    // sets state, so we can handle the data correctly.
-    current_key_ = str;
-
-    // set state flag that signals the need to capture the value that corresponds with this key.
-    // for the PPM we are interested in position (geofencing), id (redaction), speed (filtering), secMark (bookeeping)
-    if ( top == "metadata" ) {
-
-        // Added for ODE-453 for the new JSON format.
-        get_value_ = ("sanitized"==current_key_ );
-
-    } else if ( top == "coreData" ) {
-
-        get_value_ = ("id"==current_key_ || "speed"==current_key_ || "secMark"==current_key_ );
-
-    } else if ( top == "position" ) {
-
-        get_value_ = ("latitude"==current_key_ ||  "longitude"==current_key_);
-
-    }
-
-    return result_ == ResultStatus::SUCCESS;
-}
-
-
-bool BSMHandler::StartArray() 
-{
-    tokens_.push_back("[");
-    return result_ == ResultStatus::SUCCESS;
-}
-
-bool BSMHandler::EndArray(rapidjson::SizeType elementCount) 
-{
-    tokens_.push_back("]");
-    return result_ == ResultStatus::SUCCESS;
-}
-
