@@ -382,17 +382,17 @@ TEST_CASE( "Parse Shape File Data", "[quad][shapefile]" ) {
     }
 
     // Do quick read/write file tests.
-    shapes::CSVInputFactory input_factory_bad_1("data/test-data/test.shapes.bad1");
+    shapes::CSVInputFactory input_factory_bad_1("unit-test-data/test-data/test.shapes.bad1");
     input_factory_bad_1.make_shapes();
-    shapes::CSVInputFactory input_factory_bad_2("data/test-data/test.shapes.bad2");
+    shapes::CSVInputFactory input_factory_bad_2("unit-test-data/test-data/test.shapes.bad2");
     CHECK_THROWS_AS(input_factory_bad_2.make_shapes(), std::invalid_argument);
-    shapes::CSVInputFactory input_factory_bad_3("data/test-data/test.shapes.bad3");
+    shapes::CSVInputFactory input_factory_bad_3("unit-test-data/test-data/test.shapes.bad3");
     CHECK_THROWS_AS(input_factory_bad_3.make_shapes(), std::invalid_argument);
-    shapes::CSVInputFactory input_factory("data/test-data/test.shapes");
+    shapes::CSVInputFactory input_factory("unit-test-data/test-data/test.shapes");
     CHECK_NOTHROW(input_factory.make_shapes());
-    shapes::CSVOutputFactory output_factory_1("data/empty/test.shapes.out");
+    shapes::CSVOutputFactory output_factory_1("unit-test-data/empty/test.shapes.out");
     CHECK_THROWS_AS(output_factory_1.write_shapes(), std::invalid_argument);
-    shapes::CSVOutputFactory output_factory("data/test-data/test.shapes.out");
+    shapes::CSVOutputFactory output_factory("unit-test-data/test-data/test.shapes.out");
 
     for ( auto& eptr : input_factory.get_edges() ) {
         output_factory.add_edge(eptr);
@@ -1118,7 +1118,8 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
         CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kIdRedactFlag>() );
-        CHECK( handler.get_json().size() == 0 );
+        // json is the string "null" when empty
+        CHECK( handler.get_json() == "null" );
     };
 
     SECTION( "Check Flag Setting" ) {
@@ -1138,19 +1139,6 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
 
         CHECK( handler.get_activation_flag() == 0 );
     }
-
-    SECTION( "Check Handler State Reset" ) {
-
-        // this string CANNOT have position in it soas not to trigger isWithinEntity in the parser.
-        std::string state_test{"{\"test\":{\"A\":\"string\",\"B\":{\"B1\":1.1,\"B2\":2.2},\"C\":99.9,\"D\":{}}}"};
-
-        // resetting automatically occurs prior to processing.
-        // here we explicitly check that it is working.
-        CHECK( handler.process( state_test ) );
-        CHECK( handler.get_result_string() == "success" );
-        CHECK( handler.get_json().size() == 0 );
-        CHECK( handler.get_box_extension() == Approx(5.2) );
-    }
 }
 
 TEST_CASE( "BSMHandler JSON Malformed Parsing", "[ppm][filtering][parsing]" ) {
@@ -1161,7 +1149,7 @@ TEST_CASE( "BSMHandler JSON Malformed Parsing", "[ppm][filtering][parsing]" ) {
     BSMHandler handler{ buildTestQuadTree(), pconf };
 
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "data/test-case.malformed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.malformed.json", json_test_cases ) );
 
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
@@ -1187,11 +1175,11 @@ TEST_CASE( "BSMHandler JSON No Filtering", "[ppm][filtering][alloff]" ) {
 
     // load up all the test cases.
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
 
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
@@ -1218,8 +1206,8 @@ TEST_CASE( "BSMHandler JSON Full Filtering", "[ppm][filtering][allon]" ) {
     // 2. the PPM process id should be added.
 
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1229,7 +1217,7 @@ TEST_CASE( "BSMHandler JSON Full Filtering", "[ppm][filtering][allon]" ) {
 
     // get rid of previous cases.
     json_test_cases.clear();
-    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.id.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1239,7 +1227,7 @@ TEST_CASE( "BSMHandler JSON Full Filtering", "[ppm][filtering][allon]" ) {
 
     // get rid of previous cases.
     json_test_cases.clear();
-    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "speed" );
@@ -1249,7 +1237,7 @@ TEST_CASE( "BSMHandler JSON Full Filtering", "[ppm][filtering][allon]" ) {
 
     // get rid of previous cases.
     json_test_cases.clear();
-    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "geoposition" );
@@ -1274,10 +1262,14 @@ TEST_CASE( "BSMHandler JSON Id Redaction Only", "[ppm][filtering][idonly]" ) {
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
 
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1286,7 +1278,7 @@ TEST_CASE( "BSMHandler JSON Id Redaction Only", "[ppm][filtering][idonly]" ) {
 
     // get rid of previous cases.
     json_test_cases.clear();
-    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.id.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1310,10 +1302,13 @@ TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]"
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
 
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1321,7 +1316,8 @@ TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]"
 
     // get rid of previous cases.
     json_test_cases.clear();
-    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "speed" );
@@ -1367,10 +1363,10 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
     CHECK_FALSE( handler.isWithinEntity( bsm[3] ) );
 
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "data/test-case.all.good.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.inside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.bad.id.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.id.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1378,136 +1374,9 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
 
     // get rid of previous cases.
     json_test_cases.clear();
-    REQUIRE ( loadTestCases( "data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "geoposition" );
     }
-}
-
-/**
-* This test requires the quad tree because we have to check the position parsing.
-*/
-TEST_CASE( "JSON Tokenizing Checks", "[ppm][handler][parsing]" ) {
-
-    ConfigMap pconf;
-
-    REQUIRE( buildBaseConfiguration( pconf ) ); 
-
-    // Setup the quad.
-    geo::Point sw{ 35.946920, -83.938486 };
-    geo::Point ne{ 35.955526, -83.926738 };
-
-    // Declare a quad with the given bounds.
-    Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
-
-    /*
-    BSMHandler handler{qptr, pconf};
-
-    std::string json_geo{"{\"coreData\":{\"id\":\"string\",\"position\":{\"latitude\":1.1,\"longitude\":2.2},\"speed\":99.9,\"F6\":{}}}"};
-    std::string json_spd{"{\"coreData\":{\"id\":\"string\",\"speed\":99.9,\"position\":{\"latitude\":1.1,\"longitude\":2.2},\"F6\":{}}}"};
-
-    // should fail because of the position (first in the json), so the string is only a partial string.
-    CHECK_FALSE( handler.process( json_geo ) );
-    CHECK( json_geo.substr(0,70) == handler.get_json() );
-
-    // should fail because of the speed (first in the json), so the string is only a partial string.
-    CHECK_FALSE( handler.process( json_spd ) );
-    CHECK( json_spd.substr(0,39) == handler.get_json() );
-
-    handler.reset();
-
-    CHECK( handler.StartObject() );
-    CHECK( handler.starting_new_object() );
-    CHECK( handler.get_object_stack().size() == 1 );    // top-level has the empty string name.
-    CHECK( handler.get_object_stack().back() == "" );
-
-    // create the top-level key - an object is the value not a number or string.
-    CHECK( handler.Key( "coreData", 8, false ) );
-    CHECK( handler.get_current_key() == "coreData" );               // key setting check complete.
-    CHECK_FALSE( handler.get_next_value() );
-
-
-    CHECK_FALSE( handler.finished_current_object() );               // just started.
-    CHECK( handler.StartObject() );
-    CHECK( handler.get_object_stack().back() == "coreData" );       // working on coreData.
-
-    CHECK( handler.starting_new_object() );                         // just saw a start bracket
-    CHECK( handler.Key( "id", 2, false ) );
-    CHECK( handler.get_next_value() );                              // must get the actual id.
-
-    CHECK( handler.String( "string", 6, false ) );
-    CHECK( handler.get_tokens().back() == "\"string\"" );
-    CHECK( handler.get_bsm().get_id() == "string" );                // make sure it got assigned.
-    CHECK_FALSE( handler.get_next_value() );                        // we just got the value, no next value.
-
-    CHECK_FALSE( handler.starting_new_object() );     
-    CHECK( handler.Key( "position", 8, false ) );
-    CHECK_FALSE( handler.get_next_value() );
-
-    CHECK_FALSE( handler.finished_current_object() );
-    CHECK( handler.StartObject() );
-    CHECK( handler.get_object_stack().back() == "position" );
-
-    CHECK( handler.starting_new_object() );
-    CHECK( handler.Key( "latitude", 8, false ) );
-    CHECK( handler.get_next_value() );                              // must get latitude.
-
-    CHECK( handler.get_current_key() == "latitude" );
-    CHECK( handler.RawNumber( "1.1", 3, false ) );
-    CHECK( handler.get_bsm().lat == Approx( 1.1 ) );                // check bsm instance update.
-    CHECK_FALSE( handler.get_next_value() );
-
-    CHECK_FALSE( handler.starting_new_object() );
-    CHECK( handler.Key( "longitude", 9, false ) );
-    CHECK( handler.get_next_value() );                              // must get longitude.
-
-    CHECK( handler.get_current_key() == "longitude" );
-    CHECK( handler.RawNumber( "2.2", 3, false ) );
-    CHECK( handler.get_bsm().lon == Approx( 2.2 ) );                // check bsm instance update.
-    CHECK_FALSE( handler.get_next_value() );                        // done with next values.
-
-    CHECK( handler.get_object_stack().back() == "position" );       // completed the position object.
-    CHECK_FALSE( handler.EndObject(2) );                            // here is the first failure that would result in suppression.
-    //CHECK( handler.get_result() == BSMHandler::ResultStatus::GEOPOSITION );  // failure status, but we will continue to force parse.
-    CHECK( handler.get_result_string() == "geoposition" );  // failure status, but we will continue to force parse.
-    CHECK( handler.get_object_stack().back() == "coreData" );
-
-    CHECK_FALSE( handler.starting_new_object() );
-    CHECK( handler.get_object_stack().back() == "coreData" );       // back in the coreData object.
-    CHECK_FALSE( handler.Key( "speed", 5, false ) );                // all of these checks will fail because the position latched the status.
-    CHECK( handler.get_next_value() );                              // speed must be retreived.
-
-    CHECK( handler.get_current_key() == "speed" );
-    CHECK_FALSE( handler.RawNumber( "99.9", 4, false ) );
-    CHECK( handler.get_bsm().get_velocity() == Approx( 99.9 ) );    // bsm instance updated.
-    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );   // failure status has changed now.
-    CHECK( handler.get_result_string() == "speed" );   // failure status has changed now.
-    CHECK_FALSE( handler.get_next_value() );
-
-    CHECK_FALSE( handler.starting_new_object() );
-    CHECK_FALSE( handler.Key( "F6", 2, false ) );                   // always going to fail because of speed now.
-    CHECK_FALSE( handler.get_next_value() );
-
-    CHECK_FALSE( handler.finished_current_object() );
-    CHECK_FALSE( handler.StartObject() );                           // always going to fail see above.
-    CHECK( handler.get_object_stack().back() == "F6" );
-
-    CHECK_FALSE( handler.EndObject(0) );
-    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
-    CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
-    CHECK( handler.get_object_stack().back() == "coreData" );
-
-    CHECK_FALSE( handler.EndObject(6) );
-    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
-    CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
-    CHECK( handler.get_object_stack().back() == "" );
-
-    CHECK_FALSE( handler.EndObject(0) );
-    //CHECK( handler.get_result() == BSMHandler::ResultStatus::SPEED );  // last failure status we will finish
-    CHECK( handler.get_result_string() == "speed" );  // last failure status we will finish
-    CHECK( handler.get_object_stack().empty() );
-
-    CHECK( json_geo == handler.get_json() );                          // check we reconstructed the original JSON.
-    */
 }

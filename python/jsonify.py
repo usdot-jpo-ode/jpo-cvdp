@@ -141,6 +141,129 @@ JSON_1_DICT = {
 }
 
 JSON_2_DICT = {
+    "metadata": {
+        "latency": 1,
+        "logFileName": "wsmpforward.coer",
+        "payloadType": "us.dot.its.jpo.ode.model.OdeBsmPayload",
+        "receivedAt": "2017-08-02T19:56:45.822Z[UTC]",
+        "sanitized": False,
+        "schemaVersion": 1,
+        "serialId": {
+            "bundleId": 4,
+            "bundleSize": 1,
+            "recordId": 2,
+            "serialNumber": 0,
+            "streamId": "0bfda39b-0bf1-4e2e-a1f1-b858426f7408"
+        },
+        "validSignature": False
+    },
+    "payload": {
+        "data": {
+            "coreData": {
+                "accelSet": {
+                    "accelYaw": 0
+                },
+                "accuracy": {
+                    "semiMajor": 12.7,
+                    "semiMinor": 12.7
+                },
+                "brakes": {
+                    "abs": "unavailable",
+                    "auxBrakes": "unavailable",
+                    "brakeBoost": "unavailable",
+                    "scs": "unavailable",
+                    "traction": "unavailable",
+                    "wheelBrakes": {
+                        "leftFront": False,
+                        "leftRear": False,
+                        "rightFront": False,
+                        "rightRear": False,
+                        "unavailable": False
+                    }
+                },
+                "heading": 321.0125,
+                "id": "G2",
+                "msgCnt": 5,
+                "position": {
+                    "elevation": 154.7,
+                    "latitude": 35.949821,
+                    "longitude": -83.936279
+                },
+                "secMark": 36799,
+                "size": {
+                    "length": 250,
+                    "width": 150
+                },
+                "speed": 22.0
+            },
+            "partII": [
+                {
+                    "id": "VEHICLESAFETYEXT",
+                    "value": {
+                        "pathHistory": {
+                            "crumbData": [
+                                {
+                                    "elevationOffset": -19.8,
+                                    "latOffset": 7.55e-05,
+                                    "lonOffset": 0.0002609,
+                                    "timeOffset": 32.2
+                                },
+                                {
+                                    "elevationOffset": -25.8,
+                                    "latOffset": 7.32e-05,
+                                    "lonOffset": 0.0003135,
+                                    "timeOffset": 34
+                                },
+                                {
+                                    "elevationOffset": -34.5,
+                                    "latOffset": 0.0001027,
+                                    "lonOffset": 0.0004479,
+                                    "timeOffset": 37.2
+                                },
+                                {
+                                    "elevationOffset": -128.2,
+                                    "latOffset": 0.000232,
+                                    "lonOffset": 0.0011832,
+                                    "timeOffset": 73.44
+                                }
+                            ]
+                        },
+                        "pathPrediction": {
+                            "confidence": 50,
+                            "radiusOfCurve": 0
+                        }
+                    }
+                },
+                {
+                    "id": "SUPPLEMENTALVEHICLEEXT",
+                    "value": {
+                        "classDetails": {
+                            "fuelType": "UNKNOWNFUEL",
+                            "hpmsType": "NONE",
+                            "keyType": 0,
+                            "regional": [],
+                            "role": "BASICVEHICLE"
+                        },
+                        "regional": [],
+                        "vehicleData": {
+                            "bumpers": {
+                                "front": 0.5,
+                                "rear": 0.6
+                            },
+                            "height": 1.9
+                        },
+                        "weatherProbe": {}
+                    }
+                }
+            ]
+        },
+        "dataType": "us.dot.its.jpo.ode.plugin.j2735.J2735Bsm",
+        "schemaVersion": 1
+    },
+    "schemaVersion": 1
+}
+
+JSON_3_DICT = {
     "schemaVersion": 3,
     "metadata": {
         "schemaVersion":3,
@@ -424,7 +547,7 @@ from json import dumps, loads
 
 import sys
 
-def json2toTIMS(json_str_in):
+def json3toTIMS(json_str_in):
     json_in = loads(json_str_in)
 
     json_tims_out = JSON_TIMS_DICT
@@ -435,13 +558,23 @@ def json2toTIMS(json_str_in):
 
     return json_tims_out
 
-def json1toJson2(json_str_in):
+def json1toJson3(json_str_in):
+    json_in = loads(json_str_in)
+
+    json_out = JSON_3_DICT
+
+    # Core data itself remained unchanged; just copy
+    json_out['payload']['data']['coreData'] = json_in['coreData']
+
+    return json_out    
+
+def json2toJson3(json_str_in):
     json_in = loads(json_str_in)
 
     json_out = JSON_2_DICT
 
     # Core data itself remained unchanged; just copy
-    json_out['payload']['data']['coreData'] = json_in['coreData']
+    json_out['payload']['data']['coreData'] = json_in['payload']['data']['coreData']
 
     return json_out    
     
@@ -475,9 +608,13 @@ def csvBSMLineToJson(bsm_line):
     return json_ret
 
 for line in sys.stdin:
+    if line[0] == '#':
+        continue
+
     #json_ret = csvBSMLineToJson(line)
-    #json_ret = json1toJson2(line)
-    json_ret = json2toTIMS(line)
+    #json_ret = json2toJson3(line)
+    #json_ret = json1toJson3(line)
+    json_ret = json3toTIMS(line)
 
     if not json_ret:
         # Invalid line.

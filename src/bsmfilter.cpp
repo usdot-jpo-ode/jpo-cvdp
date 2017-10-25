@@ -386,6 +386,21 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 
     rapidjson::Value& metadata = document_["metadata"];
 
+    // switch sanitized flag
+    if (!metadata.HasMember("sanitized")) {
+        result_ = ResultStatus::MISSING;
+
+        return false;
+    }
+
+    if (!metadata["sanitized"].IsBool()) {
+        result_ = ResultStatus::OTHER;
+
+        return false;
+    }
+
+    metadata["sanitized"] = true;
+
     // get the payload type
     if (!metadata.HasMember("payloadType")) {
         result_ = ResultStatus::MISSING;
@@ -489,7 +504,6 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         }
 
         id = core_data["id"].GetString();
-        bsm_.set_id(id);
 
         if (is_active<kIdRedactFlag>()) {
             bsm_.set_original_id(id);
@@ -497,6 +511,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 
             core_data["id"].SetString(id.c_str(), static_cast<rapidjson::SizeType>(id.size()), document_.GetAllocator());
         }
+
+        bsm_.set_id(id);
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTIMPayload") {
         if (!metadata.HasMember("receivedDetails")) {
             result_ = ResultStatus::MISSING;
