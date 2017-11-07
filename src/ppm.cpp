@@ -97,15 +97,16 @@ PPM::PPM( const std::string& name, const std::string& description ) :
     partition{RdKafka::Topic::PARTITION_UA},
     mode{""},
     debug{""},
-    consumed_topics{},
     offset{RdKafka::Topic::OFFSET_BEGINNING},
     published_topic{},
+    consumed_topic{},
     conf{nullptr},
     tconf{nullptr},
     qptr{},
     consumer{},
     consumer_timeout{500},
     producer{},
+    raw_topic{},
     filtered_topic{},
     ilogger{},
     elogger{}
@@ -383,22 +384,24 @@ bool PPM::configure() {
     }
 
     // librdkafka defined configuration.
-    conf->set("default_topic_conf", tconf, error_string);
-
-    auto search = pconf.find("privacy.topic.consumer");
-    if ( search != pconf.end() ) {
-        consumed_topics.push_back( search->second );
-        ilogger->info("consumed topic: {}", search->second);
-
+    if (optIsSet('u')) {
+        // this is the produced (filtered) topic.
+        consumed_topic = optString( 'u' );
     } else {
-        
-        elogger->error("no consumer topic was specified; must fail.");
-        return false;
+        auto search = pconf.find("privacy.topic.consumer");
+        if ( search != pconf.end() ) {
+            consumed_topic = search->second;
+        } else {
+            elogger->error("no consumer topic was specified; must fail.");
+            return false;
+        }
     }
 
-    if (optIsSet('t')) {
+    ilogger->info("consumed topic: {}", consumed_topic);
+
+    if (optIsSet('f')) {
         // this is the produced (filtered) topic.
-        published_topic = optString( 't' );
+        published_topic = optString( 'f' );
 
     } else {
         // maybe it was specified in the configuration file.
@@ -413,7 +416,7 @@ bool PPM::configure() {
 
     ilogger->info("published topic: {}", published_topic);
 
-    search = pconf.find("privacy.consumer.timeout.ms");
+    auto search = pconf.find("privacy.consumer.timeout.ms");
     if ( search != pconf.end() ) {
         try {
             consumer_timeout = std::stoi( search->second );
@@ -587,42 +590,31 @@ bool PPM::launch_consumer()
         return false;
     }
 
-    // wait on the topics we specified to become available for subscription.
-    // loop terminates with a signal (CTRL-C) or when all the topics are available.
-    int tcount = 0;
-    for ( auto& topic : consumed_topics ) {
-        while ( bsms_available && tcount < consumed_topics.size() ) {
-            if ( topic_available(topic) ) {
-                ilogger->trace("Consumer topic: {} is available.", topic);
-                // count it and attempt to get the next one if it exists.
-                ++tcount;
-                break;
-            }
-            // topic is not available, wait for a second or two.
-            std::this_thread::sleep_for( std::chrono::milliseconds( 1500 ) );
-            ilogger->trace("Waiting for needed consumer topic: {}.", topic);
+    //raw_topic = nullptr;
+
+    std::vector<std::string> topics;
+
+    while ( bsms_available ) {
+        if ( topic_available( consumed_topic ) ) {
+            ilogger->trace("Consumer topic: {} is available.", consumed_topic);
+            //raw_topic = std::shared_ptr<RdKafka::Topic>( RdKafka::Topic::create(consumer.get(), consumed_topic, tconf, error_string) );
+            topics.push_back(consumed_topic);
+            RdKafka::ErrorCode err = consumer->subscribe(topics);
+
+            if ( err ) {
+                elogger->critical("Failed to subscribe to  topic: {}. Error: {}.", consumed_topic, RdKafka::err2str(err) );
+                return false;
+            } 
+
+            break;
         }
+
+        // topic is not available, wait for a second or two.
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1500 ) );
+        ilogger->trace("Waiting for needed consumer topic: {}.", consumed_topic);
     }
 
-    if ( tcount == consumed_topics.size() ) {
-        // all the needed topics are available for subscription.
-        RdKafka::ErrorCode status = consumer->subscribe(consumed_topics);
-        if (status) {
-            elogger->critical("Failed to subscribe to {} topics. Error: {}.", consumed_topics.size(), RdKafka::err2str(status) );
-            return false;
-        }
-    } else {
-        ilogger->warn("User cancelled PPM while waiting for topics to become available.");
-        return false;
-    }
-
-    std::ostringstream buf{};
-    for ( auto& topic : consumed_topics ) {
-        if (buf.tellp()!=0) buf << ", ";
-        buf << topic;
-    }
-
-    ilogger->info("Consumer: {} created using topics: {}.", consumer->name(), buf.str());
+    ilogger->info("Consumer: {} created using topic: {}.", consumer->name(), consumed_topic);
     return true;
 }
 
@@ -755,10 +747,22 @@ int PPM::operator()(void) {
 
     BSMHandler handler{qptr, pconf};
 
+    std::vector<RdKafka::TopicPartition*> partitions;
+    RdKafka::ErrorCode err = consumer->position(partitions);
+
+    if (err) {
+        ilogger->info("err {}", RdKafka::err2str(err));
+    } else {
+        for (auto *partition : partitions) {
+            ilogger->info("topar {} {}", partition->topic(), partition->offset());
+        }
+    }
+
     // consume-produce loop.
     while (bsms_available) {
 
         std::unique_ptr<RdKafka::Message> msg{ consumer->consume( consumer_timeout ) };
+
         if ( msg_consume(msg.get(), NULL, handler) ) {
 
             status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
@@ -772,8 +776,8 @@ int PPM::operator()(void) {
                 bsm_send_bytes += msg->len();
                 ilogger->trace("produced BSM successfully.");
             }
-
         } 
+
         // NOTE: good for troubleshooting, but bad for performance.
         elogger->flush();
         ilogger->flush();
@@ -794,10 +798,11 @@ int main( int argc, char* argv[] )
 
     ppm.addOption( 'c', "config", "Configuration for Kafka and Privacy Protection Module.", true );
     ppm.addOption( 'C', "config-check", "Check the configuration and output the settings.", false );
-    ppm.addOption( 't', "produce-topic", "topic.", true );
+    ppm.addOption( 'u', "unfiltered-topic", "The unfiltered consume topic.", true );
+    ppm.addOption( 'f', "filtered-topic", "The unfiltered produce topic.", true );
     ppm.addOption( 'p', "partition", "Consumer topic partition from which to read.", true );
     ppm.addOption( 'g', "group", "Consumer group identifier", true );
-    ppm.addOption( 'b', "broker", "Broker address (localhost:9092)", true );
+    ppm.addOption( 'b', "broker", "List of broker addresses (localhost:9092)", true );
     ppm.addOption( 'o', "offset", "Byte offset to start reading in the consumed topic.", true );
     ppm.addOption( 'x', "exit", "Exit consumer when last message in partition has been received.", false );
     ppm.addOption( 'd', "debug", "debug level.", true );

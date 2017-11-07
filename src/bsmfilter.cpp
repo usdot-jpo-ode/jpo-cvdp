@@ -363,6 +363,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     std::string id;
 
     finalized_ = false;
+    result_ = ResultStatus::SUCCESS;
     
     // create the DOM
     // check for errors

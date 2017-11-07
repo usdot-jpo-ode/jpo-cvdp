@@ -5,8 +5,8 @@
 while true; do
     ntopics=$(docker exec jpocvdp_kafka_1 /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 | wc -l)
 
-    if [[ $ntopics == "2" ]]; then 
-        echo 'Found 2 topics:'
+    if [[ $ntopics == "4" ]]; then 
+        echo 'Found 4 topics:'
         docker exec jpocvdp_kafka_1 /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 2> /dev/null
         
         break   
@@ -21,27 +21,27 @@ DATA_FILE=data/I_80_test.json
 echo $MAP_FILE
 echo $DATA_FILE
 
-./test-scripts/standalone.sh $MAP_FILE config/test/c1.properties $DATA_FILE 0
+./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c1.properties $DATA_FILE BSM 0
 echo ""
 echo ""
 
 sleep 1
-./test-scripts/standalone.sh $MAP_FILE config/test/c2.properties $DATA_FILE 10
+./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c2.properties $DATA_FILE BSM 10
 echo ""
 echo ""
 
 sleep 1
-./test-scripts/standalone.sh $MAP_FILE config/test/c3.properties $DATA_FILE 18
+./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c3.properties $DATA_FILE BSM 18
 echo ""
 echo ""
 
 sleep 1
-./test-scripts/standalone.sh $MAP_FILE config/test/c4.properties $DATA_FILE 23
+./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c4.properties $DATA_FILE BSM 23
 echo ""
 echo ""
 
 sleep 1
-./test-scripts/standalone.sh $MAP_FILE config/test/c5.properties $DATA_FILE 33
+./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c5.properties $DATA_FILE BSM 33
 echo ""
 echo ""
 
@@ -50,14 +50,15 @@ DATA_FILE=data/I_80_test_TIMS.json
 echo $MAP_FILE
 echo $DATA_FILE
 
-./test-scripts/standalone.sh $MAP_FILE config/test/c1.properties $DATA_FILE 35
+sleep 1
+./test-scripts/standalone.sh $MAP_FILE config/tim-test/c1.properties $DATA_FILE TIM 0
 echo ""
 echo ""
 
 sleep 1
-./test-scripts/standalone.sh $MAP_FILE config/test/c2.properties $DATA_FILE 45
+./test-scripts/standalone.sh $MAP_FILE config/tim-test/c2.properties $DATA_FILE TIM 10
 echo ""
 echo ""
 
 sleep 1
-./test-scripts/standalone.sh $MAP_FILE config/test/c3.properties $DATA_FILE 53
+./test-scripts/standalone.sh $MAP_FILE config/tim-test/c3.properties $DATA_FILE TIM 18
