@@ -211,7 +211,8 @@ instead of having to modify the mapfile.
 - `group.id` : The group identifier for the PPM consumer.  Consumers label
   themselves with a consumer group name, and each record published to a topic is
   delivered to one consumer instance within each subscribing consumer group.
-  Consumer instances can be in separate processes or on separate machines.
+  Consumer instances can be in separate processes or on separate machines.  **Due to the way the kafka library 
+  internally updates its topic offsets, the group ID must be unique for each the topic.**
 
 - `privacy.kafka.partition` : The partition(s) that this PPM will consume records from. A Kafka topic can be divided,
   or partitioned, into several "parallel" streams. A topic may have many partitions so it can handle an arbitrary
