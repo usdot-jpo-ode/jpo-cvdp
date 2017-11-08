@@ -306,6 +306,11 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
         activate<BSMHandler::kGeofenceFilterFlag>();
     }
 
+    search = conf.find("privacy.redaction.size");
+    if ( search != conf.end() && search->second=="ON" ) {
+        activate<BSMHandler::kSizeRedactFlag>();
+    }
+
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
@@ -514,6 +519,24 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         }
 
         bsm_.set_id(id);
+
+        // Check for BSM size.  
+        // Size is a special case; if it's not included, then we do 
+        // NOT return an error/suppress
+        if (core_data.HasMember("size") && is_active<kSizeRedactFlag>()) {
+            // size included
+            rapidjson::Value& size = core_data["size"];
+          
+            if (size.HasMember("length")) {
+                // length included; redact
+                size["length"] = 0; 
+            } 
+
+            if (size.HasMember("width")) {
+                // width included; redact
+                size["width"] = 0; 
+            } 
+        }
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTIMPayload") {
         if (!metadata.HasMember("receivedDetails")) {
             result_ = ResultStatus::MISSING;

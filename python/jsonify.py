@@ -607,6 +607,15 @@ def csvBSMLineToJson(bsm_line):
     
     return json_ret
 
+def json3addSize(json_str_in):
+    json_in = loads(json_str_in)
+
+    # Core data itself remained unchanged; just copy
+    size = {'length': 1000, 'width': 30}
+    json_in['payload']['data']['coreData']['size'] = size
+
+    return json_in    
+
 for line in sys.stdin:
     if line[0] == '#':
         continue
@@ -614,7 +623,8 @@ for line in sys.stdin:
     #json_ret = csvBSMLineToJson(line)
     #json_ret = json2toJson3(line)
     #json_ret = json1toJson3(line)
-    json_ret = json3toTIMS(line)
+    #json_ret = json3toTIMS(line)
+    json_ret = json3addSize(line)
 
     if not json_ret:
         # Invalid line.

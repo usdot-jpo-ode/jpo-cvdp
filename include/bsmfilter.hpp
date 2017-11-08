@@ -421,6 +421,7 @@ class BSMHandler {
         static constexpr uint32_t kVelocityFilterFlag = 0x1 << 0;
         static constexpr uint32_t kGeofenceFilterFlag = 0x1 << 1;
         static constexpr uint32_t kIdRedactFlag       = 0x1 << 2;
+        static constexpr uint32_t kSizeRedactFlag     = 0x1 << 4;
 
         // must be static const to compose these flags and use in template specialization.
         static const unsigned flags = rapidjson::kParseDefaultFlags | rapidjson::kParseNumbersAsStringsFlag;
