@@ -24,4 +24,4 @@ cp $1 ${DOCKER_SHARED_VOLUME}/road_file.csv
 # Copy the config to the test data.
 cp $2 ${DOCKER_SHARED_VOLUME}/config.properties
 
-docker run -it -v ${DOCKER_SHARED_VOLUME}:/ppm_data -e DOCKER_HOST_IP=${DOCKER_HOST_IP} jpoode_ppm:latest /cvdi-stream/docker-test/ppm.sh
+docker run -it -v ${DOCKER_SHARED_VOLUME}:/ppm_data -e DOCKER_HOST_IP=${DOCKER_HOST_IP} -e PPM_CONFIG_FILE=${PPM_CONFIG_FILE} jpoode_ppm:latest /cvdi-stream/docker-test/ppm.sh
