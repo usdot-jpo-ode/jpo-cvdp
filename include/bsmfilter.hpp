@@ -30,7 +30,7 @@
 #include <stack>
 #include <vector>
 #include <random>
-#include "rapidjson/reader.h"
+#include "rapidjson/document.h"
 #include "cvlib.hpp"
 
 /**
@@ -406,13 +406,12 @@ class BSM : public geo::Point {
  * - The id field is redacted for certain prescribed ids.
  *
  */
-class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHandler> { 
+class BSMHandler {
     public:
-
         /**
          * records the status of the parsing including what caused parsing to stop, i.e., the point to be suppressed.
          */
-        enum ResultStatus : uint16_t { SUCCESS, SPEED, GEOPOSITION, PARSE, OTHER };
+        enum ResultStatus : uint16_t { SUCCESS, SPEED, GEOPOSITION, PARSE, MISSING, OTHER };
 
         using Ptr = std::shared_ptr<BSMHandler>;                                ///< Handle to pass this handler around efficiently.
         using ResultStringMap = std::unordered_map<ResultStatus,std::string,EnumHash>;   ///< Quick retrieval of result string.
@@ -494,124 +493,6 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
          */
         std::string::size_type get_bsm_buffer_size(); 
 
-        /**
-         * @brief Predicate that indicates a new JSON object is being parsed.
-         *
-         * @return true if the last token parsed is '{' and the tokens list is not empty.
-         */
-        bool starting_new_object() const;
-
-        /**
-         * @brief Predicate indicating the current JSON object has been completely parsed.
-         *
-         * @return true if some JSON tokens have been parsed and the last token parsed was '}'.
-         */
-        bool finished_current_object() const;
-
-        /**
-         * @brief Reset the state of the BSMHandler instance so it is ready to process a new JSON string.
-         */
-        void reset();
-
-        /**
-         * @brief SAX Handler for parsing a null value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Null();
-
-        /**
-         * @brief SAX Handler for parsing a boolean value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Bool(bool b);
-
-        /**
-         * @brief SAX Handler for parsing an integer value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Int(int i);
-
-        /**
-         * @brief SAX Handler for parsing an unsigned integer value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Uint(unsigned u);
-
-        /**
-         * @brief SAX Handler for parsing a 64-bit integer value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Int64(int64_t i);
-
-        /**
-         * @brief SAX Handler for parsing an unsigned 64-bit value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Uint64(uint64_t u);
-
-        /**
-         * @brief SAX Handler for parsing a double value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Double(double d);
-
-        /**
-         * @brief SAX Handler for parsing a number presented as a string in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool RawNumber(const char* str, rapidjson::SizeType length, bool copy);
-
-        /**
-         * @brief SAX Handler for parsing a string value in a JSON string.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool String(const char* str, rapidjson::SizeType length, bool copy);
-
-        /**
-         * @brief SAX Handler for parsing the beginning of a new JSON object.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool StartObject();
-
-        /**
-         * @brief SAX Handler for parsing the end of a new JSON object.
-         *
-         * @param memberCount the number of JSON elements in the preceeding object.
-         * @return false to terminate parsing; true otherwise.
-         */
-        bool EndObject(rapidjson::SizeType memberCount);
-
-        /**
-         * @brief SAX Handler for parsing the key for a JSON element.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool Key(const char* str, rapidjson::SizeType length, bool copy);
-
-        /**
-         * @brief SAX Handler for parsing the beginning of a JSON array.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool StartArray();
-
-        /**
-         * @brief SAX Handler for parsing the end of a JSON array.
-         *
-         * @return false to terminate parsing; true otherwise
-         */
-        bool EndArray(rapidjson::SizeType elementCount);
-
         template<uint32_t FLAG>
         bool is_active() {
             return activated_ & FLAG;
@@ -630,10 +511,6 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         }
 
         const uint32_t get_activation_flag() const;
-        const std::string& get_current_key() const;
-        bool get_next_value() const;
-        const StrVector& get_object_stack() const; 
-        const StrVector& get_tokens() const; 
         const VelocityFilter& get_velocity_filter() const;
         const IdRedactor& get_id_redactor() const;
 
@@ -643,16 +520,14 @@ class BSMHandler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, BSMHan
         const double get_box_extension() const;
         
     private:
-        rapidjson::Reader reader_;                  ///< JSON reader.
+        rapidjson::Document document_;              ///< JSON DOM
         uint32_t activated_;                        ///< A flag word indicating which features of the privacy protection are activiated.
+
+        bool finalized_;                            ///< Indicates the JSON string after redaction has been created and retrieved.
         ResultStatus result_;                       ///< Indicates the current state of BSM parsing and what causes failure.
         BSM bsm_;                                   ///< The BSM instance that is being built through parsing.
         Quad::Ptr quad_ptr_;                        ///< A pointer to the quad tree containing the map elements.
         bool get_value_;                            ///< Indicates the next value should be saved.
-        bool finalized_;                            ///< Indicates the JSON string after redaction has been created and retrieved.
-        std::string current_key_;                   ///< The current key being processed by the SAX JSON parser.
-        StrVector object_stack_;                    ///< A vector that retains the objects being parsed from the JSON; used as a stack.
-        StrVector tokens_;                          ///< A vector containing all the tokens necessary to generate the JSON of the filtered BSM.
         std::string json_;                          ///< The JSON string after redaction.
 
         VelocityFilter vf_;                         ///< The velocity filter functor instance.

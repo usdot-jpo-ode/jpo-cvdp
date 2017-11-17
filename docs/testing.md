@@ -8,9 +8,9 @@ There are several ways to test the capabilities of the PPM.
 
 ## Test Files
 
-Several example JSON BSM test files are in the [jpo-cvdp/data](../data) directory.  These files can be edited to generate
-your own test cases. Each line in the file should be a well-formed BSM JSON
-object. **Each BSM should be on a separate line in the file.** **If a JSON object cannot be parsed it is suppressed.**
+Several example JSON message test files are in the [jpo-cvdp/data](../data) directory.  These files can be edited to generate
+your own test cases. Each line in the file should be a well-formed BSM or TIM JSON
+object. **Each message should be on a separate line in the file.** **If a JSON object cannot be parsed it is suppressed.**
 
 ## Docker Testing
 
@@ -28,7 +28,7 @@ Next run:
 
     $ ./test-scripts/standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [OFFSET]
 
-Where MAP_FILE is a [map file](configuration.md#map-file), CONFIG is [PPM Configuration file](configuration.md) and TEST_FILE is a [JSON BSM test file](#test-files). Offset refers to the offset in the filtered BSM topic; this is where the consumer will look for new output. The default offset is zero (the beginning of the topic), which should for the first time running the test. This will start the PPM Kafka container and use the supplied files to test the BSM filtering. For example, running:
+Where MAP_FILE is a [map file](configuration.md#map-file), CONFIG is [PPM Configuration file](configuration.md) and TEST_FILE is a [JSON message test file](#test-files). Offset refers to the offset in the filtered message topic; this is where the consumer will look for new output. The default offset is zero (the beginning of the topic), which should for the first time running the test. This will start the PPM Kafka container and use the supplied files to test the BSM filtering. For example, running:
 
     $ ./test-scripts/standalone.sh data/I_80.edges config/test/I_80_vel_filter.properties data/I_80_test.json
 

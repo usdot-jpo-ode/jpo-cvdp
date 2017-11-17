@@ -6,12 +6,25 @@ from json import loads
 import sys
 
 def print_bsm_data(d):
-    id_ = d['coreData']['id']
-    speed = d['coreData']['speed']
-    lat = d['coreData']['position']['latitude']
-    lng = d['coreData']['position']['longitude']
+    if d['metadata']['payloadType'] == 'us.dot.its.jpo.ode.model.OdeTIMPayload':
+        speed = d['metadata']['receivedDetails']['location']['speed']
+        lat = d['metadata']['receivedDetails']['location']['latitude']
+        lng = d['metadata']['receivedDetails']['location']['longitude']
 
-    print('Consuming BSM with ID={}, speed={}, position={}, {}'.format(id_, speed, lat, lng))
+        print('Consuming TIMS with speed={}, position={}, {}'.format(speed, lat, lng))
+
+        return
+    elif d['metadata']['payloadType'] == 'us.dot.its.jpo.ode.model.OdeBsmPayload':
+        id_ = d['payload']['data']['coreData']['id']
+        speed = d['payload']['data']['coreData']['speed']
+        lat = d['payload']['data']['coreData']['position']['latitude']
+        lng = d['payload']['data']['coreData']['position']['longitude']
+
+        print('Consuming BSM with ID={}, speed={}, position={}, {}'.format(id_, speed, lat, lng))
+
+        return
+
+    raise IOError()
 
 for l in sys.stdin:
     try:

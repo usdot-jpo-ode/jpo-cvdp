@@ -63,7 +63,7 @@ target_compile_definitions(ppm_tests PRIVATE _PPM_TESTS)               # flag to
 add_subdirectory(kafka-test)
 
 # Copy the data to the build. TODO make this part of the test or data target.
-set(BSM_DATA_DIR $<TARGET_FILE_DIR:ppm>/data)
+set(BSM_DATA_DIR $<TARGET_FILE_DIR:ppm>/unit-test-data)
 set(BSM_CONFIG_DIR $<TARGET_FILE_DIR:ppm>/config)
 
 # Make the base data directory.
@@ -72,7 +72,7 @@ add_custom_command(TARGET ppm PRE_BUILD COMMAND ${CMAKE_COMMAND}
 # Copy the data files.
 add_custom_command(TARGET ppm PRE_BUILD COMMAND echo "Copying the data directory")
 add_custom_command(TARGET ppm PRE_BUILD COMMAND ${CMAKE_COMMAND} 
-                   -E copy_directory ${PROJECT_SOURCE_DIR}/data 
+                   -E copy_directory ${PROJECT_SOURCE_DIR}/unit-test-data
                    ${BSM_DATA_DIR})
 
 # Make the base data directory.

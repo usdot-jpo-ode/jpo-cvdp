@@ -121,6 +121,7 @@ class PPM : public tool::Tool {
         int32_t partition;
         int64_t offset;
         std::string published_topic;                                    ///> The topic we are publishing filtered BSM to.
+        std::string consumed_topic;                                     ///> consumer topics.
 
         // configurations; global and topic (the names in these are fixed)
         std::unordered_map<std::string, std::string> pconf;
@@ -129,10 +130,10 @@ class PPM : public tool::Tool {
 
         Quad::Ptr qptr;
 
-        std::vector<std::string> consumed_topics;                       ///> consumer topics.
         std::shared_ptr<RdKafka::KafkaConsumer> consumer;
         int consumer_timeout;
         std::shared_ptr<RdKafka::Producer> producer;
+        std::shared_ptr<RdKafka::Topic> raw_topic;
         std::shared_ptr<RdKafka::Topic> filtered_topic;
 };
 
