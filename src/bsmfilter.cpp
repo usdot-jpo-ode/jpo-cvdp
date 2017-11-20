@@ -342,7 +342,7 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
                 return true;
             }
 
-        }   else    if (entity_ptr->get_type() == "circle") {
+        }  else if (entity_ptr->get_type() == "circle") {
             circle_ptr = std::static_pointer_cast<const geo::Circle>(entity_ptr);
 
             if (circle_ptr->contains(bsm)) {
@@ -633,4 +633,8 @@ const VelocityFilter& BSMHandler::get_velocity_filter() const {
 
 const uint32_t BSMHandler::get_activation_flag() const {
     return activated_;
+}
+
+const IdRedactor& BSMHandler::get_id_redactor() const {
+    return idr_;
 }
