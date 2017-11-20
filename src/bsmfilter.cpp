@@ -306,6 +306,11 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
         activate<BSMHandler::kGeofenceFilterFlag>();
     }
 
+    search = conf.find("privacy.redaction.size");
+    if ( search != conf.end() && search->second=="ON" ) {
+        activate<BSMHandler::kSizeRedactFlag>();
+    }
+
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
@@ -337,7 +342,7 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
                 return true;
             }
 
-        }   else    if (entity_ptr->get_type() == "circle") {
+        }  else if (entity_ptr->get_type() == "circle") {
             circle_ptr = std::static_pointer_cast<const geo::Circle>(entity_ptr);
 
             if (circle_ptr->contains(bsm)) {
@@ -514,6 +519,24 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         }
 
         bsm_.set_id(id);
+
+        // Check for BSM size.  
+        // Size is a special case; if it's not included, then we do 
+        // NOT return an error/suppress
+        if (core_data.HasMember("size") && is_active<kSizeRedactFlag>()) {
+            // size included
+            rapidjson::Value& size = core_data["size"];
+          
+            if (size.HasMember("length")) {
+                // length included; redact
+                size["length"] = 0; 
+            } 
+
+            if (size.HasMember("width")) {
+                // width included; redact
+                size["width"] = 0; 
+            } 
+        }
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTIMPayload") {
         if (!metadata.HasMember("receivedDetails")) {
             result_ = ResultStatus::MISSING;
@@ -610,4 +633,8 @@ const VelocityFilter& BSMHandler::get_velocity_filter() const {
 
 const uint32_t BSMHandler::get_activation_flag() const {
     return activated_;
+}
+
+const IdRedactor& BSMHandler::get_id_redactor() const {
+    return idr_;
 }

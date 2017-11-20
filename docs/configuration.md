@@ -142,7 +142,7 @@ be modifed as described in this second and the sections that follow.
 ## BSM Identifier Redaction
 
 If required, the `TemporaryID` field in the BSM can be redacted and replaced with a randomly chosen identifier. The following configuration parameters
-control redaction.
+control identifier redaction.
 
 - `privacy.redaction.id` : enables or disables the PPM's redaction function for the BSM `id` field (`TemporaryID` field in J2735).
     - `ON` : enables redaction
@@ -159,6 +159,15 @@ control redaction.
    the BSM output by the PPM if retained.
     - Similar to the `privacy.redaction.id.value`, these are 4 hexadecimal-encoded bytes.
     - More than one id can be specified by separating them by commas.
+
+## BSM Vehicle Size Redaction
+
+If required, the `VehicleLength` and `VehicleWidth` fields in the BSM can be redacted and replaced with a **0** value. The following configuration parameters
+control vehicle size redaction.
+
+- `privacy.redaction.size` : enables or disables the PPM's redaction function for the BSM `size` fields `length` and `width` (`VehicleLength` and `VehicleWidth` field in J2735).
+    - `ON` : enables redaction
+    - Any other value : disables redaction.
 
 ## Geofencing
 
