@@ -14,13 +14,13 @@ if [ -z $1 ] || [ ! -f $1 ]; then
     exit 1
 fi
 
-if [ -z $1 ] || [ ! -f $2 ]; then
+if [ -z $2 ] || [ ! -f $2 ]; then
     echo "Config file: "$2" not found!"
     echo $USAGE
     exit 1
 fi
 
-if [ -z $1 ] || [ ! -f $3 ]; then
+if [ -z $3 ] || [ ! -f $3 ]; then
     echo "Test file: "$3" not found!"
     echo $USAGE
     exit 1

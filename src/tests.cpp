@@ -59,6 +59,7 @@ bool buildBaseConfiguration( ConfigMap& conf ) {
     conf["privacy.filter.velocity"]            = "ON";
     conf["privacy.redaction.id"]               = "ON";
     conf["privacy.redaction.id.inclusions"]    = "ON";
+    conf["privacy.redaction.size"]             = "ON";
     conf["privacy.filter.geofence"]            = "ON";
     conf["privacy.filter.velocity.min"]        = "2.235";
     conf["privacy.filter.velocity.max"]        = "35.763";
@@ -70,6 +71,8 @@ bool buildBaseConfiguration( ConfigMap& conf ) {
 }
 
 Quad::Ptr buildTestQuadTree( void ) {
+    geo::Location sw1(35.951853, -83.932832);
+    geo::Location ne1(35.953642, -83.929975);
 
     // Build a small road network on the UT campus.
     geo::Vertex::Ptr v_a = std::make_shared<geo::Vertex>(35.952500, -83.932434, 1);
@@ -87,6 +90,8 @@ Quad::Ptr buildTestQuadTree( void ) {
     geo::EdgePtr r4 = std::make_shared<geo::Edge>(v_e, v_c, osm::Highway::SECONDARY, 4);
     geo::EdgePtr r5 = std::make_shared<geo::Edge>(v_f, v_g, osm::Highway::SECONDARY, 5);
     geo::EdgePtr r6 = std::make_shared<geo::Edge>(v_f, v_c, osm::Highway::SECONDARY, 6);
+    geo::Circle::Ptr c1 = std::make_shared<geo::Circle>(35.951250, -83.931861, 10.0);
+    geo::Grid::Ptr g1 = std::make_shared<geo::Grid>(sw1, ne1, 0, 0);
 
     // Setup the quad.
     geo::Point sw{ 35.946920, -83.938486 };
@@ -101,6 +106,8 @@ Quad::Ptr buildTestQuadTree( void ) {
     Quad::insert( qptr, r4);
     Quad::insert( qptr, r5);
     Quad::insert( qptr, r6);
+    Quad::insert( qptr, c1);
+    Quad::insert( qptr, g1);
 
     return qptr;
 }
@@ -931,6 +938,7 @@ TEST_CASE( "Redactor Checks", "[ppm][redactor]" ) {
     ConfigMap conf{ 
         { "privacy.redaction.id.inclusions", "ON" },
         { "privacy.redaction.id.included", "ID1,ID2" },
+        { "privacy.redaction.id.value", "FFFF" },
     };
 
     std::string r;
@@ -948,6 +956,8 @@ TEST_CASE( "Redactor Checks", "[ppm][redactor]" ) {
         idr.RedactAll();
         CHECK_FALSE( idr.HasInclusions() );
         CHECK( idr.NumInclusions() == -1 );
+        CHECK(idr.redaction_value() == "FFFF");
+        CHECK( idr.AddIdInclusion("ID3") );
     }
 
     SECTION( "Inclusion Redaction" ) {
@@ -1024,6 +1034,9 @@ TEST_CASE( "Velocity Filter", "[ppm][velocity]" ) {
         { "privacy.filter.velocity.min", "5" },
         { "privacy.filter.velocity.max", "100" }
     };
+    
+    // cover default constructor
+    VelocityFilter v_test;
 
     VelocityFilter vf{ conf };
 
@@ -1136,6 +1149,9 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
 
         handler.deactivate<BSMHandler::kIdRedactFlag>();
         CHECK_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+
+        handler.deactivate<BSMHandler::kSizeRedactFlag>();
+        CHECK_FALSE( handler.is_active<BSMHandler::kSizeRedactFlag>() );
 
         CHECK( handler.get_activation_flag() == 0 );
     }
@@ -1338,7 +1354,7 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
 
-    BSM bsm[4];
+    BSM bsm[6];
 
     // On A - B
     bsm[0].set_latitude(35.951090);
@@ -1356,17 +1372,32 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
     bsm[3].set_latitude(35.964);
     bsm[3].set_longitude(-83.926);
 
+    // inside the circle
+    bsm[4].set_latitude(35.951221);
+    bsm[4].set_longitude(-83.931833);
+
+    // inside the grid
+    bsm[5].set_latitude(35.952289);
+    bsm[5].set_longitude(-83.931821);
+
+    // cover the output string
+    std::stringstream ss;
+    ss << bsm[5];
+    CHECK(ss.str() == "Pos: (35.952289, -83.931821), Spd: -1 Id: ");
+    
     CHECK( handler.isWithinEntity( bsm[0] ) );
     CHECK( handler.isWithinEntity( bsm[1] ) );
-    // Aaron's checking on this one.
     CHECK( handler.isWithinEntity( bsm[2] ) );
     CHECK_FALSE( handler.isWithinEntity( bsm[3] ) );
+    CHECK( handler.isWithinEntity( bsm[4] ) );
+    CHECK( handler.isWithinEntity( bsm[5] ) );
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.id.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
+
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1378,5 +1409,19 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "geoposition" );
+    }
+}
+
+TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "unit-test-data/error_cases.json", json_test_cases ) );
+
+    for ( auto& test_case : json_test_cases ) {
+        CHECK_FALSE( handler.process( test_case ) );
     }
 }
