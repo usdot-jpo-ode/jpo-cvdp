@@ -6,10 +6,10 @@ from json import loads
 import sys
 
 def print_bsm_data(d):
-    if d['metadata']['payloadType'] == 'us.dot.its.jpo.ode.model.OdeTIMPayload':
-        speed = d['metadata']['receivedDetails']['location']['speed']
-        lat = d['metadata']['receivedDetails']['location']['latitude']
-        lng = d['metadata']['receivedDetails']['location']['longitude']
+    if d['metadata']['payloadType'] == 'us.dot.its.jpo.ode.model.OdeTimPayload':
+        speed = d['metadata']['receivedMessageDetails']['locationData']['speed']
+        lat = d['metadata']['receivedMessageDetails']['locationData']['latitude']
+        lng = d['metadata']['receivedMessageDetails']['locationData']['longitude']
 
         print('Consuming TIMS with speed={}, position={}, {}'.format(speed, lat, lng))
 

@@ -543,6 +543,165 @@ JSON_TIMS_DICT = {
   }
 }
 
+JSON_TIMS_2 = {
+  "payload": {
+    "dataType": "TravelerInformation", 
+    "data": {
+      "MessageFrame": {
+        "value": {
+          "TravelerInformation": {
+            "msgCnt": 1, 
+            "dataFrames": {
+              "TravelerDataFrame": {
+                "priority": 5, 
+                "startYear": 2017, 
+                "duratonTime": 1440, 
+                "msgId": {
+                  "roadSignID": {
+                    "mutcdCode": {
+                      "warning": ""
+                    }, 
+                    "viewAngle": 1111111111111111, 
+                    "position": {
+                      "lat": 404725418, 
+                      "elevation": 4096, 
+                      "long": -1049700560
+                    }
+                  }
+                }, 
+                "sspMsgRights2": 1, 
+                "regions": {
+                  "GeographicalPath": {
+                    "direction": 1111111111111111, 
+                    "laneWidth": 800, 
+                    "description": {
+                      "path": {
+                        "offset": {
+                          "xy": {
+                            "nodes": {
+                              "NodeXY": [
+                                {
+                                  "delta": {
+                                    "node-LatLon": {
+                                      "lat": 404735394, 
+                                      "lon": -1049701440
+                                    }
+                                  }
+                                }, 
+                                {
+                                  "delta": {
+                                    "node-LatLon": {
+                                      "lat": 404732984, 
+                                      "lon": -1049700032
+                                    }
+                                  }
+                                }, 
+                                {
+                                  "delta": {
+                                    "node-LatLon": {
+                                      "lat": 404730975, 
+                                      "lon": -1049699856
+                                    }
+                                  }
+                                }, 
+                                {
+                                  "delta": {
+                                    "node-LatLon": {
+                                      "lat": 404718186, 
+                                      "lon": -1049701616
+                                    }
+                                  }
+                                }, 
+                                {
+                                  "delta": {
+                                    "node-LatLon": {
+                                      "lat": 404716111, 
+                                      "lon": -1049702321
+                                    }
+                                  }
+                                }, 
+                                {
+                                  "delta": {
+                                    "node-LatLon": {
+                                      "lat": 404715307, 
+                                      "lon": -1049702937
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }, 
+                    "closedPath": {
+                      "false": ""
+                    }, 
+                    "directionality": {
+                      "both": ""
+                    }, 
+                    "anchor": {
+                      "lat": 404725418, 
+                      "elevation": 4096, 
+                      "long": -1049700560
+                    }
+                  }
+                }, 
+                "sspLocationRights": 1, 
+                "sspMsgRights1": 1, 
+                "startTime": 401108, 
+                "sspTimRights": 1, 
+                "content": {
+                  "advisory": {
+                    "SEQUENCE": {
+                      "item": {
+                        "itis": 513
+                      }
+                    }
+                  }
+                }, 
+                "frameType": {
+                  "advisory": ""
+                }
+              }
+            }, 
+            "packetID": "000000000018099C39"
+          }
+        }, 
+        "messageId": 31
+      }
+    }
+  }, 
+  "metadata": {
+    "receivedMessageDetails": {
+      "locationData": {
+        "latitude": 40.4740885, 
+        "speed": "0.10", 
+        "elevation": 1484, 
+        "heading": 193.6875, 
+        "longitude": -104.9691905
+      }, 
+      "rxSource": "RSU"
+    }, 
+    "validSignature": False, 
+    "recordGeneratedBy": "OBU", 
+    "odeReceivedAt": "2017-12-06T23:15:59.596Z[UTC]", 
+    "recordGeneratedAt": "2017-10-11T23:35:09.924Z[UTC]", 
+    "logFileName": "rxMsg_1507764909_2001_3A470_3A41af_3A1_3A226_3Aadff_3Afe05_3A2561.csv", 
+    "payloadType": "us.dot.its.jpo.ode.model.OdeTimPayload", 
+    "schemaVersion": 3, 
+    "serialId": {
+      "recordId": 2, 
+      "bundleSize": 1, 
+      "serialNumber": 0, 
+      "bundleId": 6, 
+      "streamId": "fef1b210-858b-4444-b0a9-72d4da9ad275"
+    }, 
+    "sanitized": False, 
+    "recordType": "rxMsg"
+  }
+}
+
 from json import dumps, loads
 
 import sys
@@ -616,6 +775,18 @@ def json3addSize(json_str_in):
 
     return json_in    
 
+def json3toTIMS2(json_str_in):
+    json_in = loads(json_str_in)
+
+    json_tims_out = JSON_TIMS_2
+
+    json_tims_out['metadata']['receivedMessageDetails']['locationData']['latitude'] = json_in['payload']['data']['coreData']['position']['latitude']
+    json_tims_out['metadata']['receivedMessageDetails']['locationData']['longitude'] = json_in['payload']['data']['coreData']['position']['longitude']
+    json_tims_out['metadata']['receivedMessageDetails']['locationData']['speed'] = json_in['payload']['data']['coreData']['speed']
+
+    return json_tims_out
+
+
 for line in sys.stdin:
     if line[0] == '#':
         continue
@@ -624,7 +795,8 @@ for line in sys.stdin:
     #json_ret = json2toJson3(line)
     #json_ret = json1toJson3(line)
     #json_ret = json3toTIMS(line)
-    json_ret = json3addSize(line)
+    #json_ret = json3addSize(line)
+    json_ret = json3toTIMS2(line)
 
     if not json_ret:
         # Invalid line.

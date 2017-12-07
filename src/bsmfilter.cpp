@@ -537,22 +537,22 @@ bool BSMHandler::process( const std::string& bsm_json ) {
                 size["width"] = 0; 
             } 
         }
-    } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTIMPayload") {
-        if (!metadata.HasMember("receivedDetails")) {
+    } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
+        if (!metadata.HasMember("receivedMessageDetails")) {
             result_ = ResultStatus::MISSING;
 
             return false;
         } 
 
-        rapidjson::Value& received_details = metadata["receivedDetails"];
+        rapidjson::Value& received_details = metadata["receivedMessageDetails"];
     
-        if (!received_details.HasMember("location")) {
+        if (!received_details.HasMember("locationData")) {
             result_ = ResultStatus::MISSING;
 
             return false;
         }
 
-        rapidjson::Value& location = received_details["location"];
+        rapidjson::Value& location = received_details["locationData"];
 
         if (!location.HasMember("latitude") || !location.HasMember("longitude") || !location.HasMember("speed")) {
             result_ = ResultStatus::MISSING;
