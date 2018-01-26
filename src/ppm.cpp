@@ -439,7 +439,11 @@ bool PPM::msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handl
 
     switch (message->err()) {
         case RdKafka::ERR__TIMED_OUT:
-            ilogger->info("Waiting for more BSMs from the ODE producer.");
+            ilogger->info("{}: Waiting for more BSMs.");
+            break;
+
+        case RdKafka::ERR__MSG_TIMED_OUT:
+            ilogger->info("{}: Waiting for more BSMs from the ODE producer.");
             break;
 
         case RdKafka::ERR_NO_ERROR:
