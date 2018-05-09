@@ -73,10 +73,12 @@
 #include <unistd.h>
 #endif
 
+bool PPM::bootstrap = true;
 bool PPM::bsms_available = true;
 
 void PPM::sigterm (int sig) {
     bsms_available = false;
+    bootstrap = false;
 }
 
 PPM::PPM( const std::string& name, const std::string& description ) :
@@ -496,6 +498,8 @@ bool PPM::msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handl
 
         case RdKafka::ERR__UNKNOWN_TOPIC:
             elogger->error("cannot consume due to an UNKNOWN consumer topic: {}", message->errstr());
+            bsms_available = false;
+            break;
 
         case RdKafka::ERR__UNKNOWN_PARTITION:
             elogger->error("cannot consume due to an UNKNOWN consumer partition: {}", message->errstr());
@@ -564,10 +568,13 @@ bool PPM::launch_producer()
 {
     std::string error_string;
 
-    producer = std::shared_ptr<RdKafka::Producer>( RdKafka::Producer::create(conf, error_string) );
     if (!producer) {
-        elogger->critical("Failed to create producer with error: {}.", error_string );
-        return false;
+        producer = std::shared_ptr<RdKafka::Producer>( RdKafka::Producer::create(conf, error_string) );
+
+        if (!producer) {
+            elogger->critical("Failed to create producer with error: {}.", error_string );
+            return false;
+        }
     }
 
     filtered_topic = std::shared_ptr<RdKafka::Topic>( RdKafka::Topic::create(producer.get(), published_topic, tconf, error_string) );
@@ -583,11 +590,14 @@ bool PPM::launch_producer()
 bool PPM::launch_consumer()
 {
     std::string error_string;
-
-    consumer = std::shared_ptr<RdKafka::KafkaConsumer>( RdKafka::KafkaConsumer::create(conf, error_string) );
+    
     if (!consumer) {
-        elogger->critical("Failed to create consumer with error: {}",  error_string );
-        return false;
+        consumer = std::shared_ptr<RdKafka::KafkaConsumer>( RdKafka::KafkaConsumer::create(conf, error_string) );
+
+        if (!consumer) {
+            elogger->critical("Failed to create consumer with error: {}",  error_string );
+            return false;
+        }
     }
 
     //raw_topic = nullptr;
@@ -742,45 +752,59 @@ int PPM::operator()(void) {
         return EXIT_FAILURE;
     }
 
-    if ( !launch_consumer() ) return false;
-    if ( !launch_producer() ) return false;
+    while (bootstrap) {
+        // reset flag here, or else nothing works below
+        bsms_available = true;
 
-    BSMHandler handler{qptr, pconf};
+        if (!launch_consumer()) {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 1500 ) );
 
-    std::vector<RdKafka::TopicPartition*> partitions;
-    RdKafka::ErrorCode err = consumer->position(partitions);
-
-    if (err) {
-        ilogger->info("err {}", RdKafka::err2str(err));
-    } else {
-        for (auto *partition : partitions) {
-            ilogger->info("topar {} {}", partition->topic(), partition->offset());
+            continue;
         }
-    }
 
-    // consume-produce loop.
-    while (bsms_available) {
+        if (!launch_producer()) {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 1500 ) );
 
-        std::unique_ptr<RdKafka::Message> msg{ consumer->consume( consumer_timeout ) };
+            continue;
+        }
 
-        if ( msg_consume(msg.get(), NULL, handler) ) {
+        BSMHandler handler{qptr, pconf};
 
-            status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
+        std::vector<RdKafka::TopicPartition*> partitions;
+        RdKafka::ErrorCode err = consumer->position(partitions);
 
-            if (status != RdKafka::ERR_NO_ERROR) {
-                elogger->error("failed to produce retained BSM because: {}", RdKafka::err2str( status ));
-
-            } else {
-                // successfully sent; update counters.
-                bsm_send_count++;
-                bsm_send_bytes += msg->len();
-                ilogger->trace("produced BSM successfully.");
+        if (err) {
+            ilogger->info("err {}", RdKafka::err2str(err));
+        } else {
+            for (auto *partition : partitions) {
+                ilogger->info("topar {} {}", partition->topic(), partition->offset());
             }
-        } 
+        }
 
-        // NOTE: good for troubleshooting, but bad for performance.
-        elogger->flush();
-        ilogger->flush();
+        // consume-produce loop.
+        while (bsms_available) {
+
+            std::unique_ptr<RdKafka::Message> msg{ consumer->consume( consumer_timeout ) };
+
+            if ( msg_consume(msg.get(), NULL, handler) ) {
+
+                status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
+
+                if (status != RdKafka::ERR_NO_ERROR) {
+                    elogger->error("failed to produce retained BSM because: {}", RdKafka::err2str( status ));
+
+                } else {
+                    // successfully sent; update counters.
+                    bsm_send_count++;
+                    bsm_send_bytes += msg->len();
+                    ilogger->trace("produced BSM successfully.");
+                }
+            } 
+
+            // NOTE: good for troubleshooting, but bad for performance.
+            elogger->flush();
+            ilogger->flush();
+        }
     }
 
     ilogger->info("PPM operations complete; shutting down...");
