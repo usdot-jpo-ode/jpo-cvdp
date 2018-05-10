@@ -52,6 +52,10 @@ loitering locations can aid in learning the identity of the driver.
 
 ## Release Notes
 
+### ODE Sprint 38
+
+- ODE-771: Fixed reported bug where the PPM exits when connections to Kafka brokers fail.
+
 ### ODE Sprint 15
 
 - ODE-369/ORNL-15: Logging
