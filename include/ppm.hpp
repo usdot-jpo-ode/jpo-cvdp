@@ -91,7 +91,8 @@ class PPM : public tool::Tool {
 
     private:
 
-        static bool bsms_available;                                     ///> flag to exit application; set via signals so static.
+        static bool bootstrap;                                          ///> flag indicating we need to bootstrap the consumer and producer
+        static bool bsms_available;                                     ///> flag to find consumer/produce bsms; set via signals so static.
 
         static constexpr long ilogsize = 1048576 * 5;                   ///> The size of a single information log; these rotate.
         static constexpr long elogsize = 1048576 * 2;                   ///> The size of a single error log; these rotate.
