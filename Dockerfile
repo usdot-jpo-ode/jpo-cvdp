@@ -22,8 +22,8 @@ ADD ./cv-lib /cvdi-stream/cv-lib
 ADD ./include /cvdi-stream/include
 ADD ./kafka-test /cvdi-stream/kafka-test
 ADD ./unit-test-data /cvdi-stream/unit-test-data
-ADD ${PPM_CONFIG_FILE} /cvdi-stream/config/
-ADD ${PPM_MAP_FILE} /cvdi-stream/config/
+ADD config/${PPM_CONFIG_FILE} /cvdi-stream/config/
+ADD data/${PPM_MAP_FILE} /cvdi-stream/config/
 
 # Do the build.
 RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvdi-stream-build && cmake /cvdi-stream && make
