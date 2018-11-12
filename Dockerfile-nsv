@@ -32,4 +32,4 @@ RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvd
 ADD ./docker-test /cvdi-stream/docker-test
 
 # Run the tool.
-CMD ["/cvdi-stream/docker-test/ppm.sh"]
+CMD ["/cvdi-stream/docker-test/ppm-nsv.sh"]
