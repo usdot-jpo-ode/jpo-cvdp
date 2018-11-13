@@ -285,7 +285,7 @@ BSMHandler::ResultStringMap BSMHandler::result_string_map{
         };
 
 BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
-    document_{},
+    // document_{},
     activated_{0},
     result_{ ResultStatus::SUCCESS },
     bsm_{},
@@ -366,31 +366,38 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     double latitude = 0.0;
     double longitude = 0.0;
     std::string id;
+    
+    // JMC: Attempt to fix memory leak; build and destroy JSON object each time to ensure memory is reclaimed.
+    rapidjson::Document document;              ///< JSON DOM
 
     finalized_ = false;
     result_ = ResultStatus::SUCCESS;
     
     // create the DOM
     // check for errors
-    if (document_.Parse(bsm_json.c_str()).HasParseError()) {
+    // if (document_.Parse(bsm_json.c_str()).HasParseError()) {
+    if (document.Parse(bsm_json.c_str()).HasParseError()) {
         result_ = ResultStatus::PARSE;
 
         return false;
     }
 
-    if (!document_.IsObject()) {
+    // if (!document_.IsObject()) {
+    if (!document.IsObject()) {
         result_ = ResultStatus::PARSE;
 
         return false;
     }
 
-    if (!document_.HasMember("metadata")) {
+    // if (!document_.HasMember("metadata")) {
+    if (!document.HasMember("metadata")) {
         result_ = ResultStatus::MISSING;
 
         return false;
     }
 
-    rapidjson::Value& metadata = document_["metadata"];
+    // rapidjson::Value& metadata = document_["metadata"];
+    rapidjson::Value& metadata = document["metadata"];
 
     // switch sanitized flag
     if (!metadata.HasMember("sanitized")) {
@@ -423,13 +430,15 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     std::string payload_type_str = metadata["payloadType"].GetString();
 
     if (payload_type_str == "us.dot.its.jpo.ode.model.OdeBsmPayload") {
-        if (!document_.HasMember("payload")) {
+        // if (!document_.HasMember("payload")) {
+        if (!document.HasMember("payload")) {
             result_ = ResultStatus::MISSING;
 
             return false;
         }
     
-        rapidjson::Value& payload = document_["payload"];
+        // rapidjson::Value& payload = document_["payload"];
+        rapidjson::Value& payload = document["payload"];
 
         // handle BSM payload
         if (!payload.HasMember("data")) {
@@ -515,7 +524,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             bsm_.set_original_id(id);
             idr_(id);
 
-            core_data["id"].SetString(id.c_str(), static_cast<rapidjson::SizeType>(id.size()), document_.GetAllocator());
+            // core_data["id"].SetString(id.c_str(), static_cast<rapidjson::SizeType>(id.size()), document_.GetAllocator());
+            core_data["id"].SetString(id.c_str(), static_cast<rapidjson::SizeType>(id.size()), document.GetAllocator());
         }
 
         bsm_.set_id(id);
@@ -587,6 +597,17 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         return false;
     }
 
+    // JMC: Moving this here to finalize the json string instead of in get_json()
+    // JMC: Go ahead and write out the BSM in redacted form using the document that we built in
+    // JMC: this method.
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+    json_ = buffer.GetString();
+
+    // TODO: if we keep this model, this variable serves no purpose.
+    finalized_ = true;
+    
     return result_ == ResultStatus::SUCCESS;
 }
 
@@ -603,21 +624,25 @@ BSM& BSMHandler::get_bsm() {
 }
 
 const std::string& BSMHandler::get_json() {
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    document_.Accept(writer);
-
-    json_ = buffer.GetString();
-
-    finalized_ = true;
-
     return json_;
+
+    // rapidjson::StringBuffer buffer;
+    // rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    // document_.Accept(writer);
+
+    // // TODO: Outside chance of a leak here -- std::string growing but early part getting replaced.
+    // json_ = buffer.GetString();
+
+    // finalized_ = true;
+
+    // return json_;
 }
 
 std::string::size_type BSMHandler::get_bsm_buffer_size() {
-    if ( !finalized_ ) {
-        get_json();
-    }
+    // JMC: how we are using this it is always finalized now that I moved the document object.
+    // if ( !finalized_ ) {
+    //     get_json();
+    // }
 
     return json_.size();
 }
