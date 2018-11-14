@@ -285,7 +285,6 @@ BSMHandler::ResultStringMap BSMHandler::result_string_map{
         };
 
 BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
-    // document_{},
     activated_{0},
     result_{ ResultStatus::SUCCESS },
     bsm_{},

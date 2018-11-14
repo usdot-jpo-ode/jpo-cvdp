@@ -535,9 +535,7 @@ class BSMHandler {
         bool get_value_;                            ///< Indicates the next value should be saved.
         std::string json_;                          ///< The JSON string after redaction.
 
-        // JMC: Leak shouldn't be here -- only doubles and no statics.
         VelocityFilter vf_;                         ///< The velocity filter functor instance.
-        // JMC: Leak shouldn't be here -- only doubles and no statics.
         IdRedactor idr_;                            ///< The ID Redactor to use during parsing of BSMs.
 
         double box_extension_;                      ///< The number of meters to extend the boxes that surround edges and define the geofence.
