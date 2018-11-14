@@ -768,6 +768,7 @@ int PPM::operator()(void) {
             continue;
         }
 
+        // JMC: There was leak in here caused by RapidJSON.  It has been fixed.  The notes are in that class's code.
         BSMHandler handler{qptr, pconf};
 
         std::vector<RdKafka::TopicPartition*> partitions;

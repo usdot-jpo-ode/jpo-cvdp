@@ -521,7 +521,11 @@ class BSMHandler {
         const double get_box_extension() const;
         
     private:
-        rapidjson::Document document_;              ///< JSON DOM
+
+        // JMC: The leak seems to be caused by re-using the RapidJSON document instance.
+        // JMC: We will use a unique instance for each message.
+        // rapidjson::Document document_;              ///< JSON DOM
+
         uint32_t activated_;                        ///< A flag word indicating which features of the privacy protection are activiated.
 
         bool finalized_;                            ///< Indicates the JSON string after redaction has been created and retrieved.
