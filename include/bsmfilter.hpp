@@ -522,8 +522,8 @@ class BSMHandler {
         
     private:
 
-        // TODO: I think the leak is here -- something in this document is not getting clearned up.
-        // TODO: Strategy - make new document every time we process!
+        // JMC: The leak seems to be caused by re-using the RapidJSON document instance.
+        // JMC: We will use a unique instance for each message.
         // rapidjson::Document document_;              ///< JSON DOM
 
         uint32_t activated_;                        ///< A flag word indicating which features of the privacy protection are activiated.

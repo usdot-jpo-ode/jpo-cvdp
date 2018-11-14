@@ -768,6 +768,7 @@ int PPM::operator()(void) {
             continue;
         }
 
+        // JMC: There was leak in here caused by RapidJSON.  It has been fixed.  The notes are in that class's code.
         BSMHandler handler{qptr, pconf};
 
         std::vector<RdKafka::TopicPartition*> partitions;
@@ -784,13 +785,10 @@ int PPM::operator()(void) {
         // consume-produce loop.
         while (bsms_available) {
 
-            // JMC: Leak option 3
             std::unique_ptr<RdKafka::Message> msg{ consumer->consume( consumer_timeout ) };
 
-            // JMC: Leak option 1
             if ( msg_consume(msg.get(), NULL, handler) ) {
 
-                // JMC: Leak option 2
                 status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
 
                 if (status != RdKafka::ERR_NO_ERROR) {
