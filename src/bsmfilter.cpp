@@ -315,6 +315,11 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
         activate<BSMHandler::kIdRedactFlag>();
     }
 
+    search = conf.find("privacy.redaction.partII");
+    if ( search != conf.end() && search-> second=="ON") {
+        activate<BSMHandler::kPartIIRedactFlag>();
+    }
+
     search = conf.find("privacy.filter.geofence.extension");
     if ( search != conf.end() ) {
         box_extension_ = std::stod( search->second );
@@ -538,6 +543,12 @@ bool BSMHandler::process( const std::string& bsm_json ) {
                 // width included; redact
                 size["width"] = 0; 
             } 
+        }
+
+        // check if partII redaction is required
+        if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
+            // redact part II
+            data["partII"] = 0;
         }
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {

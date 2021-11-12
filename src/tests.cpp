@@ -60,6 +60,7 @@ bool buildBaseConfiguration( ConfigMap& conf ) {
     conf["privacy.redaction.id"]               = "ON";
     conf["privacy.redaction.id.inclusions"]    = "ON";
     conf["privacy.redaction.size"]             = "ON";
+    conf["privacy.redaction.partII"]           = "ON";
     conf["privacy.filter.geofence"]            = "ON";
     conf["privacy.filter.velocity.min"]        = "2.235";
     conf["privacy.filter.velocity.max"]        = "35.763";
@@ -1131,6 +1132,7 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
         CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kIdRedactFlag>() );
+        CHECK( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
         // json is the string "null" when empty
         CHECK( handler.get_json() == "null" );
     };
@@ -1152,6 +1154,9 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
 
         handler.deactivate<BSMHandler::kSizeRedactFlag>();
         CHECK_FALSE( handler.is_active<BSMHandler::kSizeRedactFlag>() );
+
+        handler.deactivate<BSMHandler::kPartIIRedactFlag>() );
+        CHECK_FALSE( handler.is_active<SMHandler::kPartIIRedactFlag>() );
 
         CHECK( handler.get_activation_flag() == 0 );
     }
@@ -1184,10 +1189,12 @@ TEST_CASE( "BSMHandler JSON No Filtering", "[ppm][filtering][alloff]" ) {
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
+    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
 
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
 
     // load up all the test cases.
     std::vector<std::string> json_test_cases;
@@ -1272,10 +1279,12 @@ TEST_CASE( "BSMHandler JSON Id Redaction Only", "[ppm][filtering][idonly]" ) {
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     //handler.activate<BSMHandler::kIdRedactFlag>();
+    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
 
     REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
@@ -1312,10 +1321,12 @@ TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]"
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
     //handler.activate<BSMHandler::kVelocityFilterFlag>();
+    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
 
     REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
@@ -1349,10 +1360,12 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
 
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
+    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
 
     REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
 
     BSM bsm[6];
 
@@ -1425,3 +1438,60 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
         CHECK_FALSE( handler.process( test_case ) );
     }
 }
+
+TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
+    bool debug = false; // debug flag
+
+    ConfigMap pconf;
+
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    handler.deactivate<BSMHandler::kVelocityFilterFlag>();
+    handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
+    handler.deactivate<BSMHandler::kIdRedactFlag>();
+
+    // activate kPartIIRedactFlag and make sure the other flags are deactivated
+    REQUIRE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
+    for ( auto& test_case : json_test_cases ) {
+        // process test case to build BSM
+        CHECK( handler.process( test_case ) );
+
+        // make sure that it was successful
+        CHECK( handler.get_result_string() == "success" );
+
+        // get data
+        rapidjson::Value& data = NULL;
+        try {
+            rapidjson::Document document;
+            document.Parse(handler.get_json());
+            rapidjson::Value& metadata = document["metadata"];
+            rapidjson::Value& payload = document["payload"];
+            rapidjson::Value& data = payload["data"];
+        } catch(Exception e) {
+            if (debug) {
+                printf("Something went wrong.\n");
+            }
+        }
+
+        // check that data is non-null
+        CHECK ( data != NULL );
+
+        // check that partII section is redacted
+        CHECK( data["partII"] == 0 );
+    }
+
+} 
