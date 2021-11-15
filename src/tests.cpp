@@ -1155,8 +1155,8 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
         handler.deactivate<BSMHandler::kSizeRedactFlag>();
         CHECK_FALSE( handler.is_active<BSMHandler::kSizeRedactFlag>() );
 
-        handler.deactivate<BSMHandler::kPartIIRedactFlag>() );
-        CHECK_FALSE( handler.is_active<SMHandler::kPartIIRedactFlag>() );
+        handler.deactivate<BSMHandler::kPartIIRedactFlag>();
+        CHECK_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
 
         CHECK( handler.get_activation_flag() == 0 );
     }
@@ -1440,8 +1440,6 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
 }
 
 TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
-    bool debug = false; // debug flag
-
     ConfigMap pconf;
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
@@ -1474,18 +1472,11 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         CHECK( handler.get_result_string() == "success" );
 
         // get data
-        rapidjson::Value& data = NULL;
-        try {
-            rapidjson::Document document;
-            document.Parse(handler.get_json());
-            rapidjson::Value& metadata = document["metadata"];
-            rapidjson::Value& payload = document["payload"];
-            rapidjson::Value& data = payload["data"];
-        } catch(Exception e) {
-            if (debug) {
-                printf("Something went wrong.\n");
-            }
-        }
+        rapidjson::Document document;
+        document.Parse(handler.get_json().c_str());
+        rapidjson::Value& metadata = document["metadata"];
+        rapidjson::Value& payload = document["payload"];
+        rapidjson::Value& data = payload["data"];
 
         // check that data is non-null
         CHECK ( data != NULL );
