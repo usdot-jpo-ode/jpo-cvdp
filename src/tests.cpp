@@ -1504,36 +1504,12 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
 
         myLog("partII: " + handler.get_bsm().get_partII());
         myLog("original partII: " + handler.get_bsm().get_original_partII());
-        if (handler.get_bsm().get_partII() != handler.get_bsm().get_original_partII()) {
-            myLog("original partII doesn't match current partII -> TEST PASSED");
+
+        // if original partII actually had something in it
+        if (handler.get_bsm().get_original_partII() != "") {
+            // make sure it is now redacted
+            handler.get_bsm().get_partII == "");
         }
-        else {
-            myLog("original partII remains the same -> TEST FAILED");
-        }
-
-        // check that original partII doesn't match current partII
-        CHECK( handler.get_bsm().get_partII() != handler.get_bsm().get_original_partII() );
-
-        /*
-        // get data
-        rapidjson::Document document;
-        document.Parse(handler.get_json().c_str());
-        rapidjson::Value& metadata = document["metadata"];
-        rapidjson::Value& payload = document["payload"];
-        rapidjson::Value& data = payload["data"];
-        myLog("got data");
-
-        // check that data is non-null
-        CHECK ( data != NULL );
-        myLog("made sure data wasn't null");
-        
-        CHECK ( data["partII"] != NULL);
-        myLog("made sure that data[partII] wasn't null");
-
-        // check that partII section is redacted
-        CHECK( data["partII"] == 0 );                   // this is where the test fails!
-        myLog("partII was redacted successfully");
-        */
     }
 
 } 
