@@ -1502,9 +1502,16 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         CHECK( handler.get_result_string() == "success" );
         myLog("handler was successful");
 
+
+        if (handler.get_bsm().get_partII() != handler.get_bsm().get_original_partII()) {
+            myLog("original partII doesn't match current partII -> TEST PASSED");
+        }
+        else {
+            myLog("original partII remains the same -> TEST FAILED");
+        }
+
         // check that original partII doesn't match current partII
         CHECK( handler.get_bsm().get_partII() != handler.get_bsm().get_original_partII() );
-        myLog("original partII doesn't match current partII -> TEST PASSED");
 
         /*
         // get data
