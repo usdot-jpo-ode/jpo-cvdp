@@ -1508,7 +1508,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         // if original partII actually had something in it
         if (handler.get_bsm().get_original_partII() != "") {
             // make sure it is now redacted
-            handler.get_bsm().get_partII == "");
+            handler.get_bsm().get_partII() == "");
         }
     }
 
