@@ -368,6 +368,34 @@ class BSM : public geo::Point {
         const std::string& get_original_id() const;
 
         /**
+         * @brief Set the partII field for the BSM
+         *
+         * @param id the partII field for the BSM.
+         */
+        void set_partII( const std::string& s );
+
+        /**
+         * @brief Set the original partII field for the BSM; for unit testing.
+         *
+         * @param the original partII field in the BSM.
+         */
+        void set_original_partII( const std::string& s );
+
+        /**
+         * @brief Get the partII field for the BSM
+         *
+         * @return a const reference to the partII field for the BSM.
+         */
+        const std::string& get_partII() const;
+
+        /**
+         * @brief Get the partII field for the BSM; for unit testing.
+         *
+         * @return a const reference to the partII field for the BSM.
+         */
+        const std::string& get_original_partII() const;
+
+        /**
          * @brief Get a string representation of this BSM for the log.
          *
          * @return a string for the log that characterizes this BSM.
@@ -387,6 +415,8 @@ class BSM : public geo::Point {
         uint16_t dsec_;                         ///< the dsecond field if it exists.
         std::string id_;                        ///< the id of the BSM.
         std::string oid_;                        ///< the original id of the BSM.
+        std::string partII_;                    ///< the partII field of the BSM
+        std::string opartII_;                   ///< the original partII field of the BSM
         char* end_;                             ///< pointer to the last character parsed.
         std::string logstring_;           ///< a string to build for logging about the BSM.
 };
