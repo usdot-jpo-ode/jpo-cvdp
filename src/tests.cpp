@@ -1439,21 +1439,44 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
     }
 }
 
-TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
-    ConfigMap pconf;
+// ---
+
+bool debug = true;
+
+void myLog(std::string message) {
+    if (debug) {
+        std::cout << "[DEBUG] " << message << std::endl;
+    }
+}
+
+TEST_CASE( "test", "[test]" ) {
+    bool debug = true;
+    myLog("executing test test");
+    REQUIRE(1==1);
+}
+
+TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) { // this test is failing
+    bool debug = true;
+    myLog("executing partII redaction test");
+
+    std::unordered_map<std::string,std::string> pconf;
+    myLog("created unordered map");
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
     BSMHandler handler{ buildTestQuadTree(), pconf };
+    myLog("created BSMhandler");
 
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
+    myLog("deactivated some flags");
 
     // activate kPartIIRedactFlag and make sure the other flags are deactivated
     REQUIRE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+    myLog("performed flag checks");
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
@@ -1464,9 +1487,16 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
+
+    myLog("test cases loaded");
+
+    int count = 0;
     for ( auto& test_case : json_test_cases ) {
+        count++;
+        myLog("test case #" + std::to_string(count));
         // process test case to build BSM
         CHECK( handler.process( test_case ) );
+        myLog("built BSM");
 
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
@@ -1477,12 +1507,18 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         rapidjson::Value& metadata = document["metadata"];
         rapidjson::Value& payload = document["payload"];
         rapidjson::Value& data = payload["data"];
+        myLog("got data");
 
         // check that data is non-null
         CHECK ( data != NULL );
+        myLog("made sure data wasn't null");
+        
+        CHECK ( data["partII"] != NULL);
+        myLog("made sure that data[partII] wasn't null");
 
         // check that partII section is redacted
-        CHECK( data["partII"] == 0 );
+        CHECK( data["partII"] == 0 );                   // this is where the test fails!
+        myLog("partII was redacted successfully");
     }
 
 } 
