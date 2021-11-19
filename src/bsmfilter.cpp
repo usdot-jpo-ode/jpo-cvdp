@@ -278,12 +278,12 @@ const std::string& BSM::get_partII() const {
 }
 
 // for testing.
-void BSM::set_original_id( const std::string& s ) {
+void BSM::set_original_partII( const std::string& s ) {
     opartII_ = s;
 }
 
 // for testing.
-const std::string& BSM::get_original_id() const {
+const std::string& BSM::get_original_partII() const {
     return opartII_;
 }
 
