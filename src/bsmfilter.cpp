@@ -213,8 +213,8 @@ void BSM::reset() {
     dsec_ = 0;
     id_ = "";
     oid_ = "";
-    partII_ = "",
-    opartII_ = ""
+    partII_ = "";
+    opartII_ = "";
 }
 
 std::string BSM::logString() {
