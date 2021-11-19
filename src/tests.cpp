@@ -1439,7 +1439,7 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
     }
 }
 
-TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) { // this test is failing
+TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
 
     std::unordered_map<std::string,std::string> pconf;
 
