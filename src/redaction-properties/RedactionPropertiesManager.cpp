@@ -1,5 +1,6 @@
 #include <map>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -54,11 +55,25 @@ class RedactionPropertiesManager {
 
         void loadRedactionProperties() {
             log("loading redaction properties");
-            // TODO: implement
+
+            string line;            
+            ifstream file("../../redaction.properties");
+
+            while (getline(file, line)) { // TODO: figure out why getline isn't recognized
+                log("parsing line: " + line);
+                string key = line.substr(0, line.find("="));
+                string valueString = line.substr(line.find("="));
+                redactionProperties.insert(key, valueString);
+            }
+            
+            log("redaction properties loaded");
         }
 
 };
 
+/**
+ * This method is meant to test this class.
+ */
 int main() {
     RedactionPropertiesManager redactionPropertiesManager;
     cout << "Num properties: " << redactionPropertiesManager.getNumProperties() << endl;
