@@ -570,7 +570,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         // check if partII redaction is required
         if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
             // redact part II
-            data["partII"] = 0;
+            data["partII"] = 0; // TODO: alter the redaction of the partII field to only redact certain parts based on configuration values
         }
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {

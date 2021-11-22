@@ -1133,8 +1133,9 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
         CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kIdRedactFlag>() );
         CHECK( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-        // json is the string "null" when empty
-        CHECK( handler.get_json() == "null" );
+
+        // check that json is empty
+        CHECK( handler.get_json() == "" );
     };
 
     SECTION( "Check Flag Setting" ) {
@@ -1478,7 +1479,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         // if original partII actually had something in it
         if (handler.get_bsm().get_original_partII() != "") {
             // make sure it is now redacted
-            CHECK( handler.get_bsm().get_partII() == "" );
+            CHECK( handler.get_bsm().get_partII() == "" ); // TODO: alter the redaction of the partII field to only redact certain parts based on configuration values
         }
     }
 
