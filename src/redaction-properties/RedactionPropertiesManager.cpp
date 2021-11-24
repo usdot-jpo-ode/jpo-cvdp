@@ -73,12 +73,3 @@ class RedactionPropertiesManager {
         }
 
 };
-
-/**
- * This method is meant to test this class.
- */
-int main() {
-    RedactionPropertiesManager redactionPropertiesManager;
-    cout << "Num properties: " << redactionPropertiesManager.getNumProperties() << endl;
-    redactionPropertiesManager.printProperties();
-}
