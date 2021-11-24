@@ -1495,5 +1495,5 @@ TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
         redactionPropertiesManager.printProperties();
     }
 
-    CHECK ( redactionpropertiesManager.getNumProperties() > 0)
+    CHECK ( redactionPropertiesManager.getNumProperties() > 0);
 }
