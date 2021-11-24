@@ -36,6 +36,7 @@
 #include "cvlib.hpp"
 #include "bsmfilter.hpp"
 #include "spdlog/spdlog.h"
+#include "./redaction-properties/RedactionPropertiesManager.cpp"
 
 /** Start IdRedactor */
 
@@ -569,8 +570,12 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 
         // check if partII redaction is required
         if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
-            // redact part II
-            data["partII"] = 0; // TODO: alter the redaction of the partII field to only redact certain parts based on configuration values
+           rapidjson::Value& partII = data["partII"];
+
+           RedactionPropertiesManager rpm;
+           for (string field : rpm.getFields()) {
+               partII[field.c_str()] = 0;
+           }
         }
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
