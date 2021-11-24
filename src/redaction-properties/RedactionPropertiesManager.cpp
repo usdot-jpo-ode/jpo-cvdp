@@ -1,4 +1,5 @@
-#include <map>
+#include <string>
+#include <vector>
 #include <iostream>
 #include <fstream>
 
@@ -20,32 +21,34 @@ class RedactionPropertiesManager {
             debug = b;
         }
 
-        map<string, bool> getRedactionProperties() {
-            return redactionProperties;
+        vector<string> getRedactionProperties() {
+            return fieldsToRedact;
         }
 
         int getNumProperties() {
-            return redactionProperties.size();
+            return fieldsToRedact.size();
         }
 
-        bool getRedactionProperty(string key) {
-            bool toReturn = redactionProperties[key];
-            return redactionProperties[key];
+        string getRedactionProperty(string property) {
+            for (string field : fieldsToRedact) {
+                if (field == property) {
+                    return field;
+                }
+            }
+            return NULL;
         }
 
         void printProperties() {
             log("printing properties");
-            cout << "=== Redaction Properties ===" << endl;
-            for (pair<string, bool> pair: redactionProperties) {
-                string key = pair.first;
-                int value = pair.second;
-                cout << key.c_str() << ": " << noboolalpha << value << endl;
+            cout << "=== Fields to Redact ===" << endl;
+            for (string field: fieldsToRedact) {
+                cout << field.c_str() << endl;
             }
         }
 
     private:
         bool debug;
-        map<string, bool> redactionProperties;
+        vector<string> fieldsToRedact;
 
         void log(string message) {
             if (debug) {
@@ -57,13 +60,13 @@ class RedactionPropertiesManager {
             log("loading redaction properties");
 
             string line;            
-            ifstream file("../../redaction.properties");
+            ifstream file("../../fieldsToRedact.txt");
 
-            while (getline(file, line)) { // TODO: figure out why getline isn't recognized
-                log("parsing line: " + line);
-                string key = line.substr(0, line.find("="));
-                string valueString = line.substr(line.find("="));
-                redactionProperties.insert(key, valueString);
+            // for each line, read the line and insert it into fieldsToRedact
+            while (getline(file,line)) {
+                if (line.size() > 0) {
+                    fieldsToRedact.push_back(line);
+                }
             }
             
             log("redaction properties loaded");
