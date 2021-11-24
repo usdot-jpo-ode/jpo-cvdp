@@ -38,6 +38,10 @@ class RedactionPropertiesManager {
             return NULL;
         }
 
+        void addRedactionProperty(string propertyToAdd) {
+            fieldsToRedact.push_back(propertyToAdd);
+        }
+
         void printProperties() {
             log("printing properties");
             cout << "=== Fields to Redact ===" << endl;
