@@ -14,36 +14,50 @@ class RedactionPropertiesManager {
     public:
         RedactionPropertiesManager() {
             debug = false;
-            loadRedactionProperties();
+            loadFields(); // load fields upon construction
+        }
+
+        ~RedactionPropertiesManager() {
+            saveFields(); // save fields upon destruction
         }
 
         void setDebug(bool b) {
             debug = b;
         }
 
-        vector<string> getRedactionProperties() {
+        /**
+         * Returns a vector of the fields to redact.
+         */
+        vector<string> getFields() {
             return fieldsToRedact;
         }
 
-        int getNumProperties() {
+        /**
+         * Returns the number of fields to redact.
+         */
+        int getNumFields() {
             return fieldsToRedact.size();
         }
 
-        string getRedactionProperty(string property) {
+        bool isField(string fieldToCheck) {
             for (string field : fieldsToRedact) {
-                if (field == property) {
-                    return field;
+                if (field == fieldToCheck) {
+                    return true;
                 }
             }
-            return NULL;
+            return false;
         }
 
-        void addRedactionProperty(string propertyToAdd) {
-            fieldsToRedact.push_back(propertyToAdd);
+        void addField(string fieldToAdd) {
+            fieldsToRedact.push_back(fieldToAdd);
         }
 
-        void printProperties() {
-            log("printing properties");
+        void removeField(string fieldToRemove) {
+            // TODO: implement
+        }
+
+        void printFields() {
+            log("printing fields");
             cout << "=== Fields to Redact ===" << endl;
             for (string field: fieldsToRedact) {
                 cout << field.c_str() << endl;
@@ -60,8 +74,8 @@ class RedactionPropertiesManager {
             }
         }
 
-        void loadRedactionProperties() {
-            log("loading redaction properties");
+        void loadFields() {
+            log("loading redaction fields");
 
             string line;            
             ifstream file("fieldsToRedact.txt");
@@ -79,6 +93,10 @@ class RedactionPropertiesManager {
             }
             
             log("redaction properties loaded");
+        }
+
+        void saveFields() {
+            // TODO: implement
         }
 
 };
