@@ -49,11 +49,14 @@ class RedactionPropertiesManager {
         }
 
         void addField(string fieldToAdd) {
+            log("adding field " + fieldToAdd);
             fieldsToRedact.push_back(fieldToAdd);
         }
 
         void removeField(string fieldToRemove) {
+            log("removing field " + fieldToAdd);
             // TODO: implement
+            log("WARNING: this method is not implemented yet")
         }
 
         void printFields() {
@@ -96,7 +99,9 @@ class RedactionPropertiesManager {
         }
 
         void saveFields() {
+            log("saving redaction fields");
             // TODO: implement
+            log("WARNING: this method is not implemented yet")
         }
 
 };
