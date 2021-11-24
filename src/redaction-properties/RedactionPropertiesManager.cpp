@@ -60,10 +60,15 @@ class RedactionPropertiesManager {
             log("loading redaction properties");
 
             string line;            
-            ifstream file("../../fieldsToRedact.txt");
+            ifstream file("fieldsToRedact.txt");
+
+            if (!file) {
+                log("could not open the file");
+            }
 
             // for each line, read the line and insert it into fieldsToRedact
             while (getline(file,line)) {
+                log("read line: " + line);
                 if (line.size() > 0) {
                     fieldsToRedact.push_back(line);
                 }
