@@ -1484,16 +1484,16 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         }
     }
 
-    TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
-        bool debug = true;
-        RedactionPropertiesManager redactionPropertiesManager;
+} 
 
-        if (debug) {
-            cout << "Num properties: " << redactionPropertiesManager.getNumProperties() << endl;
-            redactionPropertiesManager.printProperties();
-        }
+TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
+    bool debug = true;
+    RedactionPropertiesManager redactionPropertiesManager;
 
-        CHECK ( redactionpropertiesManager.getNumProperties() > 0)
+    if (debug) {
+        cout << "Num properties: " << redactionPropertiesManager.getNumProperties() << endl;
+        redactionPropertiesManager.printProperties();
     }
 
-} 
+    CHECK ( redactionpropertiesManager.getNumProperties() > 0)
+}
