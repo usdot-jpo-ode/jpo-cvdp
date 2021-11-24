@@ -1,5 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
+#include "./redaction-properties/RedactionPropertiesManager.cpp"
 
 // NOTE: The test file OPERAND is a <test-spec> (see github.com/philsquared/Catch/blob/master/docs/command-line.md) 
 // <test-spec> is defined as below.
@@ -1481,6 +1482,17 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
             // make sure it is now redacted
             CHECK( handler.get_bsm().get_partII() == "" ); // TODO: alter the redaction of the partII field to only redact certain parts based on configuration values
         }
+    }
+
+    TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
+        RedactionPropertiesManager redactionPropertiesManager;
+
+        if (debug) {
+            cout << "Num properties: " << redactionPropertiesManager.getNumProperties() << endl;
+            redactionPropertiesManager.printProperties();
+        }
+
+        CHECK ( redactionpropertiesManager.getNumProperties() > 0)
     }
 
 } 
