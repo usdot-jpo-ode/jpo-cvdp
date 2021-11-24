@@ -12,12 +12,20 @@ using namespace std;
 class RedactionPropertiesManager {
 
     public:
+        /**
+         * @brief Construct a new Redaction Properties Manager object
+         * 
+         */
         RedactionPropertiesManager() {
             debug = false;
             fileName = "fieldsToRedact.txt";
             loadFields(fileName); // load fields upon construction
         }
 
+        /**
+         * @brief Destroy the Redaction Properties Manager object
+         * 
+         */
         ~RedactionPropertiesManager() {
             saveFields(fileName); // save fields upon destruction
         }
