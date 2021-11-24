@@ -161,7 +161,7 @@ class RedactionPropertiesManager {
                 }
             }
             
-            log("redaction properties loaded");
+            log("redaction fields loaded");
         }
 
         /**
