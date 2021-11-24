@@ -14,31 +14,65 @@ class RedactionPropertiesManager {
     public:
         RedactionPropertiesManager() {
             debug = false;
-            loadFields(); // load fields upon construction
+            fileName = "fieldsToRedact.txt";
+            loadFields(fileName); // load fields upon construction
         }
 
         ~RedactionPropertiesManager() {
-            saveFields(); // save fields upon destruction
+            saveFields(fileName); // save fields upon destruction
         }
 
+        /**
+         * @brief Sets the debug flag for the class.
+         * 
+         * @param b boolean to set
+         */
         void setDebug(bool b) {
             debug = b;
         }
 
         /**
-         * Returns a vector of the fields to redact.
+         * @brief Returns the file name that is used to persist the fields to redact.
+         * 
+         * @return string 
+         */
+        string getFileName() {
+            return fileName;
+        }
+
+        /**
+         * @brief Sets the file name that is used to persist the fields to redact.
+         * 
+         * @param newFileName 
+         */
+        void setFilename(string newFileName) {
+            fileName = newFileName;
+        }
+
+        /**
+         * @brief Returns a vector of the fields to redact.
+         * 
+         * @return vector<string> 
          */
         vector<string> getFields() {
             return fieldsToRedact;
         }
-
+        
         /**
-         * Returns the number of fields to redact.
+         * @brief Returns the number of fields to redact.
+         * 
+         * @return int 
          */
         int getNumFields() {
             return fieldsToRedact.size();
         }
 
+        /**
+         * @brief Checks if a field is in the list of fields to redact.
+         * 
+         * @param fieldToCheck 
+         * @return boolean indicating whether or not the field is in the list
+         */
         bool isField(string fieldToCheck) {
             for (string field : fieldsToRedact) {
                 if (field == fieldToCheck) {
@@ -48,17 +82,31 @@ class RedactionPropertiesManager {
             return false;
         }
 
+        /**
+         * @brief Adds a field to the list of fields to redact.
+         * 
+         * @param fieldToAdd 
+         */
         void addField(string fieldToAdd) {
             log("adding field " + fieldToAdd);
             fieldsToRedact.push_back(fieldToAdd);
         }
 
+        /**
+         * @brief Removes a field from the list of fields to redact.
+         * 
+         * @param fieldToRemove 
+         */
         void removeField(string fieldToRemove) {
             log("removing field " + fieldToRemove);
             // TODO: implement
             log("WARNING: this method is not implemented yet");
         }
 
+        /**
+         * @brief Prints the fields. For debugging purposes.
+         * 
+         */
         void printFields() {
             log("printing fields");
             cout << "=== Fields to Redact ===" << endl;
@@ -70,18 +118,28 @@ class RedactionPropertiesManager {
     private:
         bool debug;
         vector<string> fieldsToRedact;
+        string fileName;
 
+        /**
+         * @brief Logs the message if the debug flag is set to true.
+         * 
+         * @param message 
+         */
         void log(string message) {
             if (debug) {
                 cout << "[RPM] " << message.c_str() << endl;
             }
         }
 
-        void loadFields() {
+        /**
+         * @brief Loads the fields from a file.
+         * 
+         */
+        void loadFields(string fileName) {
             log("loading redaction fields");
 
             string line;            
-            ifstream file("fieldsToRedact.txt");
+            ifstream file(fileName);
 
             if (!file) {
                 log("could not open the file");
@@ -98,7 +156,11 @@ class RedactionPropertiesManager {
             log("redaction properties loaded");
         }
 
-        void saveFields() {
+        /**
+         * @brief Saves the fields to a file.
+         * 
+         */
+        void saveFields(string fileName) {
             log("saving redaction fields");
             // TODO: implement
             log("WARNING: this method is not implemented yet");
