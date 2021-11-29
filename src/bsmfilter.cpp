@@ -568,13 +568,53 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
+        bool debug = true;
+
         // check if partII redaction is required
         if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
+            if (debug) { cout << "partII redaction is required" << endl; }
+
+            // get partII data
            rapidjson::Value& partII = data["partII"];
 
-           RedactionPropertiesManager rpm;
-           for (string field : rpm.getFields()) {
-               partII[field.c_str()] = 0;
+           if (debug) {
+               // print partII
+               cout << "printing partII..." << endl;
+               rapidjson::StringBuffer buffer;
+               rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+               partII.Accept(writer);
+               cout << "partII: " << buffer.GetString() << endl;
+               // end of printing
+            }
+
+            if (debug) { cout << "instantiating RPM" << endl; }
+
+            // instantiate RPM
+            RedactionPropertiesManager rpm;
+
+            if (debug) { cout << "RPM instantiated" << endl; }
+
+            // for each field
+            for (string fieldName : rpm.getFields()) {
+                fieldName = fieldName.substr(7); // drop "partII." prefix
+
+                if (debug) { cout << "checking if partII has member " << fieldName.c_str() << endl; }
+
+                if (!partII.HasMember(fieldName.c_str())) {
+                    if (debug) { cout << fieldName << " wasn't found" << endl; }
+                    continue;
+                }
+
+                if (debug) { cout << fieldName.c_str() << " is present - attempting to redact" << endl; }
+
+                // redact field
+                try {
+                    partII[fieldName.c_str()] = 0;
+                }
+                catch (exception e) {
+                    if (debug) { cout << "A problem occurred attempting to redact " << fieldName.c_str() << endl; }
+                }
+                
            }
         }
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
