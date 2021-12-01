@@ -1477,11 +1477,8 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
 
-        // if original partII actually had something in it
-        if (handler.get_bsm().get_original_partII() != "") {
-            // make sure it is now redacted
-            CHECK( handler.get_bsm().get_partII() == "" ); // TODO: alter the redaction of the partII field to only redact certain parts based on configuration values
-        }
+        // TODO: verify that there are no sensitive members in the partII field left
+        // (code goes here)
     }
 
 } 
