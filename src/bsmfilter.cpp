@@ -567,8 +567,6 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             // get partII data
             rapidjson::Value& partIIArray = data["partII"];
             rapidjson::Value& partII = partIIArray[0];
-            string originalPartIIString = convertRapidjsonValueToString(partII);
-            bsm_.set_original_partII(originalPartIIString);
 
             // instantiate RPM
             RedactionPropertiesManager rpm;
