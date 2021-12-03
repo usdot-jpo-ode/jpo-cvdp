@@ -203,7 +203,6 @@ BSM::BSM() :
     id_{""},
     oid_{""},
     partII_{""},
-    opartII_{""},
     logstring_{}
 {}
 
@@ -215,7 +214,6 @@ void BSM::reset() {
     id_ = "";
     oid_ = "";
     partII_ = "";
-    opartII_ = "";
 }
 
 std::string BSM::logString() {
@@ -276,16 +274,6 @@ void BSM::set_partII( const std::string& s ) {
 
 const std::string& BSM::get_partII() const {
     return partII_;
-}
-
-// for testing.
-void BSM::set_original_partII( const std::string& s ) {
-    opartII_ = s;
-}
-
-// for testing.
-const std::string& BSM::get_original_partII() const {
-    return opartII_;
 }
 
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )

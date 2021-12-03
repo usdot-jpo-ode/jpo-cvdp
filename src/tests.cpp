@@ -1499,7 +1499,6 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         /*
         if (debug) {
             cout << "BSM: " << handler.get_bsm() << endl;
-            cout << "Original PartII: " << handler.get_bsm().get_original_partII()  << endl;
             cout << "PartII: " << handler.get_bsm().get_partII() << endl;
         }
         */
