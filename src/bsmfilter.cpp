@@ -568,7 +568,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
-        bool debug = true;
+        bool debug = false;
         
         int numMembersRedacted = 0;
 
@@ -579,19 +579,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             // get partII data
             rapidjson::Value& partIIArray = data["partII"];
             rapidjson::Value& partII = partIIArray[0];
-
-            /*
-            if (debug) {
-                // print partII
-                cout << "==========\nPart II\n==========" << endl;
-                rapidjson::StringBuffer buffer;
-                rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-                partII.Accept(writer);
-                cout << buffer.GetString() << endl;
-                cout << "==========" << endl;
-                // end of printing
-            }
-            */
+            string originalPartIIString = convertRapidjsonValueToString(partII);
+            bsm_.set_original_partII(originalPartIIString);
 
             // instantiate RPM
             RedactionPropertiesManager rpm;
@@ -616,6 +605,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
                 }
             }
             if (debug) { cout << "Members redacted: " << numMembersRedacted << endl; }
+            string partIIString = convertRapidjsonValueToString(partII);
+            bsm_.set_partII(partIIString);
         }
     } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
@@ -736,4 +727,11 @@ const uint32_t BSMHandler::get_activation_flag() const {
 
 const IdRedactor& BSMHandler::get_id_redactor() const {
     return idr_;
+}
+
+std::string BSMHandler::convertRapidjsonValueToString(rapidjson::Value& value) {
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        value.Accept(writer);
+        return buffer.GetString();
 }

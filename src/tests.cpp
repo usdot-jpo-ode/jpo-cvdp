@@ -1441,7 +1441,22 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
     }
 }
 
+TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
+    bool debug = false;
+    RedactionPropertiesManager redactionPropertiesManager;
+
+    if (debug) {
+        cout << "Num properties: " << redactionPropertiesManager.getNumFields() << endl;
+        redactionPropertiesManager.printFields();
+    }
+
+    CHECK ( redactionPropertiesManager.getNumFields() > 0);
+}
+
 TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
+    bool debug = true;
+
+    RedactionPropertiesManager rpm;
 
     std::unordered_map<std::string,std::string> pconf;
 
@@ -1468,29 +1483,33 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
 
+    if (debug) { cout << "Num test cases: " + json_test_cases.size() << endl; }
+
     int count = 0;
     for ( auto& test_case : json_test_cases ) {
         count++;
+        cout << "Test case #" << count << endl;
+
         // process test case to build BSM
         CHECK( handler.process( test_case ) );
 
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
 
-        // TODO: verify that there are no sensitive members in the partII field left
-        // (code goes here)
+        /*
+        if (debug) {
+            cout << "BSM: " << handler.get_bsm() << endl;
+            cout << "Original PartII: " << handler.get_bsm().get_original_partII()  << endl;
+            cout << "PartII: " << handler.get_bsm().get_partII() << endl;
+        }
+        */
+
+        // verify that there are no sensitive members in the partII field left
+        if (debug) { cout << "Checking that no sensitive members are still present in the the partII field..." << endl; }
+        for (string field : rpm.getFields()) {
+            CHECK( handler.get_bsm().get_partII().find(field) == string::npos);
+        }
+        
     }
 
-} 
-
-TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
-    bool debug = false;
-    RedactionPropertiesManager redactionPropertiesManager;
-
-    if (debug) {
-        cout << "Num properties: " << redactionPropertiesManager.getNumFields() << endl;
-        redactionPropertiesManager.printFields();
-    }
-
-    CHECK ( redactionPropertiesManager.getNumFields() > 0);
 }

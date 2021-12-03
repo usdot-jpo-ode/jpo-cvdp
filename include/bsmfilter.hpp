@@ -525,6 +525,14 @@ class BSMHandler {
          */
         std::string::size_type get_bsm_buffer_size(); 
 
+        /**
+         * @brief This method converts a variable of rapidjson::Value& type to a string.
+         * 
+         * @param value The rapidjson::Value& variable to convert.
+         * @return string form of the rapidjson::Value& variable
+         */
+        std::string convertRapidjsonValueToString(rapidjson::Value& value);
+
         template<uint32_t FLAG>
         bool is_active() {
             return activated_ & FLAG;
