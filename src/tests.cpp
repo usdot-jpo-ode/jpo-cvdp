@@ -1488,7 +1488,6 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     int count = 0;
     for ( auto& test_case : json_test_cases ) {
         count++;
-        cout << "Test case #" << count << endl;
 
         // process test case to build BSM
         CHECK( handler.process( test_case ) );
@@ -1496,12 +1495,10 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
 
-        /*
         if (debug) {
             cout << "BSM: " << handler.get_bsm() << endl;
             cout << "PartII: " << handler.get_bsm().get_partII() << endl;
         }
-        */
 
         // verify that there are no sensitive members in the partII field left
         if (debug) { cout << "Checking that no sensitive members are still present in the the partII field..." << endl; }
