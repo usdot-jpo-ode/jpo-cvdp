@@ -1454,7 +1454,7 @@ TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
 }
 
 TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
-    bool debug = true;
+    bool debug = false;
 
     RedactionPropertiesManager rpm;
 
