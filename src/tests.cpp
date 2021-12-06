@@ -1482,6 +1482,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.partII.json", json_test_cases ) );
 
     if (debug) { cout << "Num test cases: " + json_test_cases.size() << endl; }
 

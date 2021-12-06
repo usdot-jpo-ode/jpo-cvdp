@@ -574,8 +574,6 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             // for each field
             for (string fieldName : rpm.getFields()) {
                 try {
-                    fieldName = fieldName.substr(7); // drop "partII." prefix
-
                     if (!partII.HasMember(fieldName.c_str())) {
                         continue;
                     }
