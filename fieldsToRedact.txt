@@ -1,6 +1,6 @@
-longitudinalAcceleration
-latitudinalAcceleration
-verticalAcceleration
+accelLong
+accelLat
+accelVert
 yawRate
 steeringWheelAngle
 leftTurnSignalOn
