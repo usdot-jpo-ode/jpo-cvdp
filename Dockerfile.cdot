@@ -11,15 +11,7 @@ RUN wget https://cmake.org/files/v3.7/cmake-3.7.2.tar.gz && tar -xvf cmake-3.7.2
 RUN cd cmake-3.7.2 && ./bootstrap && make && make install && cd /
 
 # Install librdkafka.
-RUN apt-get install -y unzip
-RUN wget https://github.com/edenhill/librdkafka/archive/refs/tags/v1.6.2.zip
-RUN unzip v1.6.2.zip
-RUN cd librdkafka-1.6.2
-RUN ln -s /usr/bin/python3 /usr/bin/python
-RUN ./configure
-RUN make
-RUN make install
-RUN cd /cvdi-stream
+RUN apt-get install -y unzip && wget https://github.com/edenhill/librdkafka/archive/refs/tags/v1.6.2.zip && unzip v1.6.2.zip && cd librdkafka-1.6.2 && ln -s /usr/bin/python3 /usr/bin/python && ./configure && make && make install && cd /cvdi-stream
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
