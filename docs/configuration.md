@@ -79,8 +79,8 @@ and 2 files are rotated. Logging configuration is controlled through the command
          the log.
 
 The information log will write the configuration it will use as `info` messages when it starts. The information log also record the disposition of the
-messagess it receives. In the example below, the first BSM was retained, or passed on; the second message was suppressed because the vehicle's velocity
-was outside of the thresholds. The information in the parenthesis is the ID, secMark, lat, lon, speed from the BSM. All log messages are preceeded
+messages it receives. In the example below, the first BSM was retained, or passed on; the second message was suppressed because the vehicle's velocity
+was outside of the thresholds. The information in the parenthesis is the ID, secMark, lat, lon, speed from the BSM. All log messages are preceded
 with a date and time stamp and the level of the log message.
 
 ```
