@@ -354,6 +354,24 @@ bool PPM::configure() {
 
     ilogger->info("kafka partition: {}", partition);
 
+    // confluent cloud integration
+    String kafkaType = "" // TODO: grab this from environment variable
+    if (kafkaType != null && kafkaType == "CONFLUENT") {
+        conf->set("ssl.endpoint.identification.algorithm", "https", error_string);
+        conf->set("security.protocol", "SASL_SSL", error_string);
+        conf->set("sasl.mechanism", "SASL_SSL", error_string);
+        String username = ""; // TODO: get from environment variable
+        String password = ""; // TODO: get from environment variable
+
+        if (username != null && password != null) {
+            String auth = "org.apache.kafka.common.security.plain.PlainLoginModule required " + 
+                "username=\"" + username + "\" " +
+                "password=\"" + password + "\";";
+            conf->set("sasl.jaas.config", auth);
+        }
+    }
+    // end of confluent cloud integration
+
     if ( getOption('g').isSet() && conf->set("group.id", optString('g'), error_string) != RdKafka::Conf::CONF_OK) {
         // NOTE: there are some checks in librdkafka that require this to be present and set.
         elogger->error("kafka error setting configuration parameters group.id h: {}", error_string);
