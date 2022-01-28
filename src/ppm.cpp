@@ -355,19 +355,23 @@ bool PPM::configure() {
     ilogger->info("kafka partition: {}", partition);
 
     // confluent cloud integration
-    String kafkaType = "" // TODO: grab this from environment variable
+    String kafkaType = std::getenv("KAFKA_TYPE");
     if (kafkaType != null && kafkaType == "CONFLUENT") {
+        ilogger->info("Attempting to utilize Confluent Cloud.");
         conf->set("ssl.endpoint.identification.algorithm", "https", error_string);
         conf->set("security.protocol", "SASL_SSL", error_string);
         conf->set("sasl.mechanism", "SASL_SSL", error_string);
-        String username = ""; // TODO: get from environment variable
-        String password = ""; // TODO: get from environment variable
+        String username = std::getenv("CONFLUENT_KEY");
+        String password = std::getenv("CONFLUENT_SECRET");
 
         if (username != null && password != null) {
             String auth = "org.apache.kafka.common.security.plain.PlainLoginModule required " + 
                 "username=\"" + username + "\" " +
                 "password=\"" + password + "\";";
-            conf->set("sasl.jaas.config", auth);
+            conf->set("sasl.jaas.config", auth, error_string);
+        }
+        else {
+            elogger->error("Unable to utilize Confluent Cloud due to a problem with authentication. Key and/or secret not set.");
         }
     }
     // end of confluent cloud integration
