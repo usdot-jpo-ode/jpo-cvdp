@@ -355,24 +355,27 @@ bool PPM::configure() {
     ilogger->info("kafka partition: {}", partition);
 
     // confluent cloud integration
-    String kafkaType = std::getenv("KAFKA_TYPE");
-    if (kafkaType != null && kafkaType == "CONFLUENT") {
-        ilogger->info("Attempting to utilize Confluent Cloud.");
-        conf->set("ssl.endpoint.identification.algorithm", "https", error_string);
-        conf->set("security.protocol", "SASL_SSL", error_string);
-        conf->set("sasl.mechanism", "SASL_SSL", error_string);
-        String username = std::getenv("CONFLUENT_KEY");
-        String password = std::getenv("CONFLUENT_SECRET");
+    std::string kafkaType = std::getenv("KAFKA_TYPE");
+    std::cout << "Kafka type: " << kafkaType << std::endl; // DEBUG
+    if (kafkaType == "CONFLUENT") {
+        std::cout << "Setting up Confluent Cloud configuration key/value pairs." << std::endl; // DEBUG
 
-        if (username != null && password != null) {
-            String auth = "org.apache.kafka.common.security.plain.PlainLoginModule required " + 
-                "username=\"" + username + "\" " +
-                "password=\"" + password + "\";";
-            conf->set("sasl.jaas.config", auth, error_string);
-        }
-        else {
-            elogger->error("Unable to utilize Confluent Cloud due to a problem with authentication. Key and/or secret not set.");
-        }
+        // get username and password
+        std::string username = std::getenv("CONFLUENT_KEY");
+        std::string password = std::getenv("CONFLUENT_SECRET");
+
+        // set up config
+        conf->set("bootstrap.servers", std::getenv("DOCKER_HOST_IP"), error_string);
+        conf->set("security.protocol", "SASL_SSL", error_string);
+        conf->set("sasl.mechanism", "PLAIN", error_string);
+        conf->set("sasl.username", username.c_str(), error_string);
+        conf->set("sasl.password", password.c_str(), error_string);
+        conf->set("debug", "all", error_string);
+        conf->set("api.version.request", "true", error_string);
+        conf->set("api.version.fallback.ms", "0", error_string);
+        conf->set("broker.version.fallback", "0.10.0.0", error_string);
+
+        std::cout << "Finished setting up Confluent Cloud configuration key/value pairs." << std::endl;
     }
     // end of confluent cloud integration
 
