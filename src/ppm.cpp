@@ -75,6 +75,15 @@
 
 using namespace std;
 
+const char* getEnvironmentVariable(const char* variableName) {
+    const char* toReturn = getenv(variableName);
+    if (!toReturn) {
+        cout << "[ERROR] Something went wrong attempting to retrieve the environment variable " << variableName << endl;
+        toReturn = "";
+    }
+    return toReturn;
+}
+
 bool PPM::bootstrap = true;
 bool PPM::bsms_available = true;
 
@@ -357,17 +366,17 @@ bool PPM::configure() {
     ilogger->info("kafka partition: {}", partition);
 
     // confluent cloud integration
-    string kafkaType = getenv("KAFKA_TYPE");
+    string kafkaType = getEnvironmentVariable("KAFKA_TYPE");
     cout << "Kafka type: " << kafkaType << endl; // DEBUG
     if (kafkaType == "CONFLUENT") {
         cout << "Setting up Confluent Cloud configuration key/value pairs." << endl; // DEBUG
 
         // get username and password
-        string username = getenv("CONFLUENT_KEY");
-        string password = getenv("CONFLUENT_SECRET");
+        string username = getEnvironmentVariable("CONFLUENT_KEY");
+        string password = getEnvironmentVariable("CONFLUENT_SECRET");
 
         // set up config
-        conf->set("bootstrap.servers", getenv("DOCKER_HOST_IP"), error_string);
+        conf->set("bootstrap.servers", getEnvironmentVariable("DOCKER_HOST_IP"), error_string);
         conf->set("security.protocol", "SASL_SSL", error_string);
         conf->set("sasl.mechanism", "PLAIN", error_string);
         conf->set("sasl.username", username.c_str(), error_string);
