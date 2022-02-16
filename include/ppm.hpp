@@ -55,25 +55,27 @@
 #include "cvlib.hpp"
 #include "spdlog/spdlog.h"
 
+using namespace std;
+
 class PPM : public tool::Tool {
 
     public:
 
-        std::shared_ptr<spdlog::logger> ilogger;
-        std::shared_ptr<spdlog::logger> elogger;
+        shared_ptr<spdlog::logger> ilogger;
+        shared_ptr<spdlog::logger> elogger;
 
         static void sigterm (int sig);
 
-        PPM( const std::string& name, const std::string& description );
+        PPM( const string& name, const string& description );
         ~PPM();
-        void metadata_print (const std::string &topic, const RdKafka::Metadata *metadata);
-        bool topic_available( const std::string& topic );
+        void metadata_print (const string &topic, const RdKafka::Metadata *metadata);
+        bool topic_available( const string& topic );
         void print_configuration() const;
         bool configure();
         bool launch_consumer();
         bool launch_producer();
         bool msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
-        Quad::Ptr BuildGeofence( const std::string& mapfile );
+        Quad::Ptr BuildGeofence( const string& mapfile );
         int operator()(void);
 
         /**
@@ -115,26 +117,26 @@ class PPM : public tool::Tool {
 
         spdlog::level::level_enum iloglevel;                            ///> Log level for the information log.
         spdlog::level::level_enum eloglevel;                            ///> Log level for the error log.
-        std::string mode;
-        std::string debug;
+        string mode;
+        string debug;
 
-        std::string brokers;
+        string brokers;
         int32_t partition;
         int64_t offset;
-        std::string published_topic;                                    ///> The topic we are publishing filtered BSM to.
-        std::string consumed_topic;                                     ///> consumer topics.
+        string published_topic;                                    ///> The topic we are publishing filtered BSM to.
+        string consumed_topic;                                     ///> consumer topics.
 
         // configurations; global and topic (the names in these are fixed)
-        std::unordered_map<std::string, std::string> pconf;
+        unordered_map<string, string> pconf;
         RdKafka::Conf *conf;
         RdKafka::Conf *tconf;
 
         Quad::Ptr qptr;
 
-        std::shared_ptr<RdKafka::KafkaConsumer> consumer;
+        shared_ptr<RdKafka::KafkaConsumer> consumer;
         int consumer_timeout;
-        std::shared_ptr<RdKafka::Producer> producer;
-        std::shared_ptr<RdKafka::Topic> raw_topic;
-        std::shared_ptr<RdKafka::Topic> filtered_topic;
+        shared_ptr<RdKafka::Producer> producer;
+        shared_ptr<RdKafka::Topic> raw_topic;
+        shared_ptr<RdKafka::Topic> filtered_topic;
 };
 
