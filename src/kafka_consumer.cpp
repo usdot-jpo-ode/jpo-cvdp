@@ -49,7 +49,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <librdkafka/rdkafkacpp.h>
+#include "librdkafka/rdkafkacpp.h"
 #include <unordered_map>
 #include <csignal>
 
@@ -70,6 +70,8 @@
 #include "bsmfilter.hpp"
 #include "cvlib.hpp"
 
+using namespace std;
+
 static bool run = true;
 static bool exit_eof = false;
 
@@ -85,58 +87,58 @@ static void sigterm (int sig) {
 }
 
 // JMC: Useful librdkafka reference code for metadata.
-//static void metadata_print (const std::string &topic, const RdKafka::Metadata *metadata) {
+//static void metadata_print (const string &topic, const RdKafka::Metadata *metadata) {
 //
-//    std::cout << "Metadata for " << (topic.empty() ? "" : "all topics")
+//    cout << "Metadata for " << (topic.empty() ? "" : "all topics")
 //        << "(from broker "  << metadata->orig_broker_id()
-//        << ":" << metadata->orig_broker_name() << std::endl;
+//        << ":" << metadata->orig_broker_name() << endl;
 //
 //    /* Iterate brokers */
-//    std::cout << " " << metadata->brokers()->size() << " brokers:" << std::endl;
+//    cout << " " << metadata->brokers()->size() << " brokers:" << endl;
 //
 //    for ( auto ib : *(metadata->brokers()) ) {
-//        std::cout << "  broker " << ib->id() << " at " << ib->host() << ":" << ib->port() << std::endl;
+//        cout << "  broker " << ib->id() << " at " << ib->host() << ":" << ib->port() << endl;
 //    }
 //
 //    /* Iterate topics */
-//    std::cout << metadata->topics()->size() << " topics:" << std::endl;
+//    cout << metadata->topics()->size() << " topics:" << endl;
 //
 //    for ( auto& it : *(metadata->topics()) ) {
 //
-//        std::cout << "  topic \""<< it->topic() << "\" with " << it->partitions()->size() << " partitions:";
+//        cout << "  topic \""<< it->topic() << "\" with " << it->partitions()->size() << " partitions:";
 //
 //        if (it->err() != RdKafka::ERR_NO_ERROR) {
-//            std::cout << " " << err2str(it->err());
-//            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) std::cout << " (try again)";
+//            cout << " " << err2str(it->err());
+//            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) cout << " (try again)";
 //        }
 //
-//        std::cout << std::endl;
+//        cout << endl;
 //
 //        /* Iterate topic's partitions */
 //        for ( auto& ip : *(it->partitions()) ) {
-//            std::cout << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
+//            cout << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
 //
 //            /* Iterate partition's replicas */
 //            RdKafka::PartitionMetadata::ReplicasIterator ir;
 //            for (ir = ip->replicas()->begin(); ir != ip->replicas()->end(); ++ir) {
-//                std::cout << (ir == ip->replicas()->begin() ? "":",") << *ir;
+//                cout << (ir == ip->replicas()->begin() ? "":",") << *ir;
 //            }
 //
 //            /* Iterate partition's ISRs */
-//            std::cout << ", isrs: ";
+//            cout << ", isrs: ";
 //            RdKafka::PartitionMetadata::ISRSIterator iis;
 //            for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis)
-//                std::cout << (iis == ip->isrs()->begin() ? "":",") << *iis;
+//                cout << (iis == ip->isrs()->begin() ? "":",") << *iis;
 //
 //            if (ip->err() != RdKafka::ERR_NO_ERROR)
-//                std::cout << ", " << RdKafka::err2str(ip->err()) << std::endl;
+//                cout << ", " << RdKafka::err2str(ip->err()) << endl;
 //            else
-//                std::cout << std::endl;
+//                cout << endl;
 //        }
 //    }
 //}
 
-static bool ode_topic_available( const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer ) {
+static bool ode_topic_available( const string& topic, shared_ptr<RdKafka::KafkaConsumer> consumer ) {
     bool r = false;
 
     RdKafka::Metadata* md;
@@ -163,7 +165,7 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
 
     // payload is a void *
     // len is a size_t
-    std::string payload(static_cast<const char*>(message->payload()), message->len());
+    string payload(static_cast<const char*>(message->payload()), message->len());
 
     switch (message->err()) {
         case RdKafka::ERR__TIMED_OUT:
@@ -174,14 +176,14 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
             msg_cnt++;
             msg_bytes += message->len();
             if (verbosity >= 3) {
-                std::cerr << "Read msg at offset " << message->offset() << "\n";
+                cerr << "Read msg at offset " << message->offset() << "\n";
             }
 
             RdKafka::MessageTimestamp ts;
             ts = message->timestamp();
             
             if (verbosity >= 2 && ts.type != RdKafka::MessageTimestamp::MSG_TIMESTAMP_NOT_AVAILABLE) {
-                std::string tsname = "?";
+                string tsname = "?";
 
                 if (ts.type == RdKafka::MessageTimestamp::MSG_TIMESTAMP_CREATE_TIME) {
                     tsname = "create time";
@@ -189,11 +191,11 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
                     tsname = "log append time";
                 }
 
-                std::cout << "Timestamp: " << tsname << " " << ts.timestamp << "\n";
+                cout << "Timestamp: " << tsname << " " << ts.timestamp << "\n";
             }
 
             if (verbosity >= 2 && message->key()) {
-                std::cout << "Key: " << *message->key() << "\n";
+                cout << "Key: " << *message->key() << "\n";
             }
 
             if ( handler.process( payload ) ) {
@@ -207,20 +209,20 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
         case RdKafka::ERR__PARTITION_EOF:
             /* Last message */
             if (exit_eof && ++eof_cnt == partition_cnt) {
-                std::cerr << "%% EOF reached for all " << partition_cnt << " partition(s)" << "\n";
+                cerr << "%% EOF reached for all " << partition_cnt << " partition(s)" << "\n";
                 run = false;
             }
             break;
 
         case RdKafka::ERR__UNKNOWN_TOPIC:
         case RdKafka::ERR__UNKNOWN_PARTITION:
-            std::cerr << "Consume failed: " << message->errstr() << "\n";
+            cerr << "Consume failed: " << message->errstr() << "\n";
             run = false;
             break;
 
         default:
             /* Errors */
-            std::cerr << "Consume failed: " << message->errstr() << "\n";
+            cerr << "Consume failed: " << message->errstr() << "\n";
             run = false;
     }
 
@@ -231,7 +233,7 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
  * in the produce() call. */
 class MyHashPartitionerCb : public RdKafka::PartitionerCb {
     public:
-        int32_t partitioner_cb (const RdKafka::Topic *topic, const std::string *key,
+        int32_t partitioner_cb (const RdKafka::Topic *topic, const string *key,
                 int32_t partition_cnt, void *msg_opaque) {
             return djb_hash(key->c_str(), key->size()) % partition_cnt;
         }
@@ -255,19 +257,19 @@ class ExampleConsumeCb : public RdKafka::ConsumeCb {
         }
 };
 
-bool configure( const std::string& config_file, std::unordered_map<std::string,std::string>& pconf, RdKafka::Conf *conf, RdKafka::Conf *tconf ) {
+bool configure( const string& config_file, unordered_map<string,string>& pconf, RdKafka::Conf *conf, RdKafka::Conf *tconf ) {
 
-    std::string line;
-    std::string errstr;
-    std::vector<std::string> pieces;
-    std::ifstream ifs( config_file );
+    string line;
+    string errstr;
+    vector<string> pieces;
+    ifstream ifs( config_file );
 
     if (!ifs ) {
-        std::cerr << "cannot open configuration file: " << config_file << "\n";
+        cerr << "cannot open configuration file: " << config_file << "\n";
         return false;
     }
 
-    while (std::getline( ifs, line )) {
+    while (getline( ifs, line )) {
         line = string_utilities::strip( line );
         if ( !line.empty() && line[0] != '#' ) {
             pieces = string_utilities::split( line, '=' );
@@ -285,21 +287,21 @@ bool configure( const std::string& config_file, std::unordered_map<std::string,s
 
 int main (int argc, char **argv) {
 
-    std::unordered_map<std::string, std::string> pconf;
+    unordered_map<string, string> pconf;
 
-    std::string brokers = "localhost";
-    std::string errstr;
+    string brokers = "localhost";
+    string errstr;
 
-    std::string topic_str;                              // producer topic.
+    string topic_str;                              // producer topic.
     int32_t partition = RdKafka::Topic::PARTITION_UA;   // producer partition.
 
-    std::string config_file;
-    std::string mode;
-    std::string debug;
+    string config_file;
+    string mode;
+    string debug;
 
-    std::string region_file;                            // map data for geofence.
+    string region_file;                            // map data for geofence.
 
-    std::vector<std::string> topics;                    // consumer topics.
+    vector<string> topics;                    // consumer topics.
 
     int opt;                                            // command line option.
 
@@ -324,12 +326,12 @@ int main (int argc, char **argv) {
                 break;
 
             case 'p':
-                partition = std::atoi(optarg);
+                partition = atoi(optarg);
                 break;
 
             case 'g':
                 if (conf->set("group.id",  optarg, errstr) != RdKafka::Conf::CONF_OK) {
-                    std::cerr << errstr << "\n";
+                    cerr << errstr << "\n";
                     exit(1);
                 }
                 break;
@@ -340,7 +342,7 @@ int main (int argc, char **argv) {
 
 //            case 'z':
 //                if (conf->set("compression.codec", optarg, errstr) != RdKafka::Conf::CONF_OK) {
-//                    std::cerr << errstr << "\n";
+//                    cerr << errstr << "\n";
 //                    exit(1);
 //                }
 //                break;
@@ -367,7 +369,7 @@ int main (int argc, char **argv) {
 //            case 'M':
 //                if (conf->set("statistics.interval.ms", optarg, errstr) !=
 //                        RdKafka::Conf::CONF_OK) {
-//                    std::cerr << errstr << "\n";
+//                    cerr << errstr << "\n";
 //                    exit(1);
 //                }
 //                break;
@@ -384,8 +386,8 @@ int main (int argc, char **argv) {
 //                    name = optarg;
 //
 //                    if (!(val = strchr(name, '='))) {
-//                        std::cerr << "%% Expected -X property=value, not " << name << "\n";
-//                        std::exit(EXIT_FAILURE);
+//                        cerr << "%% Expected -X property=value, not " << name << "\n";
+//                        exit(EXIT_FAILURE);
 //                    }
 //
 //                    *val = '\0';
@@ -403,7 +405,7 @@ int main (int argc, char **argv) {
 //                        res = conf->set(name, val, errstr);
 //
 //                    if (res != RdKafka::Conf::CONF_OK) {
-//                        std::cerr << errstr << "\n";
+//                        cerr << errstr << "\n";
 //                        exit(1);
 //                    }
 //                }
@@ -413,7 +415,7 @@ int main (int argc, char **argv) {
 //                if (!strcmp(optarg, "ccb"))
 //                    use_ccb = 1;
 //                else {
-//                    std::cerr << "Unknown option: " << optarg << "\n";
+//                    cerr << "Unknown option: " << optarg << "\n";
 //                    exit(1);
 //                }
 //                break;
@@ -438,7 +440,7 @@ int main (int argc, char **argv) {
 
     // build a list of the operands on the command line.
     for (; optind < argc ; optind++)
-        topics.push_back(std::string(argv[optind]));
+        topics.push_back(string(argv[optind]));
 
 
     if (config_file.empty() && (topics.empty() || optind != argc || region_file.empty())) {
@@ -476,7 +478,7 @@ usage:
             RdKafka::version_str().c_str(), 
             RdKafka::version(),
             RdKafka::get_debug_contexts().c_str());
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     // this function will override configurations on the command line.
@@ -493,7 +495,7 @@ usage:
 
     if (!debug.empty()) {
         if (conf->set("debug", debug, errstr) != RdKafka::Conf::CONF_OK) {
-            std::cerr << errstr << "\n";
+            cerr << errstr << "\n";
             exit(1);
         }
     }
@@ -512,34 +514,60 @@ usage:
         // dump the configuration and then exit.
         // TODO: build a dump method into the conf..?
         for (int pass = 0 ; pass < 2 ; pass++) {
-            std::list<std::string> *dump;           // generic handle for both dumps.
+            list<string> *dump;           // generic handle for both dumps.
             if (pass == 0) {
                 dump = conf->dump();
-                std::cout << "# Global config" << "\n";
+                cout << "# Global config" << "\n";
             } else {
                 dump = tconf->dump();
-                std::cout << "# Topic config" << "\n";
+                cout << "# Topic config" << "\n";
             }
 
-            for (std::list<std::string>::iterator it = dump->begin(); it != dump->end(); ) {
-                std::cout << *it << " = ";
+            for (list<string>::iterator it = dump->begin(); it != dump->end(); ) {
+                cout << *it << " = ";
                 it++;
-                std::cout << *it << "\n";
+                cout << *it << "\n";
                 it++;
             }
-            std::cout << "\n";
+            cout << "\n";
         }
 
-        std::cout << "# Privacy config \n";
+        cout << "# Privacy config \n";
         for ( const auto& m : pconf ) {
-            std::cout << m.first << " = " << m.second << '\n';
+            cout << m.first << " = " << m.second << '\n';
         }
 
-        std::exit(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);
     }
 
     // librdkafka defined configuration.
     conf->set("default_topic_conf", tconf, errstr);
+
+    // confluent cloud integration
+    string kafkaType = getenv("KAFKA_TYPE");
+    cout << "Kafka type: " << kafkaType << endl; // DEBUG
+    string error_string = "";
+    if (kafkaType == "CONFLUENT") {
+        cout << "Setting up Confluent Cloud configuration key/value pairs." << endl; // DEBUG
+
+        // get username and password
+        string username = getenv("CONFLUENT_KEY");
+        string password = getenv("CONFLUENT_SECRET");
+
+        // set up config
+        conf->set("bootstrap.servers", getenv("DOCKER_HOST_IP"), error_string);
+        conf->set("security.protocol", "SASL_SSL", error_string);
+        conf->set("sasl.mechanism", "PLAIN", error_string);
+        conf->set("sasl.username", username.c_str(), error_string);
+        conf->set("sasl.password", password.c_str(), error_string);
+        conf->set("debug", "all", error_string);
+        conf->set("api.version.request", "true", error_string);
+        conf->set("api.version.fallback.ms", "0", error_string);
+        conf->set("broker.version.fallback", "0.10.0.0", error_string);
+
+        cout << "Finished setting up Confluent Cloud configuration key/value pairs." << endl;
+    }
+    // end of confluent cloud integration
 
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
@@ -548,8 +576,8 @@ usage:
     if ( search != pconf.end() ) {
         region_file = search->second;
     } else {
-        std::cerr << "No map file specified.\n";
-        std::exit(EXIT_FAILURE);
+        cerr << "No map file specified.\n";
+        exit(EXIT_FAILURE);
     }
 
     Geo::Point sw, ne;
@@ -559,33 +587,33 @@ usage:
 
         auto search = pconf.find("privacy.filter.geofence.sw.lat");
         if ( search != pconf.end() ) {
-            sw.lat = std::stod(search->second);
+            sw.lat = stod(search->second);
         }
 
         search = pconf.find("privacy.filter.geofence.sw.lon");
         if ( search != pconf.end() ) {
-            sw.lon = std::stod(search->second);
+            sw.lon = stod(search->second);
         }
 
         search = pconf.find("privacy.filter.geofence.ne.lat");
         if ( search != pconf.end() ) {
-            ne.lat = std::stod(search->second);
+            ne.lat = stod(search->second);
         }
 
         search = pconf.find("privacy.filter.geofence.ne.lon");
         if ( search != pconf.end() ) {
-            ne.lon = std::stod(search->second);
+            ne.lon = stod(search->second);
         }
 
-    } catch ( std::exception& e ) {
+    } catch ( exception& e ) {
 
-        std::cout << e.what() << "\n";
+        cout << e.what() << "\n";
         exit(0);
 
     }
 
     // Declare a quad with the given bounds.
-    Quad::Ptr quad_ptr = std::make_shared<Quad>(sw, ne);
+    Quad::Ptr quad_ptr = make_shared<Quad>(sw, ne);
 
     try {
         // Read the file and parse the shapes.
@@ -593,68 +621,68 @@ usage:
         shape_factory.make_shapes();
         // Add all the shapes to the quad.
         for (auto& circle_ptr : shape_factory.get_circles()) {
-            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(circle_ptr)); 
+            Quad::insert(quad_ptr, dynamic_pointer_cast<const Geo::Entity>(circle_ptr)); 
         }
 
         for (auto& edge_ptr : shape_factory.get_edges()) {
-            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(edge_ptr)); 
+            Quad::insert(quad_ptr, dynamic_pointer_cast<const Geo::Entity>(edge_ptr)); 
         }
 
         for (auto& grid_ptr : shape_factory.get_grids()) {
-            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(grid_ptr)); 
+            Quad::insert(quad_ptr, dynamic_pointer_cast<const Geo::Entity>(grid_ptr)); 
         }
 
 
-    } catch ( std::exception& e ) {
-        std::cerr << "Problem building geofence: " << e.what() << '\n';
+    } catch ( exception& e ) {
+        cerr << "Problem building geofence: " << e.what() << '\n';
         delete tconf;
         delete conf;
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     BSMHandler handler{quad_ptr, pconf};
 
     // Consumer setup: bring in topic.J2735BsmRawJSON stream from the ODE (or a pipe to java producer).
-    std::shared_ptr<RdKafka::KafkaConsumer> consumer{RdKafka::KafkaConsumer::create(conf, errstr)};
+    shared_ptr<RdKafka::KafkaConsumer> consumer{RdKafka::KafkaConsumer::create(conf, errstr)};
 
     if (!consumer) {
-        std::cerr << "Failed to create consumer: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        cerr << "Failed to create consumer: " << errstr << "\n";
+        exit(EXIT_FAILURE);
     }
 
-    std::cout << ">> Created Consumer: " << consumer->name() << "\n";
+    cout << ">> Created Consumer: " << consumer->name() << "\n";
 
     // grab the topic off the configuration.
     search = pconf.find("privacy.topic.consumer");
     if ( search != pconf.end() ) {
         topics.push_back( search->second );
     } else {
-        std::cerr << "Failure to use configured consumer topic: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        cerr << "Failure to use configured consumer topic: " << errstr << "\n";
+        exit(EXIT_FAILURE);
     }
 
-    for ( const std::string& topic : topics ) {
+    for ( const string& topic : topics ) {
         if ( !ode_topic_available( topic, consumer )) {
-        std::cerr << "The ODE Topic: " << topic << " is not available. This topic must be readable.\n";
-        std::exit(EXIT_FAILURE);
+        cerr << "The ODE Topic: " << topic << " is not available. This topic must be readable.\n";
+        exit(EXIT_FAILURE);
         }
     }
 
     // subscribe to the J2735BsmJson topic (or test)
     RdKafka::ErrorCode err = consumer->subscribe(topics);
     if (err) {
-        std::cerr << "Failed to subscribe to " << topics.size() << " topics: " << RdKafka::err2str(err) << "\n";
-        std::exit(EXIT_FAILURE);
+        cerr << "Failed to subscribe to " << topics.size() << " topics: " << RdKafka::err2str(err) << "\n";
+        exit(EXIT_FAILURE);
     }
 
     // Producer setup: will take the filtered BSMs and send them back to the ODE (or a test java consumer).
     RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
     if (!producer) {
-        std::cerr << "Failed to create producer: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        cerr << "Failed to create producer: " << errstr << "\n";
+        exit(EXIT_FAILURE);
     }
 
-    std::cout << ">> Created Producer: " << producer->name() << "\n";
+    cout << ">> Created Producer: " << producer->name() << "\n";
 
     if (topic_str.empty()) {
         // maybe it was specified in the configuration file.
@@ -662,16 +690,16 @@ usage:
         if ( search != pconf.end() ) {
             topic_str = search->second;
         } else {
-            std::cerr << "Topic String Empty!\n";
-            std::exit(EXIT_FAILURE);
+            cerr << "Topic String Empty!\n";
+            exit(EXIT_FAILURE);
         }
     } 
 
     // The topic we are publishing filtered BSMs to.
     RdKafka::Topic *topic = RdKafka::Topic::create(producer, topic_str, tconf, errstr);
     if (!topic) {
-        std::cerr << "Failed to create topic: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        cerr << "Failed to create topic: " << errstr << "\n";
+        exit(EXIT_FAILURE);
     } 
 
     RdKafka::ErrorCode status;
@@ -692,16 +720,16 @@ usage:
                 case RdKafka::ERR_NO_ERROR:
                     {
                         const BSM& bsm = handler.get_bsm();
-                        std::cout << "Retaining BSM: " << bsm << "\n";
+                        cout << "Retaining BSM: " << bsm << "\n";
 
                         // if we still have a message in the handler, we send it back out to the producer we have made above.
                         status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
                         //RdKafka::ErrorCode resp = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
                         if (status != RdKafka::ERR_NO_ERROR) {
-                            std::cerr << "% Produce failed: " << RdKafka::err2str( status ) << "\n";
+                            cerr << "% Produce failed: " << RdKafka::err2str( status ) << "\n";
                         } 
                         // else {
-                        //     std::cerr << "% Produced message (" << handler.get_bsm_buffer_size() << " bytes)" << "\n";
+                        //     cerr << "% Produced message (" << handler.get_bsm_buffer_size() << " bytes)" << "\n";
                         // }
                         //break;
                     }
@@ -710,7 +738,7 @@ usage:
                 case RdKafka::ERR_INVALID_MSG:
                     {
                         const BSM& bsm = handler.get_bsm();
-                        std::cout << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
+                        cout << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
                     }
                     break;
 
@@ -724,7 +752,7 @@ usage:
     }
 
     //    while (run && producer->outq_len() > 0) {
-    //      std::cerr << "Waiting for " << producer->outq_len() << "\n";
+    //      cerr << "Waiting for " << producer->outq_len() << "\n";
     //      producer->poll(1000);         // needed when using callbacks.
     //    }
 
@@ -739,7 +767,7 @@ usage:
 
     consumer->close();
 
-    std::cout << ">> Consumed " << msg_cnt << " messages (" << msg_bytes << " bytes)" << "\n";
+    cout << ">> Consumed " << msg_cnt << " messages (" << msg_bytes << " bytes)" << "\n";
 
     /*
      * Wait for RdKafka to decommission.

@@ -23,7 +23,7 @@
  *    Oak Ridge National Laboratory.
  */
 
-#include <librdkafka/rdkafkacpp.h>
+#include "librdkafka/rdkafkacpp.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
