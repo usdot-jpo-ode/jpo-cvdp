@@ -78,7 +78,7 @@ using namespace std;
 const char* getEnvironmentVariable(const char* variableName) {
     const char* toReturn = getenv(variableName);
     if (!toReturn) {
-        cout << "[ERROR] Something went wrong attempting to retrieve the environment variable " << variableName << endl;
+        cout << "Something went wrong attempting to retrieve the environment variable " << variableName << endl;
         toReturn = "";
     }
     return toReturn;
@@ -368,7 +368,7 @@ bool PPM::configure() {
     // confluent cloud integration
     string kafkaType = getEnvironmentVariable("KAFKA_TYPE");
     if (kafkaType == "CONFLUENT") {
-        cout << "[DEBUG] Setting up Confluent Cloud configuration key/value pairs for PPM." << endl; // DEBUG
+        bool debug = false;
 
         // get username and password
         string username = getEnvironmentVariable("CONFLUENT_KEY");
@@ -380,12 +380,13 @@ bool PPM::configure() {
         conf->set("sasl.mechanisms", "PLAIN", error_string);
         conf->set("sasl.username", username.c_str(), error_string);
         conf->set("sasl.password", password.c_str(), error_string);
-        // conf->set("debug", "all", error_string);
         conf->set("api.version.request", "true", error_string);
         conf->set("api.version.fallback.ms", "0", error_string);
         conf->set("broker.version.fallback", "0.10.0.0", error_string);
 
-        cout << "[DEBUG] Finished setting up Confluent Cloud configuration key/value pairs for PPM." << endl;
+        if (debug) {
+            conf->set("debug", "all", error_string);
+        }
     }
     // end of confluent cloud integration
 
@@ -817,17 +818,11 @@ int PPM::operator()(void) {
             }
         }
 
-        cout << "[DEBUG] Entering consume-produce loop" << endl;
-
         // consume-produce loop.
         while (bsms_available) {
-            cout << "=== new loop ===" << endl;
-
-            cout << "[DEBUG] Attempting to consume" << endl;
             unique_ptr<RdKafka::Message> msg{ consumer->consume( consumer_timeout ) };
 
             if ( msg_consume(msg.get(), NULL, handler) ) {
-                cout << "[DEBUG] Attempting to produce." << endl; // DEBUG
                 status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
 
                 if (status != RdKafka::ERR_NO_ERROR) {
@@ -840,16 +835,13 @@ int PPM::operator()(void) {
                     ilogger->trace("produced BSM successfully.");
                 }
             }
-            else {
-                cout << "[DEBUG] Call to msg_consume() returned false. Not attempting to produce." << endl;
-            }
 
             // NOTE: good for troubleshooting, but bad for performance.
             elogger->flush();
             ilogger->flush();
 
-            cout << "[DEBUG] BSMs consumed: " << bsm_recv_count << endl;
-            cout << "[DEBUG] BSMs produced: " << bsm_send_count << endl;
+            // cout << "[DEBUG] BSMs consumed: " << bsm_recv_count << endl;
+            // cout << "[DEBUG] BSMs produced: " << bsm_send_count << endl;
         }
     }
 
