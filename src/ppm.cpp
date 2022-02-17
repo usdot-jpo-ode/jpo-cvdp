@@ -380,7 +380,7 @@ bool PPM::configure() {
         conf->set("sasl.mechanisms", "PLAIN", error_string);
         conf->set("sasl.username", username.c_str(), error_string);
         conf->set("sasl.password", password.c_str(), error_string);
-        conf->set("debug", "all", error_string);
+        // conf->set("debug", "all", error_string);
         conf->set("api.version.request", "true", error_string);
         conf->set("api.version.fallback.ms", "0", error_string);
         conf->set("broker.version.fallback", "0.10.0.0", error_string);
