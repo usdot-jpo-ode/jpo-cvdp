@@ -565,7 +565,7 @@ usage:
         // set up config
         conf->set("bootstrap.servers", getEnvironmentVariable("DOCKER_HOST_IP"), error_string);
         conf->set("security.protocol", "SASL_SSL", error_string);
-        conf->set("sasl.mechanism", "PLAIN", error_string);
+        conf->set("sasl.mechanisms", "PLAIN", error_string);
         conf->set("sasl.username", username.c_str(), error_string);
         conf->set("sasl.password", password.c_str(), error_string);
         conf->set("debug", "all", error_string);
