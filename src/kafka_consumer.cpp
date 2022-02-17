@@ -72,6 +72,15 @@
 
 using namespace std;
 
+const char* getEnvironmentVariable(const char* variableName) {
+    const char* toReturn = getenv(variableName);
+    if (!toReturn) {
+        cout << "[ERROR] Something went wrong attempting to retrieve the environment variable " << variableName << endl;
+        toReturn = "";
+    }
+    return toReturn;
+}
+
 static bool run = true;
 static bool exit_eof = false;
 
@@ -544,18 +553,17 @@ usage:
     conf->set("default_topic_conf", tconf, errstr);
 
     // confluent cloud integration
-    string kafkaType = getenv("KAFKA_TYPE");
-    cout << "Kafka type: " << kafkaType << endl; // DEBUG
+    string kafkaType = getEnvironmentVariable("KAFKA_TYPE");
     string error_string = "";
     if (kafkaType == "CONFLUENT") {
-        cout << "Setting up Confluent Cloud configuration key/value pairs." << endl; // DEBUG
+        cout << "Setting up Confluent Cloud configuration key/value pairs for Kafka Consumer." << endl; // DEBUG
 
         // get username and password
-        string username = getenv("CONFLUENT_KEY");
-        string password = getenv("CONFLUENT_SECRET");
+        string username = getEnvironmentVariable("CONFLUENT_KEY");
+        string password = getEnvironmentVariable("CONFLUENT_SECRET");
 
         // set up config
-        conf->set("bootstrap.servers", getenv("DOCKER_HOST_IP"), error_string);
+        conf->set("bootstrap.servers", getEnvironmentVariable("DOCKER_HOST_IP"), error_string);
         conf->set("security.protocol", "SASL_SSL", error_string);
         conf->set("sasl.mechanism", "PLAIN", error_string);
         conf->set("sasl.username", username.c_str(), error_string);
@@ -565,7 +573,7 @@ usage:
         conf->set("api.version.fallback.ms", "0", error_string);
         conf->set("broker.version.fallback", "0.10.0.0", error_string);
 
-        cout << "Finished setting up Confluent Cloud configuration key/value pairs." << endl;
+        cout << "Finished setting up Confluent Cloud configuration key/value pairs for Kafka Consumer." << endl;
     }
     // end of confluent cloud integration
 

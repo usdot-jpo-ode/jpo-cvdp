@@ -4,7 +4,9 @@ USER root
 WORKDIR /cvdi-stream
 
 # Add build tools.
-RUN apt-get update && apt-get install -y software-properties-common wget git make gcc-7 g++-7 gcc-7-base && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
+RUN apt-get update
+# RUN apt-get update && apt-get install -y software-properties-common wget git make gcc-7 g++-7 gcc-7-base && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
+RUN apt-get install -y wget git make g++
 
 # Install cmake.
 RUN apt install -y libprotobuf-dev protobuf-compiler
@@ -15,7 +17,7 @@ RUN apt-get install -y libsasl2-dev
 RUN apt-get install -y libsasl2-modules
 RUN apt-get install -y libssl-dev
 RUN apt-get install -y librdkafka-dev
-RUN apt-get install -y unzip && wget https://github.com/edenhill/librdkafka/archive/refs/tags/v1.6.2.zip && unzip v1.6.2.zip && cd librdkafka-1.6.2 && ln -s /usr/bin/python3 /usr/bin/python && ./configure && make && make install && cd /cvdi-stream
+RUN apt-get install -y unzip && wget https://github.com/edenhill/librdkafka/archive/refs/tags/v1.6.2.zip && unzip v1.6.2.zip && cd librdkafka-1.6.2 && ln -s /usr/bin/python3 /usr/bin/python && ./configure && make && cd /cvdi-stream
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
@@ -35,9 +37,10 @@ ADD ./docker-test /cvdi-stream/docker-test
 WORKDIR /ppm_data
 
 # add needed files
-ADD ./data/I-70_I-25_CO-470.edges ./
+ADD ./data/I-70_I-25_CO-470.edges /cvdi-stream
 ADD ./config/cdot_ppmBsm.properties ./
 ADD ./config/cdot_ppmTim.properties ./
 
 # Run the tool.
+RUN chmod 7777 /cvdi-stream/docker-test/ppm_no_map.sh
 CMD ["/cvdi-stream/docker-test/ppm_no_map.sh"]

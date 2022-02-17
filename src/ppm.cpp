@@ -367,9 +367,8 @@ bool PPM::configure() {
 
     // confluent cloud integration
     string kafkaType = getEnvironmentVariable("KAFKA_TYPE");
-    cout << "[DEBUG] Kafka type: " << kafkaType << endl; // DEBUG
     if (kafkaType == "CONFLUENT") {
-        cout << "[DEBUG] Setting up Confluent Cloud configuration key/value pairs." << endl; // DEBUG
+        cout << "[DEBUG] Setting up Confluent Cloud configuration key/value pairs for PPM." << endl; // DEBUG
 
         // get username and password
         string username = getEnvironmentVariable("CONFLUENT_KEY");
@@ -381,12 +380,12 @@ bool PPM::configure() {
         conf->set("sasl.mechanism", "PLAIN", error_string);
         conf->set("sasl.username", username.c_str(), error_string);
         conf->set("sasl.password", password.c_str(), error_string);
-        // conf->set("debug", "all", error_string);
+        conf->set("debug", "all", error_string);
         conf->set("api.version.request", "true", error_string);
         conf->set("api.version.fallback.ms", "0", error_string);
         conf->set("broker.version.fallback", "0.10.0.0", error_string);
 
-        cout << "[DEBUG] Finished setting up Confluent Cloud configuration key/value pairs." << endl;
+        cout << "[DEBUG] Finished setting up Confluent Cloud configuration key/value pairs for PPM." << endl;
     }
     // end of confluent cloud integration
 
