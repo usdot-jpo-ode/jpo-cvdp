@@ -75,15 +75,6 @@
 
 using namespace std;
 
-const char* getEnvironmentVariable(const char* variableName) {
-    const char* toReturn = getenv(variableName);
-    if (!toReturn) {
-        cout << "Something went wrong attempting to retrieve the environment variable " << variableName << endl;
-        toReturn = "";
-    }
-    return toReturn;
-}
-
 bool PPM::bootstrap = true;
 bool PPM::bsms_available = true;
 
@@ -850,6 +841,15 @@ int PPM::operator()(void) {
     ilogger->info("PPM published : {} BSMs and {} bytes", bsm_send_count, bsm_send_bytes);
     ilogger->info("PPM suppressed: {} BSMs and {} bytes", bsm_filt_count, bsm_filt_bytes);
     return EXIT_SUCCESS;
+}
+
+const char* PPM::getEnvironmentVariable(const char* variableName) {
+    const char* toReturn = getenv(variableName);
+    if (!toReturn) {
+        ilogger->error("Something went wrong attempting to retrieve the environment variable {}", variableName);
+        toReturn = "";
+    }
+    return toReturn;
 }
 
 #ifndef _PPM_TESTS
