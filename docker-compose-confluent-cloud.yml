@@ -10,8 +10,6 @@ services:
       CONFLUENT_KEY: ${CONFLUENT_KEY}
       CONFLUENT_SECRET: ${CONFLUENT_SECRET}
       PPM_CONFIG_FILE: cdot_ppmBsm.properties
-    depends_on:
-      - kafka
   ppmtim:
     build:
       context: .
@@ -22,5 +20,3 @@ services:
       CONFLUENT_KEY: ${CONFLUENT_KEY}
       CONFLUENT_SECRET: ${CONFLUENT_SECRET}
       PPM_CONFIG_FILE: cdot_ppmTim.properties
-    depends_on:
-      - kafka
