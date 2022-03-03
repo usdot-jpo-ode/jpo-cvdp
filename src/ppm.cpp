@@ -785,7 +785,7 @@ int PPM::operator()(void) {
     } catch ( exception& e ) {
 
         // don't use logger in case we cannot configure it correctly.
-        ilogger->error("Fatal Exception: {}", e.what());
+        cerr << "Fatal Exception: " << e.what() << endl;
         return EXIT_FAILURE;
     }
 
