@@ -91,7 +91,7 @@ class PPM : public tool::Tool {
          */
         bool make_loggers( bool remove_files );
 
-        const char* getEnvironmentVariable(const char* variableName)
+        const char* getEnvironmentVariable(const char* variableName);
 
     private:
 

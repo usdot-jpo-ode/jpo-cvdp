@@ -152,31 +152,32 @@ void PPM::metadata_print (const string &topic, const RdKafka::Metadata *metadata
             }
         }
 
-        ilogger->error("");
-
         /* Iterate topic's partitions */
         for ( auto& ip : *(it->partitions()) ) {
-            ilogger->info("    partition {}, leader {}, replicas:", ip->id(), ip->leader());
+            ostringstream oss;
+            oss << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
 
             /* Iterate partition's replicas */
             RdKafka::PartitionMetadata::ReplicasIterator ir;
             for (ir = ip->replicas()->begin(); ir != ip->replicas()->end(); ++ir) {
-                ilogger->info("{}{}", (ir == ip->replicas()->begin() ? "":","), *ir);
+                oss << (ir == ip->replicas()->begin() ? "":",") << *ir;
             }
 
             /* Iterate partition's ISRs */
-            ilogger->info(", isrs: ");
+            oss << ", isrs: ";
             RdKafka::PartitionMetadata::ISRSIterator iis;
             for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis) {
-                ilogger->info("{}{}", (iis == ip->isrs()->begin() ? "":","), *iis);
+                oss << (iis == ip->isrs()->begin() ? "":",") << *iis;
             }
 
             if (ip->err() != RdKafka::ERR_NO_ERROR) {
-                ilogger->error(", {}", RdKafka::err2str(ip->err()));
+                oss << ", " << RdKafka::err2str(ip->err()) << endl;
             }
             else {
-                ilogger->info("");
+                oss << endl;
             }
+            
+            ilogger->info(oss.str());
         }
     }
 }
