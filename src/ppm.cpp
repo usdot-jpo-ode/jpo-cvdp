@@ -146,9 +146,9 @@ void PPM::metadata_print (const string &topic, const RdKafka::Metadata *metadata
         ilogger->info(" topic \"{}\" with {} partitions:", it->topic(), it->partitions()->size());
 
         if (it->err() != RdKafka::ERR_NO_ERROR) {
-            ilogger->error(" {}", err2str(it->err()));
+            elogger->error(" {}", err2str(it->err()));
             if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) {
-                ilogger->error(" (try again)");
+                elogger->error(" (try again)");
             }
         }
 
@@ -724,7 +724,7 @@ bool PPM::make_loggers( bool remove_files )
                                                                                 // some other strange os...
 #endif
         {
-            ilogger->error("Error making the logging directory.");
+            elogger->error("Error making the logging directory.");
             return false;
         }
     }
@@ -745,14 +745,14 @@ bool PPM::make_loggers( bool remove_files )
 
     if ( remove_files && fileExists( ilogname ) ) {
         if ( remove( ilogname.c_str() ) != 0 ) {
-            ilogger->error("Error removing the previous information log file.");
+            elogger->error("Error removing the previous information log file.");
             return false;
         }
     }
 
     if ( remove_files && fileExists( elogname ) ) {
         if ( remove( elogname.c_str() ) != 0 ) {
-            ilogger->error("Error removing the previous error log file.");
+            elogger->error("Error removing the previous error log file.");
             return false;
         }
     }
@@ -853,7 +853,7 @@ int PPM::operator()(void) {
 const char* PPM::getEnvironmentVariable(const char* variableName) {
     const char* toReturn = getenv(variableName);
     if (!toReturn) {
-        ilogger->error("Something went wrong attempting to retrieve the environment variable {}", variableName);
+        elogger->error("Something went wrong attempting to retrieve the environment variable {}", variableName);
         toReturn = "";
     }
     return toReturn;
@@ -905,7 +905,7 @@ int main( int argc, char* argv[] )
                 ppm.print_configuration();
                 exit( EXIT_SUCCESS );
             } else {
-                ppm.ilogger->error( "current configuration settings do not work; exiting." );
+                ppm.elogger->error( "current configuration settings do not work; exiting." );
                 exit( EXIT_FAILURE );
             }
         } catch ( exception& e ) {
