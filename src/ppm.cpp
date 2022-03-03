@@ -130,52 +130,54 @@ PPM::~PPM()
 }
 
 void PPM::metadata_print (const string &topic, const RdKafka::Metadata *metadata) {
-
-    cout << "Metadata for " << (topic.empty() ? "" : "all topics")
-        << "(from broker "  << metadata->orig_broker_id()
-        << ":" << metadata->orig_broker_name() << endl;
+    ilogger->info("Metadata for {}(from broker {}: {}", (topic.empty() ? "" : "all topics"), metadata->orig_broker_id(), metadata->orig_broker_name());
 
     /* Iterate brokers */
-    cout << " " << metadata->brokers()->size() << " brokers:" << endl;
+    ilogger->info(" {} brokers:", metadata->brokers()->size());
 
     for ( auto ib : *(metadata->brokers()) ) {
-        cout << "  broker " << ib->id() << " at " << ib->host() << ":" << ib->port() << endl;
+        ilogger->info(" broker {} at {}: {}", ib->id(), ib->host(), ib->port());
     }
 
     /* Iterate topics */
-    cout << metadata->topics()->size() << " topics:" << endl;
+    ilogger->info("{} topics", metadata->topics()->size());
 
     for ( auto& it : *(metadata->topics()) ) {
-
-        cout << "  topic \""<< it->topic() << "\" with " << it->partitions()->size() << " partitions:";
+        ilogger->info(" topic \"{}\" with {} partitions:", it->topic(), it->partitions()->size());
 
         if (it->err() != RdKafka::ERR_NO_ERROR) {
-            cout << " " << err2str(it->err());
-            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) cout << " (try again)";
+            elogger->error(" {}", err2str(it->err()));
+            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) {
+                elogger->error(" (try again)");
+            }
         }
-
-        cout << endl;
 
         /* Iterate topic's partitions */
         for ( auto& ip : *(it->partitions()) ) {
-            cout << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
+            ostringstream oss;
+            oss << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
 
             /* Iterate partition's replicas */
             RdKafka::PartitionMetadata::ReplicasIterator ir;
             for (ir = ip->replicas()->begin(); ir != ip->replicas()->end(); ++ir) {
-                cout << (ir == ip->replicas()->begin() ? "":",") << *ir;
+                oss << (ir == ip->replicas()->begin() ? "":",") << *ir;
             }
 
             /* Iterate partition's ISRs */
-            cout << ", isrs: ";
+            oss << ", isrs: ";
             RdKafka::PartitionMetadata::ISRSIterator iis;
-            for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis)
-                cout << (iis == ip->isrs()->begin() ? "":",") << *iis;
+            for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis) {
+                oss << (iis == ip->isrs()->begin() ? "":",") << *iis;
+            }
 
-            if (ip->err() != RdKafka::ERR_NO_ERROR)
-                cout << ", " << RdKafka::err2str(ip->err()) << endl;
-            else
-                cout << endl;
+            if (ip->err() != RdKafka::ERR_NO_ERROR) {
+                oss << ", " << RdKafka::err2str(ip->err()) << endl;
+            }
+            else {
+                oss << endl;
+            }
+            
+            ilogger->info(oss.str());
         }
     }
 }
@@ -208,28 +210,36 @@ bool PPM::topic_available( const string& topic ) {
 
 void PPM::print_configuration() const
 {
-    cout << "# Global config" << "\n";
+    ilogger->info("# Global config");
     list<string>* conf_list = conf->dump();
 
     int i = 0;
     for ( auto& v : *conf_list ) {
-        if ( i%2==0 ) cout << v << " = ";
-        else cout << v << '\n';
+        if ( i%2==0 ) {
+            ilogger->info("{} = ", v);
+        }
+        else {
+            ilogger->info("{}", v);
+        }
         ++i;
     }
 
-    cout << "# Topic config" << "\n";
+    ilogger->info("# Topic config");
     conf_list = tconf->dump();
     i = 0;
     for ( auto& v : *conf_list ) {
-        if ( i%2==0 ) cout << v << " = ";
-        else cout << v << '\n';
+        if ( i%2==0 ) {
+            ilogger->info("{} = ", v);
+        }
+        else {
+            ilogger->info("{}", v);
+        }
         ++i;
     }
 
-    cout << "# Privacy config \n";
+    ilogger->info("# Privacy config");
     for ( const auto& m : pconf ) {
-        cout << m.first << " = " << m.second << '\n';
+        ilogger->info("{} = {}", m.first, m.second);
     }
 }
 
@@ -714,7 +724,7 @@ bool PPM::make_loggers( bool remove_files )
                                                                                 // some other strange os...
 #endif
         {
-            cerr << "Error making the logging directory.\n";
+            elogger->error("Error making the logging directory.");
             return false;
         }
     }
@@ -735,14 +745,14 @@ bool PPM::make_loggers( bool remove_files )
 
     if ( remove_files && fileExists( ilogname ) ) {
         if ( remove( ilogname.c_str() ) != 0 ) {
-            cerr << "Error removing the previous information log file.\n";
+            elogger->error("Error removing the previous information log file.");
             return false;
         }
     }
 
     if ( remove_files && fileExists( elogname ) ) {
         if ( remove( elogname.c_str() ) != 0 ) {
-            cerr << "Error removing the previous error log file.\n";
+            elogger->error("Error removing the previous error log file.");
             return false;
         }
     }
@@ -775,7 +785,7 @@ int PPM::operator()(void) {
     } catch ( exception& e ) {
 
         // don't use logger in case we cannot configure it correctly.
-        cerr << "Fatal Exception: " << e.what() << '\n';
+        cerr << "Fatal Exception: " << e.what() << endl;
         return EXIT_FAILURE;
     }
 
@@ -830,9 +840,6 @@ int PPM::operator()(void) {
             // NOTE: good for troubleshooting, but bad for performance.
             elogger->flush();
             ilogger->flush();
-
-            // cout << "[DEBUG] BSMs consumed: " << bsm_recv_count << endl;
-            // cout << "[DEBUG] BSMs produced: " << bsm_send_count << endl;
         }
     }
 
@@ -846,7 +853,7 @@ int PPM::operator()(void) {
 const char* PPM::getEnvironmentVariable(const char* variableName) {
     const char* toReturn = getenv(variableName);
     if (!toReturn) {
-        ilogger->error("Something went wrong attempting to retrieve the environment variable {}", variableName);
+        elogger->error("Something went wrong attempting to retrieve the environment variable {}", variableName);
         toReturn = "";
     }
     return toReturn;
@@ -898,12 +905,10 @@ int main( int argc, char* argv[] )
                 ppm.print_configuration();
                 exit( EXIT_SUCCESS );
             } else {
-                cerr << "Current configuration settings do not work.\n";
-                ppm.ilogger->error( "current configuration settings do not work; exiting." );
+                ppm.elogger->error( "current configuration settings do not work; exiting." );
                 exit( EXIT_FAILURE );
             }
         } catch ( exception& e ) {
-            cerr << "Fatal Exception: " << e.what() << '\n';
             ppm.elogger->error( "exception: {}", e.what() );
             exit( EXIT_FAILURE );
         }
