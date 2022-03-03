@@ -31,7 +31,7 @@ ADD ./docker-test /cvdi-stream/docker-test
 WORKDIR /ppm_data
 
 # add needed files
-ADD ./data/I-70_I-25_CO-470.edges /cvdi-stream
+ADD ./data/I-70_I-25_CO-470.edges ./
 ADD ./config/cdot_ppmBsm.properties ./
 ADD ./config/cdot_ppmTim.properties ./
 
