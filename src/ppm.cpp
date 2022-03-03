@@ -146,7 +146,7 @@ void PPM::metadata_print (const string &topic, const RdKafka::Metadata *metadata
         ilogger->info(" topic \"{}\" with {} partitions:", it->topic(), it->partitions()->size());
 
         if (it->err() != RdKafka::ERR_NO_ERROR) {
-            ilogger->error(" {}", err2str(it->err()))
+            ilogger->error(" {}", err2str(it->err()));
             if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) {
                 ilogger->error(" (try again)");
             }
@@ -168,7 +168,7 @@ void PPM::metadata_print (const string &topic, const RdKafka::Metadata *metadata
             ilogger->info(", isrs: ");
             RdKafka::PartitionMetadata::ISRSIterator iis;
             for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis) {
-                ilogger->info("{}{}", (iis == ip->isrs()->begin() ? "":","), *iis)
+                ilogger->info("{}{}", (iis == ip->isrs()->begin() ? "":","), *iis);
             }
 
             if (ip->err() != RdKafka::ERR_NO_ERROR) {
@@ -723,7 +723,7 @@ bool PPM::make_loggers( bool remove_files )
                                                                                 // some other strange os...
 #endif
         {
-            ilogger->error("Error making the logging directory.")
+            ilogger->error("Error making the logging directory.");
             return false;
         }
     }
