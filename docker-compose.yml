@@ -17,7 +17,7 @@ services:
   ppm:
     build:
       context: .
-      dockerfile: Dockerfile.standalone
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
       - "9090:9090"

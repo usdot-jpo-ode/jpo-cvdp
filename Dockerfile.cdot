@@ -4,7 +4,7 @@ USER root
 WORKDIR /cvdi-stream
 
 # Add build tools.
-RUN apt-get install -y wget make g++
+RUN apt-get update && apt-get install -y wget make g++
 
 # Install cmake.
 RUN apt install -y libprotobuf-dev protobuf-compiler
