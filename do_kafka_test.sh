@@ -3,11 +3,11 @@
 
 # Wait until Kafka creates our topics.
 while true; do
-    ntopics=$(docker exec -it jpo-cvdp-kafka-1 /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 | wc -l)
+    ntopics=$(docker exec -it jpo-cvdp_kafka_1 /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 | wc -l)
 
     if [[ $ntopics == "4" ]]; then 
         echo 'Found 4 topics:'
-        docker exec -it jpo-cvdp-kafka-1 /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 2> /dev/null
+        docker exec -it jpo-cvdp_kafka_1 /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 2> /dev/null
         
         break   
     fi
