@@ -20,19 +20,19 @@ services:
       dockerfile: Dockerfile.standalone
     environment:
       DOCKER_HOST_IP: ${DOCKER_HOST_IP}
-      PPM_CONFIG_FILE: cdot_ppmBsm.properties
+      PPM_CONFIG_FILE: ppmBsm.properties
     depends_on:
       - kafka
     links:
       - kafka
-  # ppm_tim:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     DOCKER_HOST_IP: ${DOCKER_HOST_IP}
-  #     PPM_CONFIG_FILE: cdot_ppmTim.properties
-  #   depends_on:
-  #     - kafka
-  #   links:
-  #     - kafka
+  ppm_tim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+      PPM_CONFIG_FILE: ppmTim.properties
+    depends_on:
+      - kafka
+    links:
+      - kafka
