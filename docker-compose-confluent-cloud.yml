@@ -9,7 +9,7 @@ services:
       KAFKA_TYPE: ${KAFKA_TYPE}
       CONFLUENT_KEY: ${CONFLUENT_KEY}
       CONFLUENT_SECRET: ${CONFLUENT_SECRET}
-      PPM_CONFIG_FILE: cdot_ppmBsm.properties
+      PPM_CONFIG_FILE: ppmBsm.properties
   ppmtim:
     build:
       context: .
@@ -19,4 +19,4 @@ services:
       KAFKA_TYPE: ${KAFKA_TYPE}
       CONFLUENT_KEY: ${CONFLUENT_KEY}
       CONFLUENT_SECRET: ${CONFLUENT_SECRET}
-      PPM_CONFIG_FILE: cdot_ppmTim.properties
+      PPM_CONFIG_FILE: ppmTim.properties
