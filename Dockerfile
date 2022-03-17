@@ -27,5 +27,15 @@ RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvd
 # Add test data. This changes frequently so keep it low in the file.
 ADD ./docker-test /cvdi-stream/docker-test
 
+# change to ppm_data directory
+WORKDIR /ppm_data
+
+# add needed files
+ADD ./data/I_80.edges ./
+ADD ./config/ppmBsm.properties ./
+ADD ./config/ppmTim.properties ./
+ADD ./data/I_80_Eastbound_Vertices.csv ./road_file.csv
+
 # Run the tool.
+RUN chmod 7777 /cvdi-stream/docker-test/ppm.sh
 CMD ["/cvdi-stream/docker-test/ppm.sh"]

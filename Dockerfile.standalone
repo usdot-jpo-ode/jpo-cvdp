@@ -24,5 +24,14 @@ ADD ./unit-test-data /cvdi-stream/unit-test-data
 # Do the build.
 RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvdi-stream-build && cmake /cvdi-stream && make
 
+# change to ppm_data directory
+WORKDIR /ppm_data
+
+# add needed files
+ADD ./data/I-80.edges ./
+ADD ./config/ppmBsm.properties ./
+ADD ./config/ppmTim.properties ./
+ADD ./data/I_80_Eastbound_Vertices.csv ./road_file.csv
+
 # Add test data. This changes frequently so keep it low in the file.
 ADD ./docker-test /cvdi-stream/docker-test
