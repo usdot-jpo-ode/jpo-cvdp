@@ -27,14 +27,6 @@ RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvd
 # Add test data. This changes frequently so keep it low in the file.
 ADD ./docker-test /cvdi-stream/docker-test
 
-# change to ppm_data directory
-WORKDIR /ppm_data
-
-# add needed files
-ADD ./data/I-70_I-25_CO-470.edges ./
-ADD ./config/cdot_ppmBsm.properties ./
-ADD ./config/cdot_ppmTim.properties ./
-
 # Run the tool.
 RUN chmod 7777 /cvdi-stream/docker-test/ppm_no_map.sh
 CMD ["/cvdi-stream/docker-test/ppm_no_map.sh"]

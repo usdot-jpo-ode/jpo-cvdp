@@ -172,6 +172,9 @@ There is a provided docker-compose file (docker-compose-confluent-cloud.yml) tha
 This has only been tested with Confluent Cloud but technically all SASL authenticated Kafka brokers can be reached using this method.
 
 # Troubleshooting
+## Standalone Cluster
+The docker-compose-standalone.yml file is meant for local testing/troubleshooting. To utilize this, rename it to docker-compose.yml and run docker-compose up.
+
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
