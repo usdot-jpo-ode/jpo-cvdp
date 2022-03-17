@@ -3,7 +3,7 @@ services:
   ppmbsm:
     build:
       context: .
-      dockerfile: Dockerfile.cdot
+      dockerfile: Dockerfile
     environment:
       DOCKER_HOST_IP: ${DOCKER_HOST_IP}
       KAFKA_TYPE: ${KAFKA_TYPE}
@@ -13,7 +13,7 @@ services:
   ppmtim:
     build:
       context: .
-      dockerfile: Dockerfile.cdot
+      dockerfile: Dockerfile
     environment:
       DOCKER_HOST_IP: ${DOCKER_HOST_IP}
       KAFKA_TYPE: ${KAFKA_TYPE}
