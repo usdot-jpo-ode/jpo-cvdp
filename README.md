@@ -173,7 +173,10 @@ This has only been tested with Confluent Cloud but technically all SASL authenti
 
 # Troubleshooting
 ## Standalone Cluster
-The docker-compose-standalone.yml file is meant for local testing/troubleshooting. To utilize this, rename it to docker-compose.yml and run docker-compose up.
+The docker-compose-standalone.yml file is meant for local testing/troubleshooting.
+
+To utilize this, pass the -f flag to the docker-compose command as follows:
+> docker-compose -f docker-compose-confluent-cloud.yml up
 
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
