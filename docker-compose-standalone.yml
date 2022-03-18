@@ -4,6 +4,7 @@ services:
     image: wurstmeister/zookeeper
     ports:
       - "2181:2181"
+
   kafka:
     image: wurstmeister/kafka
     ports:
@@ -14,14 +15,27 @@ services:
       KAFKA_CREATE_TOPICS: "topic.OdeBsmJson:1:1,topic.FilteredOdeBsmJson:1:1,topic.OdeTimJson:1:1,topic.FilteredOdeTimJson:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-  ppm:
+
+  ppm_bsm:
     build:
       context: .
-      dockerfile: Dockerfile.standalone
-    ports:
-      - "8080:8080"
-      - "9090:9090"
+      dockerfile: Dockerfile
+    environment:
+      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+      PPM_CONFIG_FILE: ppmBsm.properties
     depends_on:
       - kafka
-    links:
+    volumes:
+      - ${DOCKER_SHARED_VOLUME}:/ppm_data
+      
+  ppm_tim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+      PPM_CONFIG_FILE: ppmTim.properties
+    depends_on:
       - kafka
+    volumes:
+    - ${DOCKER_SHARED_VOLUME}:/ppm_data

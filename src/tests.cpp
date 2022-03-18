@@ -1131,8 +1131,7 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
         CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kIdRedactFlag>() );
-        // json is the string "null" when empty
-        CHECK( handler.get_json() == "null" );
+        CHECK( handler.get_json() == "" ); // there was a comment here about json being null when empty, but it appears to be "", not null
     };
 
     SECTION( "Check Flag Setting" ) {
