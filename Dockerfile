@@ -4,14 +4,14 @@ USER root
 WORKDIR /cvdi-stream
 
 # Add build tools.
-RUN apt-get update && apt-get install -y software-properties-common wget git make gcc-7 g++-7 gcc-7-base && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
+RUN apt-get update && apt-get install -y g++
 
 # Install cmake.
-RUN wget https://cmake.org/files/v3.7/cmake-3.7.2.tar.gz && tar -xvf cmake-3.7.2.tar.gz
-RUN cd cmake-3.7.2 && ./bootstrap && make && make install && cd /
+RUN apt install -y libprotobuf-dev protobuf-compiler
+RUN apt install -y cmake
 
 # Install librdkafka.
-RUN git clone https://github.com/edenhill/librdkafka.git && cd librdkafka && ln -s /usr/bin/python3 /usr/bin/python && ./configure && make && make install && cd /cvdi-stream
+RUN apt-get install -y libsasl2-dev libsasl2-modules libssl-dev librdkafka-dev
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
@@ -28,4 +28,5 @@ RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvd
 ADD ./docker-test /cvdi-stream/docker-test
 
 # Run the tool.
+RUN chmod 7777 /cvdi-stream/docker-test/ppm.sh
 CMD ["/cvdi-stream/docker-test/ppm.sh"]
