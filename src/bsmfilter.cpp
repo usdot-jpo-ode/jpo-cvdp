@@ -556,7 +556,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
-        handlePartIIRedaction();
+        handlePartIIRedaction(data);
+        
     }
     else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
@@ -623,14 +624,14 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     return result_ == ResultStatus::SUCCESS;
 }
 
-void BSMHandler::handlePartIIRedaction() {
+void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
     bool debug = false;
     
     int numMembersRedacted = 0;
 
     // check if partII redaction is required
     if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
-        if (debug) { cout << "partII redaction is required" << endl; }
+        if (debug) { std::cout << "partII redaction is required" << std::endl; }
 
         // get partII data
         rapidjson::Value& partIIArray = data["partII"];
@@ -640,24 +641,24 @@ void BSMHandler::handlePartIIRedaction() {
         RedactionPropertiesManager rpm;
 
         // for each field
-        for (string fieldName : rpm.getFields()) {
+        for (std::string fieldName : rpm.getFields()) {
             try {
                 if (!partII.HasMember(fieldName.c_str())) {
                     continue;
                 }
 
-                if (debug) { cout << "***" << fieldName.c_str() << " is present - attempting to redact" << "***" << endl; }
+                if (debug) { std::cout << "***" << fieldName.c_str() << " is present - attempting to redact" << "***" << std::endl; }
                 
                 // redact field
                 partII[fieldName.c_str()] = 0;
                 numMembersRedacted++;
             }
-            catch (exception e) {
-                if (debug) { cout << "A problem occurred attempting to redact " << fieldName.c_str() << endl; }
+            catch (std::exception e) {
+                if (debug) { std::cout << "A problem occurred attempting to redact " << fieldName.c_str() << std::endl; }
             }
         }
-        if (debug) { cout << "Members redacted: " << numMembersRedacted << endl; }
-        string partIIString = convertRapidjsonValueToString(partII);
+        if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
+        std::string partIIString = convertRapidjsonValueToString(partII);
         bsm_.set_partII(partIIString);
     }
 }

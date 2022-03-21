@@ -477,7 +477,7 @@ class BSMHandler {
          * @brief Handle redacting necessary partII fields.
          *
          */
-        void handlePartIIRedaction();
+        void handlePartIIRedaction(rapidjson::Value& data);
 
         /**
          * @brief Return the result of the most recent BSM processing.

@@ -3,23 +3,20 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 /**
  * This class is meant to manage various redaction properties for use in the BSM Filter.
- * @author Daniel Stephenson
  */
 class RedactionPropertiesManager {
 
     public:
+
         /**
-         * @brief Construct a new Redaction Properties Manager object
+         * @brief Construct a new Redaction Properties Manager object with a default path.
          * 
          */
         RedactionPropertiesManager() {
-            debug = false;
-            fileName = "fieldsToRedact.txt";
-            loadFields(fileName); // load fields upon construction
+            debug = true;
+            loadFields("/workspaces/jpo-cvdp/fieldsToRedact.txt"); // load fields upon construction
         }
 
         /**
@@ -44,7 +41,7 @@ class RedactionPropertiesManager {
          * 
          * @return string 
          */
-        string getFileName() {
+        std::string getFileName() {
             return fileName;
         }
 
@@ -53,7 +50,7 @@ class RedactionPropertiesManager {
          * 
          * @param newFileName 
          */
-        void setFilename(string newFileName) {
+        void setFilename(std::string newFileName) {
             fileName = newFileName;
         }
 
@@ -62,7 +59,7 @@ class RedactionPropertiesManager {
          * 
          * @return vector<string> 
          */
-        vector<string> getFields() {
+        std::vector<std::string> getFields() {
             return fieldsToRedact;
         }
         
@@ -81,8 +78,8 @@ class RedactionPropertiesManager {
          * @param fieldToCheck 
          * @return boolean indicating whether or not the field is in the list
          */
-        bool isField(string fieldToCheck) {
-            for (string field : fieldsToRedact) {
+        bool isField(std::string fieldToCheck) {
+            for (std::string field : fieldsToRedact) {
                 if (field == fieldToCheck) {
                     return true;
                 }
@@ -95,7 +92,7 @@ class RedactionPropertiesManager {
          * 
          * @param fieldToAdd 
          */
-        void addField(string fieldToAdd) {
+        void addField(std::string fieldToAdd) {
             log("adding field " + fieldToAdd);
             fieldsToRedact.push_back(fieldToAdd);
         }
@@ -105,7 +102,7 @@ class RedactionPropertiesManager {
          * 
          * @param fieldToRemove 
          */
-        void removeField(string fieldToRemove) {
+        void removeField(std::string fieldToRemove) {
             log("removing field " + fieldToRemove);
             // TODO: implement
             log("WARNING: this method is not implemented yet");
@@ -117,25 +114,25 @@ class RedactionPropertiesManager {
          */
         void printFields() {
             log("printing fields");
-            cout << "=== Fields to Redact ===" << endl;
-            for (string field: fieldsToRedact) {
-                cout << field.c_str() << endl;
+            std::cout << "=== Fields to Redact ===" << std::endl;
+            for (std::string field: fieldsToRedact) {
+                std::cout << field.c_str() << std::endl;
             }
         }
 
     private:
         bool debug;
-        vector<string> fieldsToRedact;
-        string fileName;
+        std::vector<std::string> fieldsToRedact;
+        std::string fileName;
 
         /**
          * @brief Logs the message if the debug flag is set to true.
          * 
          * @param message 
          */
-        void log(string message) {
+        void log(std::string message) {
             if (debug) {
-                cout << "[RPM] " << message.c_str() << endl;
+                std::cout << "[RPM] " << message.c_str() << std::endl;
             }
         }
 
@@ -143,14 +140,15 @@ class RedactionPropertiesManager {
          * @brief Loads the fields from a file.
          * 
          */
-        void loadFields(string fileName) {
+        void loadFields(std::string fileName) {
             log("loading redaction fields");
 
-            string line;            
-            ifstream file(fileName);
+            std::string line;            
+            std::ifstream file(fileName);
 
             if (!file) {
-                log("could not open the file");
+                std::cout << "ERROR: could not file: " << fileName << std::endl;
+                return;
             }
 
             // for each line, read the line and insert it into fieldsToRedact
@@ -168,10 +166,9 @@ class RedactionPropertiesManager {
          * @brief Saves the fields to a file.
          * 
          */
-        void saveFields(string fileName) {
+        void saveFields(std::string fileName) {
             log("saving redaction fields");
             // TODO: implement
             log("WARNING: this method is not implemented yet");
         }
-
 };

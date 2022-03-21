@@ -1444,7 +1444,7 @@ TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
     RedactionPropertiesManager redactionPropertiesManager;
 
     if (debug) {
-        cout << "Num properties: " << redactionPropertiesManager.getNumFields() << endl;
+        std::cout << "Num properties: " << redactionPropertiesManager.getNumFields() << std::endl;
         redactionPropertiesManager.printFields();
     }
 
@@ -1472,17 +1472,17 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
 
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.tims.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
+    // REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.partII.json", json_test_cases ) );
 
-    if (debug) { cout << "Num test cases: " + json_test_cases.size() << endl; }
+    if (debug) { std::cout << "Num test cases: " + json_test_cases.size() << std::endl; }
 
     int count = 0;
     for ( auto& test_case : json_test_cases ) {
@@ -1495,14 +1495,14 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         CHECK( handler.get_result_string() == "success" );
 
         if (debug) {
-            cout << "BSM: " << handler.get_bsm() << endl;
-            cout << "PartII: " << handler.get_bsm().get_partII() << endl;
+            std::cout << "BSM: " << handler.get_bsm() << std::endl;
+            std::cout << "PartII: " << handler.get_bsm().get_partII() << std::endl;
         }
 
         // verify that there are no sensitive members in the partII field left
-        if (debug) { cout << "Checking that no sensitive members are still present in the the partII field..." << endl; }
-        for (string field : rpm.getFields()) {
-            CHECK( handler.get_bsm().get_partII().find(field) == string::npos);
+        if (debug) { std::cout << "Checking that no sensitive members are still present in the the partII field..." << std::endl; }
+        for (std::string field : rpm.getFields()) {
+            CHECK( handler.get_bsm().get_partII().find(field) == std::string::npos);
         }
         
     }
