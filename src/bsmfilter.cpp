@@ -36,6 +36,7 @@
 #include "cvlib.hpp"
 #include "bsmfilter.hpp"
 #include "spdlog/spdlog.h"
+#include "./redaction-properties/RedactionPropertiesManager.cpp"
 
 /** Start IdRedactor */
 
@@ -201,6 +202,7 @@ BSM::BSM() :
     dsec_{0},
     id_{""},
     oid_{""},
+    partII_{""},
     logstring_{}
 {}
 
@@ -211,6 +213,7 @@ void BSM::reset() {
     dsec_ = 0;
     id_ = "";
     oid_ = "";
+    partII_ = "";
 }
 
 std::string BSM::logString() {
@@ -265,6 +268,14 @@ const std::string& BSM::get_original_id() const {
     return oid_;
 }
 
+void BSM::set_partII( const std::string& s ) {
+    partII_ = s;
+}
+
+const std::string& BSM::get_partII() const {
+    return partII_;
+}
+
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )
 {
     os  << std::setprecision(16) << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
@@ -313,6 +324,11 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
+    }
+
+    search = conf.find("privacy.redaction.partII");
+    if ( search != conf.end() && search-> second=="ON") {
+        activate<BSMHandler::kPartIIRedactFlag>();
     }
 
     search = conf.find("privacy.filter.geofence.extension");
@@ -539,7 +555,10 @@ bool BSMHandler::process( const std::string& bsm_json ) {
                 size["width"] = 0; 
             } 
         }
-    } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
+
+        handlePartIIRedaction();
+    }
+    else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
             result_ = ResultStatus::MISSING;
 
@@ -583,7 +602,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
             result_ = ResultStatus::SPEED;
         }
-    } else {
+    }
+    else {
         result_ = ResultStatus::MISSING;
 
         return false;
@@ -601,6 +621,45 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     finalized_ = true;
     
     return result_ == ResultStatus::SUCCESS;
+}
+
+void BSMHandler::handlePartIIRedaction() {
+    bool debug = false;
+    
+    int numMembersRedacted = 0;
+
+    // check if partII redaction is required
+    if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
+        if (debug) { cout << "partII redaction is required" << endl; }
+
+        // get partII data
+        rapidjson::Value& partIIArray = data["partII"];
+        rapidjson::Value& partII = partIIArray[0];
+
+        // instantiate RPM
+        RedactionPropertiesManager rpm;
+
+        // for each field
+        for (string fieldName : rpm.getFields()) {
+            try {
+                if (!partII.HasMember(fieldName.c_str())) {
+                    continue;
+                }
+
+                if (debug) { cout << "***" << fieldName.c_str() << " is present - attempting to redact" << "***" << endl; }
+                
+                // redact field
+                partII[fieldName.c_str()] = 0;
+                numMembersRedacted++;
+            }
+            catch (exception e) {
+                if (debug) { cout << "A problem occurred attempting to redact " << fieldName.c_str() << endl; }
+            }
+        }
+        if (debug) { cout << "Members redacted: " << numMembersRedacted << endl; }
+        string partIIString = convertRapidjsonValueToString(partII);
+        bsm_.set_partII(partIIString);
+    }
 }
 
 const BSMHandler::ResultStatus BSMHandler::get_result() const {
@@ -658,4 +717,11 @@ const uint32_t BSMHandler::get_activation_flag() const {
 
 const IdRedactor& BSMHandler::get_id_redactor() const {
     return idr_;
+}
+
+std::string BSMHandler::convertRapidjsonValueToString(rapidjson::Value& value) {
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        value.Accept(writer);
+        return buffer.GetString();
 }

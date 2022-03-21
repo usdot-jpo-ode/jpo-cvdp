@@ -1,0 +1,79 @@
+{
+    "metadata": {
+        "latency": 1,
+        "logFileName": "wsmpforward.coer",
+        "payloadType": "us.dot.its.jpo.ode.model.OdeBsmPayload",
+        "receivedAt": "2017-08-02T19:56:45.822Z[UTC]",
+        "sanitized": false,
+        "schemaVersion": 1,
+        "serialId": {
+            "bundleId": 4,
+            "bundleSize": 1,
+            "recordId": 2,
+            "serialNumber": 0,
+            "streamId": "0bfda39b-0bf1-4e2e-a1f1-b858426f7408"
+        },
+        "validSignature": false
+    },
+    "payload": {
+        "data": {
+            "coreData": {
+                "accelSet": {
+                    "accelYaw": 0
+                },
+                "accuracy": {
+                    "semiMajor": 1.4,
+                    "semiMinor": 0.85
+                },
+                "brakes": {
+                    "abs": "on",
+                    "auxBrakes": "unavailable",
+                    "brakeBoost": "unavailable",
+                    "scs": "on",
+                    "traction": "on",
+                    "wheelBrakes": {
+                        "leftFront": false,
+                        "leftRear": false,
+                        "rightFront": false,
+                        "rightRear": false,
+                        "unavailable": true
+                    }
+                },
+                "heading": 251,
+                "id": "2AA3B784",
+                "msgCnt": 65,
+                "position": {
+                    "elevation": 1830.9,
+                    "latitude": 39.7197323,
+                    "longitude": -105.2028467
+                },
+                "secMark": 3599,
+                "speed": 18.32
+            },
+            "partII": [
+                {
+                    "id": "VEHICLESAFETYEXT",
+                    "value": {
+                        "pathHistory": {
+                            "crumbData": [
+                                {
+                                    "elevationOffset": 1,
+                                    "latOffset": -0.0000838,
+                                    "lonOffset": -0.0003006,
+                                    "timeOffset": 32.2
+                                }
+                            ]
+                        },
+                        "pathPrediction": {
+                            "confidence": 80,
+                            "radiusOfCurve": 2008.9
+                        }
+                    }
+                }
+            ]
+        },
+        "dataType": "us.dot.its.jpo.ode.plugin.j2735.J2735Bsm",
+        "schemaVersion": 1
+    },
+    "schemaVersion": 1
+}
