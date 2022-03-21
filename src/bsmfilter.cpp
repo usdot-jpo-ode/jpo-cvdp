@@ -556,43 +556,9 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
-        bool debug = false;
-        
-        int numMembersRedacted = 0;
-
-        // check if partII redaction is required
-        if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
-            if (debug) { cout << "partII redaction is required" << endl; }
-
-            // get partII data
-            rapidjson::Value& partIIArray = data["partII"];
-            rapidjson::Value& partII = partIIArray[0];
-
-            // instantiate RPM
-            RedactionPropertiesManager rpm;
-
-            // for each field
-            for (string fieldName : rpm.getFields()) {
-                try {
-                    if (!partII.HasMember(fieldName.c_str())) {
-                        continue;
-                    }
-
-                    if (debug) { cout << "***" << fieldName.c_str() << " is present - attempting to redact" << "***" << endl; }
-                    
-                    // redact field
-                    partII[fieldName.c_str()] = 0;
-                    numMembersRedacted++;
-                }
-                catch (exception e) {
-                    if (debug) { cout << "A problem occurred attempting to redact " << fieldName.c_str() << endl; }
-                }
-            }
-            if (debug) { cout << "Members redacted: " << numMembersRedacted << endl; }
-            string partIIString = convertRapidjsonValueToString(partII);
-            bsm_.set_partII(partIIString);
-        }
-    } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
+        handlePartIIRedaction();
+    }
+    else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
             result_ = ResultStatus::MISSING;
 
@@ -636,7 +602,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
             result_ = ResultStatus::SPEED;
         }
-    } else {
+    }
+    else {
         result_ = ResultStatus::MISSING;
 
         return false;
@@ -654,6 +621,45 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     finalized_ = true;
     
     return result_ == ResultStatus::SUCCESS;
+}
+
+void BSMHandler::handlePartIIRedaction() {
+    bool debug = false;
+    
+    int numMembersRedacted = 0;
+
+    // check if partII redaction is required
+    if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
+        if (debug) { cout << "partII redaction is required" << endl; }
+
+        // get partII data
+        rapidjson::Value& partIIArray = data["partII"];
+        rapidjson::Value& partII = partIIArray[0];
+
+        // instantiate RPM
+        RedactionPropertiesManager rpm;
+
+        // for each field
+        for (string fieldName : rpm.getFields()) {
+            try {
+                if (!partII.HasMember(fieldName.c_str())) {
+                    continue;
+                }
+
+                if (debug) { cout << "***" << fieldName.c_str() << " is present - attempting to redact" << "***" << endl; }
+                
+                // redact field
+                partII[fieldName.c_str()] = 0;
+                numMembersRedacted++;
+            }
+            catch (exception e) {
+                if (debug) { cout << "A problem occurred attempting to redact " << fieldName.c_str() << endl; }
+            }
+        }
+        if (debug) { cout << "Members redacted: " << numMembersRedacted << endl; }
+        string partIIString = convertRapidjsonValueToString(partII);
+        bsm_.set_partII(partIIString);
+    }
 }
 
 const BSMHandler::ResultStatus BSMHandler::get_result() const {

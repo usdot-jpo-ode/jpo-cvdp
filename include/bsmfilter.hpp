@@ -474,6 +474,12 @@ class BSMHandler {
         bool process( const std::string& bsm_json );
 
         /**
+         * @brief Handle redacting necessary partII fields.
+         *
+         */
+        void handlePartIIRedaction();
+
+        /**
          * @brief Return the result of the most recent BSM processing.
          *
          * @return the parsing result status including success or if failure which element caused the failure.
