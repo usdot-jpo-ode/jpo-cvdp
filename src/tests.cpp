@@ -1440,26 +1440,12 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
 }
 
 TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
-    bool debug = false;
     RedactionPropertiesManager redactionPropertiesManager;
-
-    if (debug) {
-        std::cout << "Num properties: " << redactionPropertiesManager.getNumFields() << std::endl;
-        redactionPropertiesManager.printFields();
-    }
-
     CHECK ( redactionPropertiesManager.getNumFields() > 0);
 }
 
 TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
-    std::cout << "*** testing partII redaction ***" << std::endl;
-
-    bool debug = true;
-
     RedactionPropertiesManager rpm;
-    rpm.addField("weatherProbe");
-
-    if (debug) { std::cout << "number of fields to redact: " << rpm.getNumFields() << std::endl; }
 
     std::unordered_map<std::string,std::string> pconf;
 
@@ -1479,9 +1465,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.partII.json", json_test_cases ) );
 
-    int count = 0;
     for ( auto& test_case : json_test_cases ) {
-        count++;
 
         // process test case to build BSM (redaction will occur here)
         CHECK( handler.process( test_case ) );
@@ -1489,12 +1473,16 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
 
-        if (debug) {
-            std::cout << "BSM: " << handler.get_bsm() << std::endl;
-            std::cout << "PartII: " << handler.get_bsm().get_partII() << std::endl;
-        }
+        // verify that there are no sensitive members in the partII field left
+        std::string partIIString = handler.get_bsm().get_partII();
+        rapidjson::Document partII;
+        partII.Parse(partIIString.c_str());
 
-        // TODO: verify that there are no sensitive members in the partII field left
+        for (std::string member : rpm.getFields()) {
+            bool found = false;
+            handler.isMemberPresent(partII, member, found);
+            CHECK( found == false );
+        }
         
     }
 

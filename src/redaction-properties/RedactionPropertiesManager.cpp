@@ -11,7 +11,7 @@ class RedactionPropertiesManager {
     public:
 
         /**
-         * @brief Construct a new Redaction Properties Manager object with a default path.
+         * @brief Construct a new Redaction Properties Manager object with a default path. Upon instantiation, fields are loaded from a file.
          * 
          */
         RedactionPropertiesManager() {

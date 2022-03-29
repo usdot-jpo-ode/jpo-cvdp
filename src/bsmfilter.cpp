@@ -625,7 +625,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 }
 
 void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
-    bool debug = true;
+    bool debug = false;
     
     int numMembersRedacted = 0;
 
@@ -640,12 +640,24 @@ void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
         rapidjson::Value& partII = data["partII"];
 
         // for each field
-        for (std::string fieldName : rpm.getFields()) {
+        for (std::string member : rpm.getFields()) {
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(partII, member, psuccess);
+                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
+            }
+
             // redact field
             bool success = false;
-            findAndRemoveMember(partII, fieldName.c_str(), success);
+            findAndRemoveMember(partII, member.c_str(), success);
             if (success) {
                 numMembersRedacted++;
+            }
+
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(partII, member, psuccess);
+                std::cout << "----- After redaction? " << psuccess << std::endl;
             }
         }
         if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
