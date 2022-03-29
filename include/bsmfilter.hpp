@@ -480,6 +480,24 @@ class BSMHandler {
         void handlePartIIRedaction(rapidjson::Value& data);
 
         /**
+         * @brief Recursively search for a member in a value and remove it. Returns when the member is found and removed for the first time.
+         * 
+         * @param value The value to begin searching.
+         * @param member The member to remove.
+         * @param success The flag that the caller can check upon return to see if the operation was successful.
+         */
+        void findAndRemoveMember(rapidjson::Value& value, std::string member, bool& success);
+
+        /**
+         * @brief Recursively check if a member is present. Returns upon finding the first instance of the member.
+         * 
+         * @param value The value to begin searching.
+         * @param member The member to remove.
+         * @param success The flag that the caller can check upon return to see if the operation was successful.
+         */
+        void isMemberPresent(rapidjson::Value& value, std::string member, bool& success);
+
+        /**
          * @brief Return the result of the most recent BSM processing.
          *
          * @return the parsing result status including success or if failure which element caused the failure.

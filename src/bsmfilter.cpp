@@ -625,7 +625,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 }
 
 void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
-    bool debug = false;
+    bool debug = true;
     
     int numMembersRedacted = 0;
 
@@ -633,33 +633,98 @@ void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
     if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
         if (debug) { std::cout << "partII redaction is required" << std::endl; }
 
-        // get partII data
-        rapidjson::Value& partIIArray = data["partII"];
-        rapidjson::Value& partII = partIIArray[0];
-
         // instantiate RPM
         RedactionPropertiesManager rpm;
 
+        // get partII data
+        rapidjson::Value& partII = data["partII"];
+
         // for each field
         for (std::string fieldName : rpm.getFields()) {
-            try {
-                if (!partII.HasMember(fieldName.c_str())) {
-                    continue;
-                }
-
-                if (debug) { std::cout << "***" << fieldName.c_str() << " is present - attempting to redact" << "***" << std::endl; }
-                
-                // redact field
-                partII[fieldName.c_str()] = 0;
+            // redact field
+            bool success = false;
+            findAndRemoveMember(partII, fieldName.c_str(), success);
+            if (success) {
                 numMembersRedacted++;
-            }
-            catch (std::exception e) {
-                if (debug) { std::cout << "A problem occurred attempting to redact " << fieldName.c_str() << std::endl; }
             }
         }
         if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
         std::string partIIString = convertRapidjsonValueToString(partII);
         bsm_.set_partII(partIIString);
+    }
+}
+
+/**
+ * @brief Recursively search for a member in a value and remove it. Returns when the member is found and removed for the first time.
+ * 
+ * @param value The value to begin searching.
+ * @param member The member to remove.
+ * @param success The flag that the caller can check upon return to see if the operation was successful.
+ */
+void BSMHandler::findAndRemoveMember(rapidjson::Value& value, std::string member, bool& success) {
+    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
+    if (success) {
+        // return if search has already succeeded
+        return;
+    }
+    if (value.IsObject()) {
+        if (value.HasMember(member.c_str())) {
+            value.RemoveMember(member.c_str());
+            success = true;
+            return;
+        }
+        for (auto& m : value.GetObject()) {
+            std::string type = kTypeNames[m.value.GetType()];
+            if (type == "Object" || type == "Array") {
+                std::string name = m.name.GetString();
+                auto& v = value[name.c_str()];
+                findAndRemoveMember(v, member, success);
+            }
+        }
+    }
+    else if (value.IsArray()) {
+        for (auto& m : value.GetArray()) {
+            std::string type = kTypeNames[m.GetType()];
+            if (type == "Object" || type == "Array") {
+                findAndRemoveMember(m, member, success);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Recursively check if a member is present. Returns upon finding the first instance of the member.
+ * 
+ * @param value The value to begin searching.
+ * @param member The member to remove.
+ * @param success The flag that the caller can check upon return to see if the operation was successful.
+ */
+void BSMHandler::isMemberPresent(rapidjson::Value& value, std::string member, bool& success) {
+    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
+    if (success) {
+        // return if search has already succeeded
+        return;
+    }
+    if (value.IsObject()) {
+        if (value.HasMember(member.c_str())) {
+            success = true;
+        }
+        for (auto& m : value.GetObject()) {
+            std::string type = kTypeNames[m.value.GetType()];
+            if (type == "Object" || type == "Array") {
+                std::string name = m.name.GetString();
+                auto& v = value[name.c_str()];
+                isMemberPresent(v, member, success);
+            }
+        }
+    }
+    else if (value.IsArray()) {
+        for (auto& m : value.GetArray()) {
+            std::string type = kTypeNames[m.GetType()];
+            if (type == "Object" || type == "Array") {
+                isMemberPresent(m, member, success);
+            }
+        }
     }
 }
 
