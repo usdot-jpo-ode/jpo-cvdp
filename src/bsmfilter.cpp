@@ -649,7 +649,7 @@ void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
 
             // redact field
             bool success = false;
-            findAndRemoveMember(partII, member.c_str(), success);
+            findAndRemoveAllInstancesOfMember(partII, member.c_str(), success);
             if (success) {
                 numMembersRedacted++;
             }
@@ -667,30 +667,25 @@ void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
 }
 
 /**
- * @brief Recursively search for a member in a value and remove it. Returns when the member is found and removed for the first time.
+ * @brief Recursively search for a member in a value and remove all instances of it it.
  * 
  * @param value The value to begin searching.
- * @param member The member to remove.
+ * @param member The member to remove all instances of.
  * @param success The flag that the caller can check upon return to see if the operation was successful.
  */
-void BSMHandler::findAndRemoveMember(rapidjson::Value& value, std::string member, bool& success) {
+void BSMHandler::findAndRemoveAllInstancesOfMember(rapidjson::Value& value, std::string member, bool& success) {
     static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
-    if (success) {
-        // return if search has already succeeded
-        return;
-    }
     if (value.IsObject()) {
-        if (value.HasMember(member.c_str())) {
+        while (value.HasMember(member.c_str())) {
             value.RemoveMember(member.c_str());
             success = true;
-            return;
         }
         for (auto& m : value.GetObject()) {
             std::string type = kTypeNames[m.value.GetType()];
             if (type == "Object" || type == "Array") {
                 std::string name = m.name.GetString();
                 auto& v = value[name.c_str()];
-                findAndRemoveMember(v, member, success);
+                findAndRemoveAllInstancesOfMember(v, member, success);
             }
         }
     }
@@ -698,7 +693,7 @@ void BSMHandler::findAndRemoveMember(rapidjson::Value& value, std::string member
         for (auto& m : value.GetArray()) {
             std::string type = kTypeNames[m.GetType()];
             if (type == "Object" || type == "Array") {
-                findAndRemoveMember(m, member, success);
+                findAndRemoveAllInstancesOfMember(m, member, success);
             }
         }
     }
