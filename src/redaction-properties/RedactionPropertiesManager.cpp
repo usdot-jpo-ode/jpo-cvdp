@@ -4,7 +4,7 @@
 #include <fstream>
 
 /**
- * This class is meant to manage various redaction properties for use in the BSM Filter.
+ * This class is meant to load in a number of specified fields to redact from the partII section of BSM messages. This is used in the BSM Filter.
  */
 class RedactionPropertiesManager {
 
