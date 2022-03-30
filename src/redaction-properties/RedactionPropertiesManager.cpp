@@ -20,14 +20,6 @@ class RedactionPropertiesManager {
         }
 
         /**
-         * @brief Destroy the Redaction Properties Manager object
-         * 
-         */
-        ~RedactionPropertiesManager() {
-            saveFields(fileName); // save fields upon destruction
-        }
-
-        /**
          * @brief Sets the debug flag for the class.
          * 
          * @param b boolean to set
