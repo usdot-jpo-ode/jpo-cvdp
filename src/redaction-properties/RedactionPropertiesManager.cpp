@@ -98,17 +98,6 @@ class RedactionPropertiesManager {
         }
 
         /**
-         * @brief Removes a field from the list of fields to redact.
-         * 
-         * @param fieldToRemove 
-         */
-        void removeField(std::string fieldToRemove) {
-            log("removing field " + fieldToRemove);
-            // TODO: implement
-            log("WARNING: this method is not implemented yet");
-        }
-
-        /**
          * @brief Prints the fields. For debugging purposes.
          * 
          */
@@ -160,15 +149,5 @@ class RedactionPropertiesManager {
             }
             
             log("redaction fields loaded");
-        }
-
-        /**
-         * @brief Saves the fields to a file.
-         * 
-         */
-        void saveFields(std::string fileName) {
-            log("saving redaction fields");
-            // TODO: implement
-            log("WARNING: this method is not implemented yet");
         }
 };
