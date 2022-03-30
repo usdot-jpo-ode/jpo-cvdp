@@ -375,9 +375,9 @@ class BSM : public geo::Point {
         void set_partII( const std::string& s );
 
         /**
-         * @brief Get the partII field for the BSM
+         * @brief Get the partII field for the BSM after redaction.
          *
-         * @return a const reference to the partII field for the BSM.
+         * @return a const reference to the partII field for the BSM after redaction. If partII redaction is disabled, this will be empty.
          */
         const std::string& get_partII() const;
 

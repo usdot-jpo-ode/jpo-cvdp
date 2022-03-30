@@ -1445,13 +1445,15 @@ TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
 }
 
 TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
+    // create redaction properties manager
     RedactionPropertiesManager rpm;
 
+    // create BSMHandler
     std::unordered_map<std::string,std::string> pconf;
-
     REQUIRE( buildBaseConfiguration( pconf ) ); 
     BSMHandler handler{ buildTestQuadTree(), pconf };
 
+    // deactive unrelated flags
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
@@ -1462,28 +1464,32 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
 
+    // load in test cases
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.partII.json", json_test_cases ) );
 
     for ( auto& test_case : json_test_cases ) {
-
         // process test case to build BSM (redaction will occur here)
         CHECK( handler.process( test_case ) );
 
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
 
-        // verify that there are no sensitive members in the partII field left
+        // get partII string from BSM
         std::string partIIString = handler.get_bsm().get_partII();
-        rapidjson::Document partII;
-        partII.Parse(partIIString.c_str());
+        CHECK( partIIString != "" );
 
+        // parse into document
+        rapidjson::Document partII;
+        rapidjson::ParseResult parseResult = partII.Parse(partIIString.c_str());
+        CHECK( parseResult );
+
+        // verify that there are no sensitive members in the partII field left
         for (std::string member : rpm.getFields()) {
             bool found = false;
             handler.isMemberPresent(partII, member, found);
-            CHECK( found == false );
+            CHECK( !found );
         }
-        
     }
 
 }
