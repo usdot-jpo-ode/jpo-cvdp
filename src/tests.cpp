@@ -1493,3 +1493,48 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     }
 
 }
+
+TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][filtering][partII][allflags]" ) {
+    // create redaction properties manager
+    RedactionPropertiesManager rpm;
+
+    // create BSMHandler
+    std::unordered_map<std::string,std::string> pconf;
+    REQUIRE( buildBaseConfiguration( pconf ) ); 
+    BSMHandler handler{ buildTestQuadTree(), pconf };
+
+    // make sure all flags are enabled
+    REQUIRE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
+    REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
+    REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
+    REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
+
+    // load in test cases
+    std::vector<std::string> json_test_cases;
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.partII.json", json_test_cases ) );
+
+    for ( auto& test_case : json_test_cases ) {
+        // process test case to build BSM (redaction will occur here)
+        CHECK( handler.process( test_case ) );
+
+        // make sure that it was successful
+        CHECK( handler.get_result_string() == "success" );
+
+        // get partII string from BSM
+        std::string partIIString = handler.get_bsm().get_partII();
+        CHECK( partIIString != "" );
+
+        // parse into document
+        rapidjson::Document partII;
+        rapidjson::ParseResult parseResult = partII.Parse(partIIString.c_str());
+        CHECK( parseResult );
+
+        // verify that there are no sensitive members in the partII field left
+        for (std::string member : rpm.getFields()) {
+            bool found = false;
+            handler.isMemberPresent(partII, member, found);
+            CHECK( !found );
+        }
+    }
+
+}
