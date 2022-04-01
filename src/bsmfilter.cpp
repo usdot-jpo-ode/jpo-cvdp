@@ -36,6 +36,7 @@
 #include "cvlib.hpp"
 #include "bsmfilter.hpp"
 #include "spdlog/spdlog.h"
+#include "./redaction-properties/RedactionPropertiesManager.cpp"
 
 /** Start IdRedactor */
 
@@ -201,6 +202,7 @@ BSM::BSM() :
     dsec_{0},
     id_{""},
     oid_{""},
+    partII_{""},
     logstring_{}
 {}
 
@@ -211,6 +213,7 @@ void BSM::reset() {
     dsec_ = 0;
     id_ = "";
     oid_ = "";
+    partII_ = "";
 }
 
 std::string BSM::logString() {
@@ -265,6 +268,14 @@ const std::string& BSM::get_original_id() const {
     return oid_;
 }
 
+void BSM::set_partII( const std::string& s ) {
+    partII_ = s;
+}
+
+const std::string& BSM::get_partII() const {
+    return partII_;
+}
+
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )
 {
     os  << std::setprecision(16) << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
@@ -313,6 +324,11 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
+    }
+
+    search = conf.find("privacy.redaction.partII");
+    if ( search != conf.end() && search-> second=="ON") {
+        activate<BSMHandler::kPartIIRedactFlag>();
     }
 
     search = conf.find("privacy.filter.geofence.extension");
@@ -539,7 +555,11 @@ bool BSMHandler::process( const std::string& bsm_json ) {
                 size["width"] = 0; 
             } 
         }
-    } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
+
+        handlePartIIRedaction(data);
+        
+    }
+    else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
             result_ = ResultStatus::MISSING;
 
@@ -583,7 +603,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
             result_ = ResultStatus::SPEED;
         }
-    } else {
+    }
+    else {
         result_ = ResultStatus::MISSING;
 
         return false;
@@ -601,6 +622,117 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     finalized_ = true;
     
     return result_ == ResultStatus::SUCCESS;
+}
+
+void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
+    bool debug = false;
+    
+    int numMembersRedacted = 0;
+
+    // check if partII redaction is required
+    if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
+        if (debug) { std::cout << "partII redaction is required" << std::endl; }
+
+        // instantiate RPM
+        RedactionPropertiesManager rpm;
+
+        // get partII data
+        rapidjson::Value& partII = data["partII"];
+
+        // for each field
+        for (std::string member : rpm.getFields()) {
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(partII, member, psuccess);
+                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
+            }
+
+            // redact field
+            bool success = false;
+            findAndRemoveAllInstancesOfMember(partII, member.c_str(), success);
+            if (success) {
+                numMembersRedacted++;
+            }
+
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(partII, member, psuccess);
+                std::cout << "----- After redaction? " << psuccess << std::endl;
+            }
+        }
+        if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
+        std::string partIIString = convertRapidjsonValueToString(partII);
+        bsm_.set_partII(partIIString);
+    }
+}
+
+/**
+ * @brief Recursively search for a member in a value and remove all instances of it it.
+ * 
+ * @param value The value to begin searching.
+ * @param member The member to remove all instances of.
+ * @param success The flag that the caller can check upon return to see if the operation was successful.
+ */
+void BSMHandler::findAndRemoveAllInstancesOfMember(rapidjson::Value& value, std::string member, bool& success) {
+    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
+    if (value.IsObject()) {
+        while (value.HasMember(member.c_str())) {
+            value.RemoveMember(member.c_str());
+            success = true;
+        }
+        for (auto& m : value.GetObject()) {
+            std::string type = kTypeNames[m.value.GetType()];
+            if (type == "Object" || type == "Array") {
+                std::string name = m.name.GetString();
+                auto& v = value[name.c_str()];
+                findAndRemoveAllInstancesOfMember(v, member, success);
+            }
+        }
+    }
+    else if (value.IsArray()) {
+        for (auto& m : value.GetArray()) {
+            std::string type = kTypeNames[m.GetType()];
+            if (type == "Object" || type == "Array") {
+                findAndRemoveAllInstancesOfMember(m, member, success);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Recursively check if a member is present. Returns upon finding the first instance of the member.
+ * 
+ * @param value The value to begin searching.
+ * @param member The member to remove.
+ * @param success The flag that the caller can check upon return to see if the operation was successful.
+ */
+void BSMHandler::isMemberPresent(rapidjson::Value& value, std::string member, bool& success) {
+    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
+    if (success) {
+        // return if search has already succeeded
+        return;
+    }
+    if (value.IsObject()) {
+        if (value.HasMember(member.c_str())) {
+            success = true;
+        }
+        for (auto& m : value.GetObject()) {
+            std::string type = kTypeNames[m.value.GetType()];
+            if (type == "Object" || type == "Array") {
+                std::string name = m.name.GetString();
+                auto& v = value[name.c_str()];
+                isMemberPresent(v, member, success);
+            }
+        }
+    }
+    else if (value.IsArray()) {
+        for (auto& m : value.GetArray()) {
+            std::string type = kTypeNames[m.GetType()];
+            if (type == "Object" || type == "Array") {
+                isMemberPresent(m, member, success);
+            }
+        }
+    }
 }
 
 const BSMHandler::ResultStatus BSMHandler::get_result() const {
@@ -658,4 +790,11 @@ const uint32_t BSMHandler::get_activation_flag() const {
 
 const IdRedactor& BSMHandler::get_id_redactor() const {
     return idr_;
+}
+
+std::string BSMHandler::convertRapidjsonValueToString(rapidjson::Value& value) {
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        value.Accept(writer);
+        return buffer.GetString();
 }
