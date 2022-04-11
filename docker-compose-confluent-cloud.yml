@@ -10,6 +10,9 @@ services:
       CONFLUENT_KEY: ${CONFLUENT_KEY}
       CONFLUENT_SECRET: ${CONFLUENT_SECRET}
       PPM_CONFIG_FILE: ppmBsm.properties
+    volumes:
+      - ${DOCKER_SHARED_VOLUME}:/ppm_data
+      
   ppmtim:
     build:
       context: .
@@ -20,3 +23,5 @@ services:
       CONFLUENT_KEY: ${CONFLUENT_KEY}
       CONFLUENT_SECRET: ${CONFLUENT_SECRET}
       PPM_CONFIG_FILE: ppmTim.properties
+    volumes:
+      - ${DOCKER_SHARED_VOLUME}:/ppm_data
