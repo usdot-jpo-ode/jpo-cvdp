@@ -178,6 +178,9 @@ The docker-compose-standalone.yml file is meant for local testing/troubleshootin
 To utilize this, pass the -f flag to the docker-compose command as follows:
 > docker-compose -f docker-compose-confluent-cloud.yml up
 
+### Data & Config Files
+Rather than adding edges and properties files to the tracked files for each use case of the PPM, the DOCKER_SHARED_VOLUME environment variable should point to an external directory that contains these files.
+
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
