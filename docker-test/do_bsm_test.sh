@@ -1,7 +1,7 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=/usr/local/lib
 
-broker=172.22.27.167:9092 #TODO: this should be the host machine
+broker=172.17.0.1:9092
 
 echo "**************************"
 echo "Producing Raw BSMs..."

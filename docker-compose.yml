@@ -21,9 +21,6 @@ services:
     ports:
       - "8080:8080"
       - "9090:9090"
-    environment:
-      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
-      PPM_CONFIG_FILE: cdot_ppmBsm.properties
     depends_on:
       - kafka
     links:
