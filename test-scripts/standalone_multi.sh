@@ -69,9 +69,9 @@ echo "Running standalone multi PPM test with "$1 $2 $3 $4 $5 $6 $7
 echo "**************************"
 
 # Start the BSM PPM in a new container.
-docker run --name ppm_bsm_kafka -v /tmp/docker-test/bsm-data:/ppm_data -it --rm -p '8080:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
+docker run --name ppm_bsm_kafka -v /tmp/docker-test/bsm-data:/ppm_data -it --rm -p '8080:8080' -d jpo-cvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
 # Start the TIM PPM in a new container.
-docker run --name ppm_tim_kafka -v /tmp/docker-test/tim-data:/ppm_data -it --rm -p '8081:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
+docker run --name ppm_tim_kafka -v /tmp/docker-test/tim-data:/ppm_data -it --rm -p '8081:8080' -d jpo-cvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
 
 sleep 10
 
