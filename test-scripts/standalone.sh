@@ -60,14 +60,19 @@ echo "**************************"
 echo "Running standalone test with "$1 $2 $3 $4
 echo "**************************"
 
-#docker stop ppm_kafka > /dev/null
-#docker rm ppm_kafka > /dev/null
+# echo "[log] stopping ppm_kafka"
+# docker stop ppm_kafka
+# echo "[log] removing ppm_kafka"
+# docker rm ppm_kafka
 
 # Start the PPM in a new container.
-docker run --name ppm_kafka -v /tmp/docker-test/data:/ppm_data -it --rm -p '8080:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
+echo "[log] starting PPM in new container"
+docker run --name ppm_kafka -v /tmp/docker-test/data:/ppm_data -it --rm -p '8080:8080' jpo-cvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh
 
+echo "[log] waiting..."
 sleep 10
 
+echo "[log] producing test data"
 if [ $4 = "BSM" ]; then
     docker exec ppm_kafka /cvdi-stream/docker-test/do_bsm_test.sh $OFFSET
     # Produce the test data.
@@ -76,4 +81,6 @@ elif [ $4 = "TIM" ]; then
     # Produce the test data.
 fi
 
-docker stop ppm_kafka > /dev/null
+echo "[log] stopping PPM"
+docker stop ppm_kafka
+
