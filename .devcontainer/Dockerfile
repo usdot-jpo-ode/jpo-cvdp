@@ -23,4 +23,5 @@ RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
 
 # install librdkafka
+RUN apt-get update
 RUN apt-get install -y libsasl2-dev libsasl2-modules libssl-dev librdkafka-dev
