@@ -2,7 +2,7 @@
 The purpose of this diagram is to show how data flows through the Privacy Protection Module.
 
 ## Key Explanation
-- The blue rectangles are java classes that belong to this repository.
+- The blue rectangles are C++ classes that belong to this repository.
 - The yellow ovals are kafka topics that the PPM consumes from and produces to.
 
 ## Data Flow Explanation
