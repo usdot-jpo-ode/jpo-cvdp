@@ -16,7 +16,7 @@ class RedactionPropertiesManager {
          */
         RedactionPropertiesManager() {
             debug = false;
-            loadFields("/workspaces/jpo-cvdp/fieldsToRedact.txt"); // load fields upon construction
+            loadFields("/ppm_data/fieldsToRedact.txt"); // load fields upon construction
         }
 
         /**
