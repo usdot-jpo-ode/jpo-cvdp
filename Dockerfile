@@ -29,4 +29,4 @@ ADD ./docker-test /cvdi-stream/docker-test
 
 # Run the tool.
 RUN chmod 7777 /cvdi-stream/docker-test/ppm_no_map.sh
-CMD ["/cvdi-stream/docker-test/ppm.sh"]
+CMD ["/cvdi-stream/docker-test/ppm_no_map.sh"]
