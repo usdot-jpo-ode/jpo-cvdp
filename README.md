@@ -179,7 +179,14 @@ To utilize this, pass the -f flag to the docker-compose command as follows:
 > docker-compose -f docker-compose-confluent-cloud.yml up
 
 ### Data & Config Files
-Rather than adding edges and properties files to the tracked files for each use case of the PPM, the DOCKER_SHARED_VOLUME environment variable should point to an external directory that contains these files.
+Data and config files are expected to be in a location pointed to by the DOCKER_SHARED_VOLUME environment variable.
+
+At this time, the PPM assumes that this location is the /ppm_data directory. When run in a docker or k8s solution, an external drive/directory can be mounted to this directory.
+
+In a BSM configuration, the PPM requires the following files to be present in the /ppm_data directory:
+- *.edges
+- ppmBsm.properties
+- fieldsToRedact.txt
 
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
