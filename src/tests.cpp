@@ -1439,11 +1439,6 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
     }
 }
 
-TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
-    RedactionPropertiesManager redactionPropertiesManager;
-    CHECK ( redactionPropertiesManager.getNumFields() > 0);
-}
-
 TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
     // create redaction properties manager
     RedactionPropertiesManager rpm;

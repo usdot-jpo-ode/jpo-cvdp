@@ -128,7 +128,7 @@ class RedactionPropertiesManager {
             std::ifstream file(fileName);
 
             if (!file) {
-                std::cout << "ERROR: could not file: " << fileName << std::endl;
+                // file not found, no fields to redact
                 return;
             }
 
