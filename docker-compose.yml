@@ -28,3 +28,6 @@ services:
       - kafka
     volumes:
       - ${DOCKER_SHARED_VOLUME}:/ppm_data
+    environment:
+      REDACTION_PROPERTIES_PATH: ${DOCKER_SHARED_VOLUME}/fieldsToRedact.
+      RPM_DEBUG: ${RPM_DEBUG}

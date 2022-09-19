@@ -15,8 +15,19 @@ class RedactionPropertiesManager {
          * 
          */
         RedactionPropertiesManager() {
-            debug = false;
-            loadFields("/ppm_data/fieldsToRedact.txt"); // load fields upon construction
+            std::string rpmDebug = getEnvironmentVariable("RPM_DEBUG");
+            if (rpmDebug == "true") {
+                debug = true;
+            }
+            else {
+                debug = false;
+            }
+            std::string path_to_fields_to_redact_file = getEnvironmentVariable("REDACTION_PROPERTIES_PATH");
+            if (path_to_fields_to_redact_file == "") {
+                log("REDACTION_PROPERTIES_PATH environment variable not set. Field redaction will not take place.");
+                return;
+            }
+            loadFields(path_to_fields_to_redact_file); // load fields upon construction
         }
 
         /**
@@ -129,17 +140,31 @@ class RedactionPropertiesManager {
 
             if (!file) {
                 // file not found, no fields to redact
+                log("The fieldsToRedact.txt file was not found. Field redaction will not take place.");
                 return;
             }
 
             // for each line, read the line and insert it into fieldsToRedact
             while (getline(file,line)) {
-                log("read line: " + line);
                 if (line.size() > 0) {
                     fieldsToRedact.push_back(line);
                 }
             }
             
-            log("redaction fields loaded");
+            if (fieldsToRedact.size() > 0) {
+                log("non-zero number of redaction fields loaded");
+            }
+            else {
+                log("0 redaction fields loaded from file");
+            }
+        }
+
+        const char* getEnvironmentVariable(const char* variableName) {
+            const char* toReturn = getenv(variableName);
+            if (!toReturn) {
+                // fail silently
+                toReturn = "";
+            }
+            return toReturn;
         }
 };

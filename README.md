@@ -188,6 +188,14 @@ In a BSM configuration, the PPM requires the following files to be present in th
 - ppmBsm.properties
 - fieldsToRedact.txt
 
+#### fieldsToRedact.txt
+The path to this file is specified by the REDACTION_PROPERTIES_PATH environment variable. If this is not set, field redaction will not take place but the PPM will continue to function. If this is set and the file is not found, the same behavior will occur.
+
+When running the project in the provided dev container, the REDACTION_PROPERTIES_PATH environment variable should be set to the project-level fieldsToRedact.txt file for debugging/experimentation purposes. This is located in /workspaces/jpo-cvdp/config/fieldsToRedact.txt from the perspective of the dev container.
+
+#### RPM Debug
+If the RPM_DEBUG environment variable is set to true, debug messages will be logged to the console by the RedactionPropertiesManager class. This will allow developers to see whether the environment variable is set, whether the file was found and whether a non-zero number of redaction fields were loaded in.
+
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
