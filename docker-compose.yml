@@ -29,5 +29,5 @@ services:
     volumes:
       - ${DOCKER_SHARED_VOLUME}:/ppm_data
     environment:
-      REDACTION_PROPERTIES_PATH: /ppm_data/fieldsToRedact.txt
+      REDACTION_PROPERTIES_PATH: ${REDACTION_PROPERTIES_PATH}
       RPM_DEBUG: ${RPM_DEBUG}

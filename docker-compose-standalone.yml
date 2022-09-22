@@ -23,7 +23,7 @@ services:
     environment:
       DOCKER_HOST_IP: ${DOCKER_HOST_IP}
       PPM_CONFIG_FILE: ppmBsm.properties
-      REDACTION_PROPERTIES_PATH: /ppm_data/fieldsToRedact.txt
+      REDACTION_PROPERTIES_PATH: ${REDACTION_PROPERTIES_PATH}
       RPM_DEBUG: ${RPM_DEBUG}
     depends_on:
       - kafka
@@ -37,7 +37,7 @@ services:
     environment:
       DOCKER_HOST_IP: ${DOCKER_HOST_IP}
       PPM_CONFIG_FILE: ppmTim.properties
-      REDACTION_PROPERTIES_PATH: ${DOCKER_SHARED_VOLUME}/fieldsToRedact.txt
+      REDACTION_PROPERTIES_PATH: ${REDACTION_PROPERTIES_PATH}
       RPM_DEBUG: ${RPM_DEBUG}
     depends_on:
       - kafka
