@@ -1,5 +1,8 @@
 #include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
 
+#include <iostream>
+#include <fstream>
+
 /**
  * @brief Construct a new Redaction Properties Manager object with a default path. Upon instantiation, fields are loaded from a file.
  * 
@@ -14,7 +17,7 @@ RedactionPropertiesManager::RedactionPropertiesManager() {
     }
     std::string path_to_fields_to_redact_file = getEnvironmentVariable("REDACTION_PROPERTIES_PATH");
     if (path_to_fields_to_redact_file == "") {
-        log("REDACTION_PROPERTIES_PATH environment variable not set. Field redaction will not take place.");
+        logToFile("REDACTION_PROPERTIES_PATH environment variable not set. Field redaction will not take place.");
         return;
     }
     loadFields(path_to_fields_to_redact_file); // load fields upon construction
@@ -86,7 +89,7 @@ bool RedactionPropertiesManager::isField(std::string fieldToCheck) {
  * @param fieldToAdd 
  */
 void RedactionPropertiesManager::addField(std::string fieldToAdd) {
-    log("adding field " + fieldToAdd);
+    logToFile("adding field " + fieldToAdd);
     fieldsToRedact.push_back(fieldToAdd);
 }
 
@@ -95,7 +98,7 @@ void RedactionPropertiesManager::addField(std::string fieldToAdd) {
  * 
  */
 void RedactionPropertiesManager::printFields() {
-    log("printing fields");
+    logToFile("printing fields");
     std::cout << "=== Fields to Redact ===" << std::endl;
     for (std::string field: fieldsToRedact) {
         std::cout << field.c_str() << std::endl;
@@ -103,13 +106,18 @@ void RedactionPropertiesManager::printFields() {
 }
 
 /**
-    * @brief Logs the message if the debug flag is set to true.
+    * @brief Logs the message to a file if the debug flag is set to true.
     * 
     * @param message 
     */
-void RedactionPropertiesManager::log(std::string message) {
+void RedactionPropertiesManager::logToFile(std::string message) {
     if (debug) {
-        std::cout << "[RPM] " << message.c_str() << std::endl;
+        std::fstream logFile("rpm_log.txt", std::ios_base::app);
+        if (!logFile) {
+            std::cout << "error opening file" << std::endl;
+        }
+        logFile << message << std::endl;
+        logFile.close();
     }
 }
 
@@ -118,14 +126,14 @@ void RedactionPropertiesManager::log(std::string message) {
     * 
     */
 void RedactionPropertiesManager::loadFields(std::string fileName) {
-    log("loading redaction fields");
+    logToFile("loading redaction fields");
 
     std::string line;            
     std::ifstream file(fileName);
 
     if (!file) {
         // file not found, no fields to redact
-        log("The fieldsToRedact.txt file was not found. Field redaction will not take place.");
+        logToFile("The fieldsToRedact.txt file was not found. Field redaction will not take place.");
         return;
     }
 
@@ -137,10 +145,10 @@ void RedactionPropertiesManager::loadFields(std::string fileName) {
     }
     
     if (fieldsToRedact.size() > 0) {
-        log("non-zero number of redaction fields loaded");
+        logToFile("non-zero number of redaction fields loaded");
     }
     else {
-        log("0 redaction fields loaded from file");
+        logToFile("0 redaction fields loaded from file");
     }
 }
 

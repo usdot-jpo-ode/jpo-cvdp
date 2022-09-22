@@ -81,11 +81,11 @@ class RedactionPropertiesManager {
         std::string fileName;
 
         /**
-         * @brief Logs the message if the debug flag is set to true.
-         * 
-         * @param message 
-         */
-        void log(std::string message);
+            * @brief Logs the message to a file.
+            * 
+            * @param message 
+            */
+        void logToFile(std::string message);
 
         /**
          * @brief Loads the fields from a file.

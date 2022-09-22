@@ -633,9 +633,6 @@ void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
     if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
         if (debug) { std::cout << "partII redaction is required" << std::endl; }
 
-        // instantiate RPM
-        RedactionPropertiesManager rpm;
-
         // get partII data
         rapidjson::Value& partII = data["partII"];
 
