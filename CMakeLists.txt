@@ -40,7 +40,8 @@ endif ()
 
 set(PPM_SRC "src/ppm.cpp" 
             "src/tool.cpp" 
-            "src/bsmfilter.cpp" )
+            "src/bsmfilter.cpp"
+            "src/redaction-properties/RedactionPropertiesManager.cpp" )
 
 add_executable(ppm ${PPM_SRC})
 target_link_libraries(ppm pthread CVLib rdkafka++)

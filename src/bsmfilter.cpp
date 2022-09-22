@@ -36,7 +36,7 @@
 #include "cvlib.hpp"
 #include "bsmfilter.hpp"
 #include "spdlog/spdlog.h"
-#include "./redaction-properties/RedactionPropertiesManager.cpp"
+#include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
 
 /** Start IdRedactor */
 
