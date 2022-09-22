@@ -24,3 +24,6 @@ RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
 
 # install librdkafka
 RUN apt-get install -y libsasl2-dev libsasl2-modules libssl-dev librdkafka-dev
+
+ENV REDACTION_PROPERTIES_PATH /workspaces/jpo-cvdp/config/fieldsToRedact.txt
+ENV RPM_DEBUG true
