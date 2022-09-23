@@ -176,7 +176,12 @@ There is a provided docker-compose file (docker-compose-confluent-cloud.yml) tha
 ## Note
 This has only been tested with Confluent Cloud but technically all SASL authenticated Kafka brokers can be reached using this method.
 
-# Troubleshooting
+# Testing/Troubleshooting
+## Unit Tests
+Unit tests can be built and executed using the build_and_run_unit_tests.sh file inside of the dev container for the project. More information about this can be found [here](./docs/testing.md#utilizing-the-buildandrununittestssh-script).
+
+The unit tests are also built when the solution is compiled. For information on that, check out [this section](./docs/testing.md#unit-testing).
+
 ## Standalone Cluster
 The docker-compose-standalone.yml file is meant for local testing/troubleshooting.
 
