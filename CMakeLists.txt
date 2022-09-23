@@ -39,10 +39,14 @@ endif ()
 
 #### BUILD TARGET FOR THE PPM ####
 
-set(PPM_SRC "src/ppm.cpp" 
-            "src/tool.cpp" 
-            "src/bsmfilter.cpp"
-            "src/redaction-properties/RedactionPropertiesManager.cpp" )
+set(PPM_SRC "src/redaction-properties/RedactionPropertiesManager.cpp"
+            "src/bsm.cpp"
+            "src/bsmHandler.cpp"
+            "src/idRedactor.cpp"
+            "src/ppm.cpp"
+            "src/tool.cpp"
+            "src/velocityFilter.cpp"
+             )
 
 add_executable(ppm ${PPM_SRC})
 target_link_libraries(ppm pthread CVLib rdkafka++)

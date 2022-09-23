@@ -34,7 +34,7 @@
 #include "rapidjson/stringbuffer.h"
 
 #include "cvlib.hpp"
-#include "bsmfilter.hpp"
+#include "bsmHandler.hpp"
 #include "spdlog/spdlog.h"
 #include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
 

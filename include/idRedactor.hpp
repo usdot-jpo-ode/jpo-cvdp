@@ -7,9 +7,12 @@
 #include <random>
 #include <unordered_set>
 #include <unordered_map>
+#include <iomanip>
 #include "rapidjson/document.h"
+#include "cvlib.hpp"
 
 using ConfigMap = std::unordered_map<std::string,std::string>;            ///< An alias to a string key - value configuration for the privacy parameters.
+using StrVector = std::vector<std::string>;             ///< List of std::string instances.
 
 /**
  * @brief An IdRedactor encapsulates whether IdRedaction should take place and how it is performed.
