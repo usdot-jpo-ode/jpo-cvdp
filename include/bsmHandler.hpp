@@ -23,8 +23,8 @@
  *    Oak Ridge National Laboratory.
  */
 
-#ifndef CVDP_BSM_FILTER_H
-#define CVDP_BSM_FILTER_H
+#ifndef CVDP_BSM_HANDLER_H
+#define CVDP_BSM_HANDLER_H
 
 #include <string>
 #include <stack>
