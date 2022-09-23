@@ -1,20 +1,12 @@
 #include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
 
-#include <iostream>
-#include <fstream>
-
 /**
  * @brief Construct a new Redaction Properties Manager object with a default path. Upon instantiation, fields are loaded from a file.
  * 
  */
 RedactionPropertiesManager::RedactionPropertiesManager() {
     std::string rpmDebug = getEnvironmentVariable("RPM_DEBUG");
-    if (rpmDebug == "true") {
-        debug = true;
-    }
-    else {
-        debug = false;
-    }
+    setDebug(convertStringToBool(rpmDebug));
     std::string path_to_fields_to_redact_file = getEnvironmentVariable("REDACTION_PROPERTIES_PATH");
     if (path_to_fields_to_redact_file == "") {
         logToFile("REDACTION_PROPERTIES_PATH environment variable not set. Field redaction will not take place.");
@@ -157,6 +149,30 @@ const char* RedactionPropertiesManager::getEnvironmentVariable(const char* varia
     if (!toReturn) {
         // fail silently
         toReturn = "";
+    }
+    return toReturn;
+}
+
+std::string RedactionPropertiesManager::toLowercase(std::string s) {
+    int counter = 0;
+    char c;
+    while (s[counter]) {
+        c = s[counter];
+        s[counter] = tolower(c);
+        counter++;
+    }
+    return s;
+}
+
+bool RedactionPropertiesManager::convertStringToBool(std::string s) {
+    bool toReturn;
+    std::string lowercaseString = toLowercase(s);
+    if (lowercaseString == "true" ||
+        lowercaseString == "1") {
+        toReturn = true;
+    }
+    else {
+        toReturn = false;
     }
     return toReturn;
 }

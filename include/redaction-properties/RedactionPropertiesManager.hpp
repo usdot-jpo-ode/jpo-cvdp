@@ -94,6 +94,10 @@ class RedactionPropertiesManager {
         void loadFields(std::string fileName);
 
         const char* getEnvironmentVariable(const char* variableName);
+
+        std::string toLowercase(std::string s);
+
+        bool convertStringToBool(std::string s);
 };
 
 #endif
