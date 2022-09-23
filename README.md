@@ -191,7 +191,6 @@ At this time, the PPM assumes that this location is the /ppm_data directory. Whe
 In a BSM configuration, the PPM requires the following files to be present in the /ppm_data directory:
 - *.edges
 - ppmBsm.properties
-- fieldsToRedact.txt
 
 #### fieldsToRedact.txt
 The path to this file is specified by the REDACTION_PROPERTIES_PATH environment variable. If this is not set, field redaction will not take place but the PPM will continue to function. If this is set and the file is not found, the same behavior will occur.
