@@ -103,6 +103,11 @@ $ doxygen
 The documentation is in HTML and is written to the `<install root>/jpo-cvdp/docs/html` directory. Open `index.html` in a
 browser.
 
+## Class Usage Diagram
+![class usage](./docs/diagrams/class-usage/PPM%20Class%20Usage%20With%20Files.drawio.png)
+
+This diagram shows the usage relationship between the classes of the project. Classes that are in the same file share the same white box. A class that uses another class will have a black arrow pointing to the latter. The PPM class extends the Tool class, and this is shown with a white arrow.
+
 # Development and Collaboration Tools
 
 ## Source Repositories - GitHub
@@ -179,7 +184,22 @@ To utilize this, pass the -f flag to the docker-compose command as follows:
 > docker-compose -f docker-compose-confluent-cloud.yml up
 
 ### Data & Config Files
-Rather than adding edges and properties files to the tracked files for each use case of the PPM, the DOCKER_SHARED_VOLUME environment variable should point to an external directory that contains these files.
+Data and config files are expected to be in a location pointed to by the DOCKER_SHARED_VOLUME environment variable.
+
+At this time, the PPM assumes that this location is the /ppm_data directory. When run in a docker or k8s solution, an external drive/directory can be mounted to this directory.
+
+In a BSM configuration, the PPM requires the following files to be present in the /ppm_data directory:
+- *.edges
+- ppmBsm.properties
+- fieldsToRedact.txt
+
+#### fieldsToRedact.txt
+The path to this file is specified by the REDACTION_PROPERTIES_PATH environment variable. If this is not set, field redaction will not take place but the PPM will continue to function. If this is set and the file is not found, the same behavior will occur.
+
+When running the project in the provided dev container, the REDACTION_PROPERTIES_PATH environment variable should be set to the project-level fieldsToRedact.txt file for debugging/experimentation purposes. This is located in /workspaces/jpo-cvdp/config/fieldsToRedact.txt from the perspective of the dev container.
+
+#### RPM Debug
+If the RPM_DEBUG environment variable is set to true, debug messages will be logged to the console by the RedactionPropertiesManager class. This will allow developers to see whether the environment variable is set, whether the file was found and whether a non-zero number of redaction fields were loaded in.
 
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.

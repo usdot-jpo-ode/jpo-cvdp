@@ -32,6 +32,7 @@
 #include <random>
 #include "rapidjson/document.h"
 #include "cvlib.hpp"
+#include "redaction-properties/RedactionPropertiesManager.hpp"
 
 /**
  * @mainpage
@@ -587,6 +588,8 @@ class BSMHandler {
         IdRedactor idr_;                            ///< The ID Redactor to use during parsing of BSMs.
 
         double box_extension_;                      ///< The number of meters to extend the boxes that surround edges and define the geofence.
+
+        RedactionPropertiesManager rpm;             // rpm for partII redaction
 };
 
 #endif
