@@ -178,7 +178,7 @@ This has only been tested with Confluent Cloud but technically all SASL authenti
 
 # Testing/Troubleshooting
 ## Unit Tests
-Unit tests can be built and executed using the build_and_run_unit_tests.sh file inside of the dev container for the project. More information about this can be found [here](./docs/testing.md#utilizing-the-buildandrununittestssh-script).
+Unit tests can be built and executed using the build_and_run_unit_tests.sh file inside of the dev container for the project. More information about this can be found [here](./docs/testing.md#utilizing-the-build_and_run_unit_testssh-script).
 
 The unit tests are also built when the solution is compiled. For information on that, check out [this section](./docs/testing.md#unit-testing).
 
