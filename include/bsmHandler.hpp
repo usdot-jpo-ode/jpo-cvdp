@@ -32,6 +32,7 @@
 #include <random>
 #include "rapidjson/document.h"
 #include "cvlib.hpp"
+#include "redaction-properties/RedactionPropertiesManager.hpp"
 
 /**
  * @mainpage
