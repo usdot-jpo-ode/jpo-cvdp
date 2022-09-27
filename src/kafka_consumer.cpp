@@ -67,7 +67,7 @@
 #include <unistd.h>
 #endif
 
-#include "bsmfilter.hpp"
+#include "../include/bsmHandler.hpp"
 #include "cvlib.hpp"
 
 const char* getEnvironmentVariable(const char* variableName) {
