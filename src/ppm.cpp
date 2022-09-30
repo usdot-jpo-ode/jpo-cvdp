@@ -723,7 +723,8 @@ bool PPM::make_loggers( bool remove_files )
                                                                                 // some other strange os...
 #endif
         {
-            elogger->error("Error making the logging directory.");
+            std::string errorMessage = "Error making the logging directory at '" + path + "'.";
+            elogger->error(errorMessage.c_str());
             return false;
         }
     }

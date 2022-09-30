@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
-#include "./redaction-properties/RedactionPropertiesManager.cpp"
+#include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
 
 // NOTE: The test file OPERAND is a <test-spec> (see github.com/philsquared/Catch/blob/master/docs/command-line.md) 
 // <test-spec> is defined as below.
@@ -21,9 +21,11 @@
 // #include <iterator>
 // #include <algorithm>
 #include <regex>
+#include <iomanip>
 
 #include "cvlib.hpp"
-#include "bsmfilter.hpp"
+#include "bsmHandler.hpp"
+#include "bsm.hpp"
 
 /**
  * @brief Load the test case JSON data from case_file and return that data in case_data.
@@ -1437,11 +1439,6 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
     }
-}
-
-TEST_CASE( "RedactionPropertiesManager", "[ppm][redaction][properties]") {
-    RedactionPropertiesManager redactionPropertiesManager;
-    CHECK ( redactionPropertiesManager.getNumFields() > 0);
 }
 
 TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly]" ) {
