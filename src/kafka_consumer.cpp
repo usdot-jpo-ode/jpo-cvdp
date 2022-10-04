@@ -49,7 +49,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <librdkafka/rdkafkacpp.h>
+#include "librdkafka/rdkafkacpp.h"
 #include <unordered_map>
 #include <csignal>
 
@@ -67,8 +67,17 @@
 #include <unistd.h>
 #endif
 
-#include "bsmfilter.hpp"
+#include "../include/bsmHandler.hpp"
 #include "cvlib.hpp"
+
+const char* getEnvironmentVariable(const char* variableName) {
+    const char* toReturn = getenv(variableName);
+    if (!toReturn) {
+        std::cout << "[ERROR] Something went wrong attempting to retrieve the environment variable " << variableName << std::endl;
+        toReturn = "";
+    }
+    return toReturn;
+}
 
 static bool run = true;
 static bool exit_eof = false;
@@ -267,7 +276,7 @@ bool configure( const std::string& config_file, std::unordered_map<std::string,s
         return false;
     }
 
-    while (std::getline( ifs, line )) {
+    while (getline( ifs, line )) {
         line = string_utilities::strip( line );
         if ( !line.empty() && line[0] != '#' ) {
             pieces = string_utilities::split( line, '=' );
@@ -324,7 +333,7 @@ int main (int argc, char **argv) {
                 break;
 
             case 'p':
-                partition = std::atoi(optarg);
+                partition = atoi(optarg);
                 break;
 
             case 'g':
@@ -385,7 +394,7 @@ int main (int argc, char **argv) {
 //
 //                    if (!(val = strchr(name, '='))) {
 //                        std::cerr << "%% Expected -X property=value, not " << name << "\n";
-//                        std::exit(EXIT_FAILURE);
+//                        exit(EXIT_FAILURE);
 //                    }
 //
 //                    *val = '\0';
@@ -476,7 +485,7 @@ usage:
             RdKafka::version_str().c_str(), 
             RdKafka::version(),
             RdKafka::get_debug_contexts().c_str());
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     // this function will override configurations on the command line.
@@ -535,11 +544,36 @@ usage:
             std::cout << m.first << " = " << m.second << '\n';
         }
 
-        std::exit(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);
     }
 
     // librdkafka defined configuration.
     conf->set("default_topic_conf", tconf, errstr);
+
+    // confluent cloud integration
+    std::string kafkaType = getEnvironmentVariable("KAFKA_TYPE");
+    std::string error_string = "";
+    if (kafkaType == "CONFLUENT") {
+        std::cout << "Setting up Confluent Cloud configuration key/value pairs for Kafka Consumer." << std::endl; // DEBUG
+
+        // get username and password
+        std::string username = getEnvironmentVariable("CONFLUENT_KEY");
+        std::string password = getEnvironmentVariable("CONFLUENT_SECRET");
+
+        // set up config
+        conf->set("bootstrap.servers", getEnvironmentVariable("DOCKER_HOST_IP"), error_string);
+        conf->set("security.protocol", "SASL_SSL", error_string);
+        conf->set("sasl.mechanisms", "PLAIN", error_string);
+        conf->set("sasl.username", username.c_str(), error_string);
+        conf->set("sasl.password", password.c_str(), error_string);
+        // conf->set("debug", "all", error_string);
+        conf->set("api.version.request", "true", error_string);
+        conf->set("api.version.fallback.ms", "0", error_string);
+        conf->set("broker.version.fallback", "0.10.0.0", error_string);
+
+        std::cout << "Finished setting up Confluent Cloud configuration key/value pairs for Kafka Consumer." << std::endl;
+    }
+    // end of confluent cloud integration
 
     signal(SIGINT, sigterm);
     signal(SIGTERM, sigterm);
@@ -549,32 +583,32 @@ usage:
         region_file = search->second;
     } else {
         std::cerr << "No map file specified.\n";
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
-    Geo::Point sw, ne;
+    geo::Point sw, ne;
 
     // Build the quad.
     try {
 
         auto search = pconf.find("privacy.filter.geofence.sw.lat");
         if ( search != pconf.end() ) {
-            sw.lat = std::stod(search->second);
+            sw.lat = stod(search->second);
         }
 
         search = pconf.find("privacy.filter.geofence.sw.lon");
         if ( search != pconf.end() ) {
-            sw.lon = std::stod(search->second);
+            sw.lon = stod(search->second);
         }
 
         search = pconf.find("privacy.filter.geofence.ne.lat");
         if ( search != pconf.end() ) {
-            ne.lat = std::stod(search->second);
+            ne.lat = stod(search->second);
         }
 
         search = pconf.find("privacy.filter.geofence.ne.lon");
         if ( search != pconf.end() ) {
-            ne.lon = std::stod(search->second);
+            ne.lon = stod(search->second);
         }
 
     } catch ( std::exception& e ) {
@@ -589,19 +623,19 @@ usage:
 
     try {
         // Read the file and parse the shapes.
-        Shapes::CSVInputFactory shape_factory(region_file);
+        shapes::CSVInputFactory shape_factory(region_file);
         shape_factory.make_shapes();
         // Add all the shapes to the quad.
         for (auto& circle_ptr : shape_factory.get_circles()) {
-            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(circle_ptr)); 
+            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const geo::Entity>(circle_ptr)); 
         }
 
         for (auto& edge_ptr : shape_factory.get_edges()) {
-            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(edge_ptr)); 
+            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const geo::Entity>(edge_ptr)); 
         }
 
         for (auto& grid_ptr : shape_factory.get_grids()) {
-            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const Geo::Entity>(grid_ptr)); 
+            Quad::insert(quad_ptr, std::dynamic_pointer_cast<const geo::Entity>(grid_ptr)); 
         }
 
 
@@ -609,7 +643,7 @@ usage:
         std::cerr << "Problem building geofence: " << e.what() << '\n';
         delete tconf;
         delete conf;
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     BSMHandler handler{quad_ptr, pconf};
@@ -619,7 +653,7 @@ usage:
 
     if (!consumer) {
         std::cerr << "Failed to create consumer: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     std::cout << ">> Created Consumer: " << consumer->name() << "\n";
@@ -630,13 +664,13 @@ usage:
         topics.push_back( search->second );
     } else {
         std::cerr << "Failure to use configured consumer topic: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     for ( const std::string& topic : topics ) {
         if ( !ode_topic_available( topic, consumer )) {
         std::cerr << "The ODE Topic: " << topic << " is not available. This topic must be readable.\n";
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
         }
     }
 
@@ -644,14 +678,14 @@ usage:
     RdKafka::ErrorCode err = consumer->subscribe(topics);
     if (err) {
         std::cerr << "Failed to subscribe to " << topics.size() << " topics: " << RdKafka::err2str(err) << "\n";
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     // Producer setup: will take the filtered BSMs and send them back to the ODE (or a test java consumer).
     RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
     if (!producer) {
         std::cerr << "Failed to create producer: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     std::cout << ">> Created Producer: " << producer->name() << "\n";
@@ -662,8 +696,8 @@ usage:
         if ( search != pconf.end() ) {
             topic_str = search->second;
         } else {
-            std::cerr << "Topic String Empty!\n";
-            std::exit(EXIT_FAILURE);
+            std::cerr << "Topic std::String Empty!\n";
+            exit(EXIT_FAILURE);
         }
     } 
 
@@ -671,7 +705,7 @@ usage:
     RdKafka::Topic *topic = RdKafka::Topic::create(producer, topic_str, tconf, errstr);
     if (!topic) {
         std::cerr << "Failed to create topic: " << errstr << "\n";
-        std::exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     } 
 
     RdKafka::ErrorCode status;

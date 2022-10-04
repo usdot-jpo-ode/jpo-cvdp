@@ -73,6 +73,7 @@
 #include <unistd.h>
 #endif
 
+
 bool PPM::bootstrap = true;
 bool PPM::bsms_available = true;
 
@@ -128,52 +129,54 @@ PPM::~PPM()
 }
 
 void PPM::metadata_print (const std::string &topic, const RdKafka::Metadata *metadata) {
-
-    std::cout << "Metadata for " << (topic.empty() ? "" : "all topics")
-        << "(from broker "  << metadata->orig_broker_id()
-        << ":" << metadata->orig_broker_name() << std::endl;
+    ilogger->info("Metadata for {}(from broker {}: {}", (topic.empty() ? "" : "all topics"), metadata->orig_broker_id(), metadata->orig_broker_name());
 
     /* Iterate brokers */
-    std::cout << " " << metadata->brokers()->size() << " brokers:" << std::endl;
+    ilogger->info(" {} brokers:", metadata->brokers()->size());
 
     for ( auto ib : *(metadata->brokers()) ) {
-        std::cout << "  broker " << ib->id() << " at " << ib->host() << ":" << ib->port() << std::endl;
+        ilogger->info(" broker {} at {}: {}", ib->id(), ib->host(), ib->port());
     }
 
     /* Iterate topics */
-    std::cout << metadata->topics()->size() << " topics:" << std::endl;
+    ilogger->info("{} topics", metadata->topics()->size());
 
     for ( auto& it : *(metadata->topics()) ) {
-
-        std::cout << "  topic \""<< it->topic() << "\" with " << it->partitions()->size() << " partitions:";
+        ilogger->info(" topic \"{}\" with {} partitions:", it->topic(), it->partitions()->size());
 
         if (it->err() != RdKafka::ERR_NO_ERROR) {
-            std::cout << " " << err2str(it->err());
-            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) std::cout << " (try again)";
+            elogger->error(" {}", err2str(it->err()));
+            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) {
+                elogger->error(" (try again)");
+            }
         }
-
-        std::cout << std::endl;
 
         /* Iterate topic's partitions */
         for ( auto& ip : *(it->partitions()) ) {
-            std::cout << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
+            std::ostringstream oss;
+            oss << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
 
             /* Iterate partition's replicas */
             RdKafka::PartitionMetadata::ReplicasIterator ir;
             for (ir = ip->replicas()->begin(); ir != ip->replicas()->end(); ++ir) {
-                std::cout << (ir == ip->replicas()->begin() ? "":",") << *ir;
+                oss << (ir == ip->replicas()->begin() ? "":",") << *ir;
             }
 
             /* Iterate partition's ISRs */
-            std::cout << ", isrs: ";
+            oss << ", isrs: ";
             RdKafka::PartitionMetadata::ISRSIterator iis;
-            for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis)
-                std::cout << (iis == ip->isrs()->begin() ? "":",") << *iis;
+            for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis) {
+                oss << (iis == ip->isrs()->begin() ? "":",") << *iis;
+            }
 
-            if (ip->err() != RdKafka::ERR_NO_ERROR)
-                std::cout << ", " << RdKafka::err2str(ip->err()) << std::endl;
-            else
-                std::cout << std::endl;
+            if (ip->err() != RdKafka::ERR_NO_ERROR) {
+                oss << ", " << RdKafka::err2str(ip->err()) << std::endl;
+            }
+            else {
+                oss << std::endl;
+            }
+            
+            ilogger->info(oss.str());
         }
     }
 }
@@ -206,28 +209,36 @@ bool PPM::topic_available( const std::string& topic ) {
 
 void PPM::print_configuration() const
 {
-    std::cout << "# Global config" << "\n";
+    ilogger->info("# Global config");
     std::list<std::string>* conf_list = conf->dump();
 
     int i = 0;
     for ( auto& v : *conf_list ) {
-        if ( i%2==0 ) std::cout << v << " = ";
-        else std::cout << v << '\n';
+        if ( i%2==0 ) {
+            ilogger->info("{} = ", v);
+        }
+        else {
+            ilogger->info("{}", v);
+        }
         ++i;
     }
 
-    std::cout << "# Topic config" << "\n";
+    ilogger->info("# Topic config");
     conf_list = tconf->dump();
     i = 0;
     for ( auto& v : *conf_list ) {
-        if ( i%2==0 ) std::cout << v << " = ";
-        else std::cout << v << '\n';
+        if ( i%2==0 ) {
+            ilogger->info("{} = ", v);
+        }
+        else {
+            ilogger->info("{}", v);
+        }
         ++i;
     }
 
-    std::cout << "# Privacy config \n";
+    ilogger->info("# Privacy config");
     for ( const auto& m : pconf ) {
-        std::cout << m.first << " = " << m.second << '\n';
+        ilogger->info("{} = {}", m.first, m.second);
     }
 }
 
@@ -348,11 +359,36 @@ bool PPM::configure() {
     } else {
         auto search = pconf.find("privacy.kafka.partition");
         if ( search != pconf.end() ) {
-            partition = std::stoi(search->second);              // throws.    
+            partition = stoi(search->second);              // throws.    
         }  // otherwise leave at default; PARTITION_UA
     }
 
     ilogger->info("kafka partition: {}", partition);
+
+    // confluent cloud integration
+    std::string kafkaType = getEnvironmentVariable("KAFKA_TYPE");
+    if (kafkaType == "CONFLUENT") {
+        bool debug = false;
+
+        // get username and password
+        std::string username = getEnvironmentVariable("CONFLUENT_KEY");
+        std::string password = getEnvironmentVariable("CONFLUENT_SECRET");
+
+        // set up config
+        conf->set("bootstrap.servers", getEnvironmentVariable("DOCKER_HOST_IP"), error_string);
+        conf->set("security.protocol", "SASL_SSL", error_string);
+        conf->set("sasl.mechanisms", "PLAIN", error_string);
+        conf->set("sasl.username", username.c_str(), error_string);
+        conf->set("sasl.password", password.c_str(), error_string);
+        conf->set("api.version.request", "true", error_string);
+        conf->set("api.version.fallback.ms", "0", error_string);
+        conf->set("broker.version.fallback", "0.10.0.0", error_string);
+
+        if (debug) {
+            conf->set("debug", "all", error_string);
+        }
+    }
+    // end of confluent cloud integration
 
     if ( getOption('g').isSet() && conf->set("group.id", optString('g'), error_string) != RdKafka::Conf::CONF_OK) {
         // NOTE: there are some checks in librdkafka that require this to be present and set.
@@ -421,7 +457,7 @@ bool PPM::configure() {
     auto search = pconf.find("privacy.consumer.timeout.ms");
     if ( search != pconf.end() ) {
         try {
-            consumer_timeout = std::stoi( search->second );
+            consumer_timeout = stoi( search->second );
         } catch( std::exception& e ) {
             ilogger->info("using the default consumer timeout value.");
         }
@@ -522,22 +558,22 @@ Quad::Ptr PPM::BuildGeofence( const std::string& mapfile )  // throws
 
     auto search = pconf.find("privacy.filter.geofence.sw.lat");
     if ( search != pconf.end() ) {
-        sw.lat = std::stod(search->second);
+        sw.lat = stod(search->second);
     }
 
     search = pconf.find("privacy.filter.geofence.sw.lon");
     if ( search != pconf.end() ) {
-        sw.lon = std::stod(search->second);
+        sw.lon = stod(search->second);
     }
 
     search = pconf.find("privacy.filter.geofence.ne.lat");
     if ( search != pconf.end() ) {
-        ne.lat = std::stod(search->second);
+        ne.lat = stod(search->second);
     }
 
     search = pconf.find("privacy.filter.geofence.ne.lon");
     if ( search != pconf.end() ) {
-        ne.lon = std::stod(search->second);
+        ne.lon = stod(search->second);
     }
 
     Quad::Ptr qptr = std::make_shared<Quad>(sw, ne);
@@ -687,7 +723,8 @@ bool PPM::make_loggers( bool remove_files )
                                                                                 // some other strange os...
 #endif
         {
-            std::cerr << "Error making the logging directory.\n";
+            std::string errorMessage = "Error making the logging directory at '" + path + "'.";
+            elogger->error(errorMessage.c_str());
             return false;
         }
     }
@@ -707,15 +744,15 @@ bool PPM::make_loggers( bool remove_files )
     elogname = path + elogname;
 
     if ( remove_files && fileExists( ilogname ) ) {
-        if ( std::remove( ilogname.c_str() ) != 0 ) {
-            std::cerr << "Error removing the previous information log file.\n";
+        if ( remove( ilogname.c_str() ) != 0 ) {
+            elogger->error("Error removing the previous information log file.");
             return false;
         }
     }
 
     if ( remove_files && fileExists( elogname ) ) {
-        if ( std::remove( elogname.c_str() ) != 0 ) {
-            std::cerr << "Error removing the previous error log file.\n";
+        if ( remove( elogname.c_str() ) != 0 ) {
+            elogger->error("Error removing the previous error log file.");
             return false;
         }
     }
@@ -748,7 +785,7 @@ int PPM::operator()(void) {
     } catch ( std::exception& e ) {
 
         // don't use logger in case we cannot configure it correctly.
-        std::cerr << "Fatal Exception: " << e.what() << '\n';
+        std::cerr << "Fatal std::Exception: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -784,11 +821,9 @@ int PPM::operator()(void) {
 
         // consume-produce loop.
         while (bsms_available) {
-
             std::unique_ptr<RdKafka::Message> msg{ consumer->consume( consumer_timeout ) };
 
             if ( msg_consume(msg.get(), NULL, handler) ) {
-
                 status = producer->produce(filtered_topic.get(), partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
 
                 if (status != RdKafka::ERR_NO_ERROR) {
@@ -800,7 +835,7 @@ int PPM::operator()(void) {
                     bsm_send_bytes += msg->len();
                     ilogger->trace("produced BSM successfully.");
                 }
-            } 
+            }
 
             // NOTE: good for troubleshooting, but bad for performance.
             elogger->flush();
@@ -813,6 +848,15 @@ int PPM::operator()(void) {
     ilogger->info("PPM published : {} BSMs and {} bytes", bsm_send_count, bsm_send_bytes);
     ilogger->info("PPM suppressed: {} BSMs and {} bytes", bsm_filt_count, bsm_filt_bytes);
     return EXIT_SUCCESS;
+}
+
+const char* PPM::getEnvironmentVariable(const char* variableName) {
+    const char* toReturn = getenv(variableName);
+    if (!toReturn) {
+        elogger->error("Something went wrong attempting to retrieve the environment variable {}", variableName);
+        toReturn = "";
+    }
+    return toReturn;
 }
 
 #ifndef _PPM_TESTS
@@ -841,17 +885,17 @@ int main( int argc, char* argv[] )
 
     if (!ppm.parseArgs(argc, argv)) {
         ppm.usage();
-        std::exit( EXIT_FAILURE );
+        exit( EXIT_FAILURE );
     }
 
     if (ppm.optIsSet('h')) {
         ppm.help();
-        std::exit( EXIT_SUCCESS );
+        exit( EXIT_SUCCESS );
     }
 
     // can set levels if needed here.
     if ( !ppm.make_loggers( ppm.optIsSet('R') )) {
-        std::exit( EXIT_FAILURE );
+        exit( EXIT_FAILURE );
     }
 
     // configuration check.
@@ -859,20 +903,18 @@ int main( int argc, char* argv[] )
         try {
             if (ppm.configure()) {
                 ppm.print_configuration();
-                std::exit( EXIT_SUCCESS );
+                exit( EXIT_SUCCESS );
             } else {
-                std::cerr << "Current configuration settings do not work.\n";
-                ppm.ilogger->error( "current configuration settings do not work; exiting." );
-                std::exit( EXIT_FAILURE );
+                ppm.elogger->error( "current configuration settings do not work; exiting." );
+                exit( EXIT_FAILURE );
             }
         } catch ( std::exception& e ) {
-            std::cerr << "Fatal Exception: " << e.what() << '\n';
-            ppm.elogger->error( "exception: {}", e.what() );
-            std::exit( EXIT_FAILURE );
+            ppm.elogger->error( "std::exception: {}", e.what() );
+            exit( EXIT_FAILURE );
         }
     }
 
-    std::exit( ppm.run() );
+    exit( ppm.run() );
 }
 
 #endif

@@ -23,7 +23,7 @@
  *    Oak Ridge National Laboratory.
  */
 
-#include <librdkafka/rdkafkacpp.h>
+#include "librdkafka/rdkafkacpp.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -34,246 +34,9 @@
 #include "rapidjson/stringbuffer.h"
 
 #include "cvlib.hpp"
-#include "bsmfilter.hpp"
+#include "bsmHandler.hpp"
 #include "spdlog/spdlog.h"
-
-/** Start IdRedactor */
-
-IdRedactor::IdRedactor() :
-    inclusion_set_{},
-    redacted_value_{"FFFFFFFF"},                    // default value.
-    inclusions_{false}                              // redact everything.
-{
-    // setup random number generator.
-    std::random_device rd;
-    rgen_ = std::mt19937{ rd() };
-    dist_ = std::uniform_int_distribution<uint32_t>{ 0, std::numeric_limits<uint32_t>::max() };
-}
-
-IdRedactor::IdRedactor( const ConfigMap& conf ) :
-    IdRedactor{}
-{
-    // TODO: The redaction value is deprecated (it is randomly assigned now).
-    auto search = conf.find("privacy.redaction.id.value");
-    if ( search != conf.end() ) {
-        redacted_value_ = search->second;
-    }
-
-    search = conf.find("privacy.redaction.id.inclusions");
-    if ( search != conf.end() && search->second=="ON" ) {
-        inclusions_ = true;
-    }
-
-    search = conf.find("privacy.redaction.id.included");
-    if ( search != conf.end() ) {
-        StrVector sv = string_utilities::split( search->second, ',' );
-        for ( auto& id : sv ) {
-            inclusion_set_.insert( id );
-        }
-    }
-};
-
-bool IdRedactor::HasInclusions() const
-{
-    return inclusions_;
-}
-
-int IdRedactor::NumInclusions() const
-{
-    if ( inclusions_ ) {
-        return inclusion_set_.size();
-    }
-    return -1;
-}
-
-void IdRedactor::RedactAll()
-{
-    inclusion_set_.clear();
-    inclusions_ = false;
-}
-
-bool IdRedactor::ClearInclusions()
-{
-    bool r = inclusion_set_.size() > 0;
-    inclusion_set_.clear();
-    return r;
-}
-
-bool IdRedactor::AddIdInclusion( const std::string& id )
-{
-    auto result = inclusion_set_.insert( id );
-    if ( !inclusions_ && result.second ) {
-        // previously redacting everything, not we are building the inclusion list.
-        inclusions_ = true;
-    }
-    return result.second;
-}
-
-bool IdRedactor::RemoveIdInclusion( const std::string& id )
-{
-    bool r = false;
-    auto search = inclusion_set_.find( id );
-    if ( search != inclusion_set_.end() ) {
-        // id is currently in the inclusion set so erase it.
-        inclusion_set_.erase( search );
-        r = true;
-    }
-    return r;
-}
-
-std::string IdRedactor::GetRandomId()
-{
-	std::stringstream ss;
-    uint32_t v = dist_(rgen_);
-    ss << std::hex << std::setfill('0') << std::setw(sizeof(uint32_t)*2) << v;                                                 
-	return ss.str();
-}
-
-bool IdRedactor::operator()( std::string& id )
-{
-    if ( inclusions_ ) {
-        auto search = inclusion_set_.find( id );
-        if ( search == inclusion_set_.end() ) {
-            // Case 1: Using inclusion set, but not found; do NOT redact.
-            return false;
-        }
-        // Case 2: Found this id in the inclusions set; redact.
-    } // Case 3: Not using inclusion set; redact everything.
-
-    // Case 2 and 3: Overwrite existing id with redaction id.
-    //id = redacted_value_;
-    id = GetRandomId();
-    return true;
-}
-
-const std::string& IdRedactor::redaction_value() const
-{
-    return redacted_value_;
-}
-
-/** Start VelocityFilter */
-
-VelocityFilter::VelocityFilter() :
-    min_{kDefaultMinVelocity},
-    max_{kDefaultMaxVelocity}
-{}
-
-VelocityFilter::VelocityFilter( const ConfigMap& conf ) :
-    VelocityFilter{}
-{
-    auto search = conf.find("privacy.filter.velocity.min");
-    if ( search != conf.end() ) {
-        min_ = std::stod( search->second );
-    }
-
-    search = conf.find("privacy.filter.velocity.max");
-    if ( search != conf.end() ) {
-        max_ = std::stod( search->second );
-    }
-}
-
-void VelocityFilter::set_min( double v ) {
-    min_ = v;
-}
-
-void VelocityFilter::set_max( double v ) {
-    max_ = v;
-}
-
-bool VelocityFilter::operator()( double v ) {
-    // true = filter it!
-    return v < min_ || v > max_;
-}
-
-bool VelocityFilter::suppress( double v ) {
-    return (*this)(v);
-}
-
-bool VelocityFilter::retain( double v ) {
-    return !(*this)(v);
-}
-
-/** Start BSM */
-
-BSM::BSM() :
-    geo::Point{90.0, 180.0},
-    velocity_{ -1 },
-    dsec_{0},
-    id_{""},
-    oid_{""},
-    logstring_{}
-{}
-
-void BSM::reset() {
-    lat = 90.0;
-    lon = 180.0;
-    velocity_ = -1.0;
-    dsec_ = 0;
-    id_ = "";
-    oid_ = "";
-}
-
-std::string BSM::logString() {
-    logstring_ = "(" + id_;
-    logstring_ += "," + std::to_string(dsec_);
-    logstring_ += "," + std::to_string(lat);
-    logstring_ += "," + std::to_string(lon);
-    logstring_ += "," + std::to_string(velocity_);
-    logstring_ += ")";
-    return logstring_;
-}
-
-void BSM::set_velocity( double v ) {
-    velocity_ = v;
-}
-
-double BSM::get_velocity() const {
-    return velocity_;
-}
-
-void BSM::set_latitude( double latitude ) {
-    lat = latitude;
-}
-
-void BSM::set_longitude( double longitude ) {
-    lon = longitude;
-}
-
-void BSM::set_secmark( uint16_t dsec ) {
-    dsec_ = dsec;
-}
-
-uint16_t BSM::get_secmark() const {
-    return dsec_;
-}
-
-void BSM::set_id( const std::string& s ) {
-    id_ = s;
-}
-
-const std::string& BSM::get_id() const {
-    return id_;
-}
-
-// for testing.
-void BSM::set_original_id( const std::string& s ) {
-    oid_ = s;
-}
-
-// for testing.
-const std::string& BSM::get_original_id() const {
-    return oid_;
-}
-
-std::ostream& operator<<( std::ostream& os, const BSM& bsm )
-{
-    os  << std::setprecision(16) << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";
-    os  << "Spd: "  << bsm.velocity_ << " ";
-    os  << "Id: "  <<  bsm.id_;
-    return os;
-}
-
-/** Start BSMHandler */
+#include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
 
 BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::SUCCESS, "success" },
@@ -313,6 +76,11 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     search = conf.find("privacy.redaction.id");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
+    }
+
+    search = conf.find("privacy.redaction.partII");
+    if ( search != conf.end() && search-> second=="ON") {
+        activate<BSMHandler::kPartIIRedactFlag>();
     }
 
     search = conf.find("privacy.filter.geofence.extension");
@@ -539,7 +307,11 @@ bool BSMHandler::process( const std::string& bsm_json ) {
                 size["width"] = 0; 
             } 
         }
-    } else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
+
+        handlePartIIRedaction(data);
+        
+    }
+    else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
             result_ = ResultStatus::MISSING;
 
@@ -583,7 +355,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
         if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
             result_ = ResultStatus::SPEED;
         }
-    } else {
+    }
+    else {
         result_ = ResultStatus::MISSING;
 
         return false;
@@ -601,6 +374,114 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     finalized_ = true;
     
     return result_ == ResultStatus::SUCCESS;
+}
+
+void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
+    bool debug = false;
+    
+    int numMembersRedacted = 0;
+
+    // check if partII redaction is required
+    if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
+        if (debug) { std::cout << "partII redaction is required" << std::endl; }
+
+        // get partII data
+        rapidjson::Value& partII = data["partII"];
+
+        // for each field
+        for (std::string member : rpm.getFields()) {
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(partII, member, psuccess);
+                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
+            }
+
+            // redact field
+            bool success = false;
+            findAndRemoveAllInstancesOfMember(partII, member.c_str(), success);
+            if (success) {
+                numMembersRedacted++;
+            }
+
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(partII, member, psuccess);
+                std::cout << "----- After redaction? " << psuccess << std::endl;
+            }
+        }
+        if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
+        std::string partIIString = convertRapidjsonValueToString(partII);
+        bsm_.set_partII(partIIString);
+    }
+}
+
+/**
+ * @brief Recursively search for a member in a value and remove all instances of it it.
+ * 
+ * @param value The value to begin searching.
+ * @param member The member to remove all instances of.
+ * @param success The flag that the caller can check upon return to see if the operation was successful.
+ */
+void BSMHandler::findAndRemoveAllInstancesOfMember(rapidjson::Value& value, std::string member, bool& success) {
+    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
+    if (value.IsObject()) {
+        while (value.HasMember(member.c_str())) {
+            value.RemoveMember(member.c_str());
+            success = true;
+        }
+        for (auto& m : value.GetObject()) {
+            std::string type = kTypeNames[m.value.GetType()];
+            if (type == "Object" || type == "Array") {
+                std::string name = m.name.GetString();
+                auto& v = value[name.c_str()];
+                findAndRemoveAllInstancesOfMember(v, member, success);
+            }
+        }
+    }
+    else if (value.IsArray()) {
+        for (auto& m : value.GetArray()) {
+            std::string type = kTypeNames[m.GetType()];
+            if (type == "Object" || type == "Array") {
+                findAndRemoveAllInstancesOfMember(m, member, success);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Recursively check if a member is present. Returns upon finding the first instance of the member.
+ * 
+ * @param value The value to begin searching.
+ * @param member The member to remove.
+ * @param success The flag that the caller can check upon return to see if the operation was successful.
+ */
+void BSMHandler::isMemberPresent(rapidjson::Value& value, std::string member, bool& success) {
+    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
+    if (success) {
+        // return if search has already succeeded
+        return;
+    }
+    if (value.IsObject()) {
+        if (value.HasMember(member.c_str())) {
+            success = true;
+        }
+        for (auto& m : value.GetObject()) {
+            std::string type = kTypeNames[m.value.GetType()];
+            if (type == "Object" || type == "Array") {
+                std::string name = m.name.GetString();
+                auto& v = value[name.c_str()];
+                isMemberPresent(v, member, success);
+            }
+        }
+    }
+    else if (value.IsArray()) {
+        for (auto& m : value.GetArray()) {
+            std::string type = kTypeNames[m.GetType()];
+            if (type == "Object" || type == "Array") {
+                isMemberPresent(m, member, success);
+            }
+        }
+    }
 }
 
 const BSMHandler::ResultStatus BSMHandler::get_result() const {
@@ -658,4 +539,11 @@ const uint32_t BSMHandler::get_activation_flag() const {
 
 const IdRedactor& BSMHandler::get_id_redactor() const {
     return idr_;
+}
+
+std::string BSMHandler::convertRapidjsonValueToString(rapidjson::Value& value) {
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        value.Accept(writer);
+        return buffer.GetString();
 }

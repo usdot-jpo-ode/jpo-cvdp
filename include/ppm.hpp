@@ -49,9 +49,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <librdkafka/rdkafkacpp.h>
+#include "librdkafka/rdkafkacpp.h"
 #include "tool.hpp"
-#include "bsmfilter.hpp"
+#include "bsmHandler.hpp"
 #include "cvlib.hpp"
 #include "spdlog/spdlog.h"
 
@@ -88,6 +88,8 @@ class PPM : public tool::Tool {
          * @return true upon success; false if some failure occurred during logger setup.
          */
         bool make_loggers( bool remove_files );
+
+        const char* getEnvironmentVariable(const char* variableName);
 
     private:
 
