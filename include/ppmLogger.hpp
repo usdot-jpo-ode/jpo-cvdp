@@ -1,5 +1,5 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef PPM_LOGGER_H
+#define PPM_LOGGER_H
 
 #include <string>
 #include "spdlog/spdlog.h"
