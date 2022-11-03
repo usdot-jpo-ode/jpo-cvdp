@@ -1,15 +1,27 @@
-#include "../../include/ppmLogger.h"
+#include "../../include/ppmLogger.hpp"
 
-#include "tool.hpp"
+void PpmLogger::setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
+    ilogger = spdlog_logger;
+}
 
-PpmLogger::PpmLogger() {
-    // setup information logger.
-    ilogger->set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
-    ilogger->set_level( iloglevel );
+void PpmLogger::setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
+    elogger = spdlog_logger;
+}
 
-    // setup error logger.
-    elogger->set_level( iloglevel );
-    elogger->set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
+void PpmLogger::set_info_level(spdlog::level::level_enum level) {
+    ilogger->set_level( level );
+}
+
+void PpmLogger::set_error_level(spdlog::level::level_enum level) {
+    elogger->set_level( level );
+}
+
+void PpmLogger::set_info_pattern(const std::string& pattern) {
+    ilogger->set_pattern( pattern );
+}
+
+void PpmLogger::set_error_pattern(const std::string& pattern) {
+    elogger->set_pattern( pattern );
 }
 
 void PpmLogger::info(const std::string& message) {
@@ -28,19 +40,11 @@ void PpmLogger::critical(const std::string& message) {
     elogger->critical(message);
 }
 
-void PpmLogger::flush() {
-    ilogger->flush();
-    elogger->flush();
-}
-
 void PpmLogger::warn(const std::string& message) {
     elogger->warn(message);
 }
 
-void PpmLogger::set_info_level(spdlog::level::level_enum level) {
-    ilogger->set_level( level );
-}
-
-void PpmLogger::set_error_level(spdlog::level::level_enum level) {
-    elogger->set_level( level );
+void PpmLogger::flush() {
+    ilogger->flush();
+    elogger->flush();
 }

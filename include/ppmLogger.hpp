@@ -10,16 +10,20 @@
  */
 class PpmLogger {
     public:
-        PpmLogger();
-        void setInfoLogger(spdlog::logger* spdlog_logger);
-        void setErrorLogger(spdlog::logger* spdlog_logger);
+        PpmLogger() = default;
+        void setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
+        void setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
+        void set_info_level(spdlog::level::level_enum level);
+        void set_error_level(spdlog::level::level_enum level);
+        void set_info_pattern(const std::string& pattern);
+        void set_error_pattern(const std::string& pattern);
+        
         void info(const std::string& message);
         void error(const std::string& message);
         void trace(const std::string& message);
         void critical(const std::string& message);
         void warn(const std::string& message);
-        void set_info_level(spdlog::level::level_enum level);
-        void set_error_level(spdlog::level::level_enum level);
+
         void flush();
 
     private:
