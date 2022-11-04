@@ -7,8 +7,8 @@
 #include <iostream>
 
 /**
- * @brief The PpmLogger class is intended to be an abstraction layer for the utilization of the spdlog library.
- * 
+ * @brief The PpmLogger class is intended to be an abstraction layer for the utilization
+ * of the spdlog library and to make logging to a file and/or the console configurable.
  */
 class PpmLogger {
     public:
