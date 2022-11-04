@@ -39,8 +39,8 @@ class PpmLogger {
         std::shared_ptr<spdlog::logger> ilogger;
         std::shared_ptr<spdlog::logger> elogger;
 
-        bool logToFileFlag = true;
-        bool logToConsoleFlag = true;
+        bool logToFileFlag = true; // TODO: pull this in from an environment variable
+        bool logToConsoleFlag = true; // TODO: pull this in from an environment variable
 
         void setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
         void setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
