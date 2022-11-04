@@ -724,7 +724,7 @@ bool PPM::make_loggers( bool remove_files )
 #endif
         {
             std::string errorMessage = "Error making the logging directory at '" + path + "'.";
-            std::cout << errorMessage << std::endl;
+            std::cout << errorMessage << std::endl; // can't use logger here
             return false;
         }
     }
@@ -745,14 +745,14 @@ bool PPM::make_loggers( bool remove_files )
 
     if ( remove_files && fileExists( ilogname ) ) {
         if ( remove( ilogname.c_str() ) != 0 ) {
-            std::cout << "Error removing the previous information log file." << std::endl;
+            std::cout << "Error removing the previous information log file." << std::endl; // can't use logger here
             return false;
         }
     }
 
     if ( remove_files && fileExists( elogname ) ) {
         if ( remove( elogname.c_str() ) != 0 ) {
-           std::cout << "Error removing the previous error log file." << std::endl;
+           std::cout << "Error removing the previous error log file." << std::endl; // can't use logger here
             return false;
         }
     }

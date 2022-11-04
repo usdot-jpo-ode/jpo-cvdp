@@ -92,6 +92,6 @@ void PpmLogger::logToConsole(std::string message) {
     char* dateTimeString = ctime(&dateTime);
     dateTimeString[strlen(dateTimeString) - 1] = '\0';
 
-    // print message to std::cout
+    // print message to standard output
     std::cout << "[" << dateTimeString << "] " << message << std::endl;
 }

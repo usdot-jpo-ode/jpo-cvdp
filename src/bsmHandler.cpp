@@ -376,25 +376,17 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     return result_ == ResultStatus::SUCCESS;
 }
 
-void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
-    bool debug = false;
-    
+void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {    
     int numMembersRedacted = 0;
 
     // check if partII redaction is required
     if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
-        if (debug) { std::cout << "partII redaction is required" << std::endl; }
 
         // get partII data
         rapidjson::Value& partII = data["partII"];
 
         // for each field
         for (std::string member : rpm.getFields()) {
-            if (debug) {
-                bool psuccess = false;
-                isMemberPresent(partII, member, psuccess);
-                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
-            }
 
             // redact field
             bool success = false;
@@ -402,14 +394,7 @@ void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
             if (success) {
                 numMembersRedacted++;
             }
-
-            if (debug) {
-                bool psuccess = false;
-                isMemberPresent(partII, member, psuccess);
-                std::cout << "----- After redaction? " << psuccess << std::endl;
-            }
         }
-        if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
         std::string partIIString = convertRapidjsonValueToString(partII);
         bsm_.set_partII(partIIString);
     }
