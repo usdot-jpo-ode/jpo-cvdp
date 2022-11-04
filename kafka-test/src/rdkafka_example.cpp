@@ -48,58 +48,44 @@
 #endif
 
 #include <librdkafka/rdkafkacpp.h>
-#include "../include/ppmLogger.hpp"
 
-#include <sstream>
-
-static std::shared_ptr<PpmLogger> logger = std::make_shared<PpmLogger>("info.log", "error.log");
-static std::stringstream ss;
-
-static void metadata_print (const std::string &topic, const RdKafka::Metadata *metadata) {
-  ss << "Metadata for " << (topic.empty() ? "" : "all topics")
+static void metadata_print (const std::string &topic,
+                            const RdKafka::Metadata *metadata) {
+  std::cout << "Metadata for " << (topic.empty() ? "" : "all topics")
            << "(from broker "  << metadata->orig_broker_id()
-           << ":" << metadata->orig_broker_name() << "\n";
-  logger->info(ss.str());
-  ss.str(""); ss.clear();
+           << ":" << metadata->orig_broker_name() << std::endl;
 
   /* Iterate brokers */
-  ss << " " << metadata->brokers()->size() << " brokers:" << "\n";
-  logger->info(ss.str());
-  ss.str(""); ss.clear();
-
+  std::cout << " " << metadata->brokers()->size() << " brokers:" << std::endl;
   RdKafka::Metadata::BrokerMetadataIterator ib;
   for (ib = metadata->brokers()->begin();
        ib != metadata->brokers()->end();
        ++ib) {
-    ss << "  broker " << (*ib)->id() << " at "
-              << (*ib)->host() << ":" << (*ib)->port() << "\n";
+    std::cout << "  broker " << (*ib)->id() << " at "
+              << (*ib)->host() << ":" << (*ib)->port() << std::endl;
   }
-  logger->info(ss.str());
-  ss.str(""); ss.clear();
-
   /* Iterate topics */
-  logger->info(metadata->topics()->size() + " topics:");
+  std::cout << metadata->topics()->size() << " topics:" << std::endl;
   RdKafka::Metadata::TopicMetadataIterator it;
   for (it = metadata->topics()->begin();
        it != metadata->topics()->end();
        ++it) {
-    ss << "  topic \""<< (*it)->topic() << "\" with "
+    std::cout << "  topic \""<< (*it)->topic() << "\" with "
               << (*it)->partitions()->size() << " partitions:";
 
     if ((*it)->err() != RdKafka::ERR_NO_ERROR) {
-      ss << " " << err2str((*it)->err());
+      std::cout << " " << err2str((*it)->err());
       if ((*it)->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE)
-        ss << " (try again)";
+        std::cout << " (try again)";
     }
-    logger->info(ss.str());
-    ss.str(""); ss.clear();
+    std::cout << std::endl;
 
     /* Iterate topic's partitions */
     RdKafka::TopicMetadata::PartitionMetadataIterator ip;
     for (ip = (*it)->partitions()->begin();
          ip != (*it)->partitions()->end();
          ++ip) {
-      ss << "    partition " << (*ip)->id()
+      std::cout << "    partition " << (*ip)->id()
                 << ", leader " << (*ip)->leader()
                 << ", replicas: ";
 
@@ -108,23 +94,19 @@ static void metadata_print (const std::string &topic, const RdKafka::Metadata *m
       for (ir = (*ip)->replicas()->begin();
            ir != (*ip)->replicas()->end();
            ++ir) {
-        ss << (ir == (*ip)->replicas()->begin() ? "":",") << *ir;
+        std::cout << (ir == (*ip)->replicas()->begin() ? "":",") << *ir;
       }
 
       /* Iterate partition's ISRs */
-      ss << ", isrs: ";
+      std::cout << ", isrs: ";
       RdKafka::PartitionMetadata::ISRSIterator iis;
       for (iis = (*ip)->isrs()->begin(); iis != (*ip)->isrs()->end() ; ++iis)
-        ss << (iis == (*ip)->isrs()->begin() ? "":",") << *iis;
+        std::cout << (iis == (*ip)->isrs()->begin() ? "":",") << *iis;
 
-      if ((*ip)->err() != RdKafka::ERR_NO_ERROR) {
-        ss << ", " << RdKafka::err2str((*ip)->err()) << "\n";
-        logger->error(ss.str());
-      }
-      else {
-        logger->info(ss.str());
-      }
-      ss.str(""); ss.clear();
+      if ((*ip)->err() != RdKafka::ERR_NO_ERROR)
+        std::cout << ", " << RdKafka::err2str((*ip)->err()) << std::endl;
+      else
+        std::cout << std::endl;
     }
   }
 }
@@ -140,9 +122,10 @@ static void sigterm (int sig) {
 class ExampleDeliveryReportCb : public RdKafka::DeliveryReportCb {
  public:
   void dr_cb (RdKafka::Message &message) {
-    logger->error("Message delivery for (" + std::to_string(message.len()) + " bytes): " + message.errstr());
+    std::cerr << "Message delivery for (" << message.len() << " bytes): " <<
+        message.errstr() << std::endl;
     if (message.key())
-      logger->info("Key: " + *(message.key()) + ";");
+      std::cout << "Key: " << *(message.key()) << ";" << std::endl;
   }
 };
 
@@ -153,23 +136,25 @@ class ExampleEventCb : public RdKafka::EventCb {
     switch (event.type())
     {
       case RdKafka::Event::EVENT_ERROR:
-        logger->error("ERROR (" + RdKafka::err2str(event.err()) + "): " + event.str());
+        std::cerr << "ERROR (" << RdKafka::err2str(event.err()) << "): " <<
+            event.str() << std::endl;
         if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN)
           run = false;
         break;
 
       case RdKafka::Event::EVENT_STATS:
-        logger->error("\"STATS\": " + event.str());
+        std::cerr << "\"STATS\": " << event.str() << std::endl;
         break;
 
       case RdKafka::Event::EVENT_LOG:
-        logger->error("LOG-" + std::to_string(event.severity()) + "-" + event.fac().c_str() + ": " + event.str().c_str());
+        fprintf(stderr, "LOG-%i-%s: %s\n",
+                event.severity(), event.fac().c_str(), event.str().c_str());
         break;
 
       default:
-        ss << "EVENT " << event.type() << " (" << RdKafka::err2str(event.err()) << "): " << event.str() << "\n";
-        logger->error(ss.str());
-        ss.str(""); ss.clear();
+        std::cerr << "EVENT " << event.type() <<
+            " (" << RdKafka::err2str(event.err()) << "): " <<
+            event.str() << std::endl;
         break;
     }
   }
@@ -201,11 +186,13 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
 
     case RdKafka::ERR_NO_ERROR:
       /* Real message */
-      logger->info("Read msg at offset " + std::to_string(message->offset()));
+      std::cerr << "Read msg at offset " << message->offset() << std::endl;
       if (message->key()) {
-        logger->info("Key: " + *message->key());
+        std::cout << "Key: " << *message->key() << std::endl;
       }
-      logger->info(std::to_string(static_cast<int>(message->len())) + std::string(static_cast<const char *>(message->payload())));
+      printf("%.*s\n",
+        static_cast<int>(message->len()),
+        static_cast<const char *>(message->payload()));
       break;
 
     case RdKafka::ERR__PARTITION_EOF:
@@ -217,13 +204,13 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
 
     case RdKafka::ERR__UNKNOWN_TOPIC:
     case RdKafka::ERR__UNKNOWN_PARTITION:
-      logger->error("Consume failed: " + message->errstr());
+      std::cerr << "Consume failed: " << message->errstr() << std::endl;
       run = false;
       break;
 
     default:
       /* Errors */
-      logger->error("Consume failed: " + message->errstr());
+      std::cerr << "Consume failed: " << message->errstr() << std::endl;
       run = false;
   }
 }
@@ -274,7 +261,7 @@ int main (int argc, char **argv) {
       else if (!strcmp(optarg, "hash")) {
         if (tconf->set("partitioner_cb", &hash_partitioner, errstr) !=
             RdKafka::Conf::CONF_OK) {
-          logger->error(errstr);
+          std::cerr << errstr << std::endl;
           exit(1);
         }
       } else
@@ -286,7 +273,7 @@ int main (int argc, char **argv) {
     case 'z':
       if (conf->set("compression.codec", optarg, errstr) !=
 	  RdKafka::Conf::CONF_OK) {
-	logger->error(errstr);
+	std::cerr << errstr << std::endl;
 	exit(1);
       }
       break;
@@ -309,7 +296,7 @@ int main (int argc, char **argv) {
     case 'M':
       if (conf->set("statistics.interval.ms", optarg, errstr) !=
           RdKafka::Conf::CONF_OK) {
-        logger->error(errstr);
+        std::cerr << errstr << std::endl;
         exit(1);
       }
       break;
@@ -324,7 +311,8 @@ int main (int argc, char **argv) {
 
 	name = optarg;
 	if (!(val = strchr(name, '='))) {
-    logger->error("Expected -X property=value, not " + std::string(name));
+          std::cerr << "%% Expected -X property=value, not " <<
+              name << std::endl;
 	  exit(1);
 	}
 
@@ -341,7 +329,7 @@ int main (int argc, char **argv) {
 	  res = conf->set(name, val, errstr);
 
 	if (res != RdKafka::Conf::CONF_OK) {
-          logger->error(errstr);
+          std::cerr << errstr << std::endl;
 	  exit(1);
 	}
       }
@@ -351,7 +339,7 @@ int main (int argc, char **argv) {
         if (!strcmp(optarg, "ccb"))
           use_ccb = 1;
         else {
-          logger->error("Unknown option: " + std::string(optarg));
+          std::cerr << "Unknown option: " << optarg << std::endl;
           exit(1);
         }
         break;
@@ -418,7 +406,7 @@ int main (int argc, char **argv) {
 
   if (!debug.empty()) {
     if (conf->set("debug", debug, errstr) != RdKafka::Conf::CONF_OK) {
-      logger->error(errstr);
+      std::cerr << errstr << std::endl;
       exit(1);
     }
   }
@@ -433,20 +421,20 @@ int main (int argc, char **argv) {
       std::list<std::string> *dump;
       if (pass == 0) {
         dump = conf->dump();
-        logger->info("# Global config");
+        std::cout << "# Global config" << std::endl;
       } else {
         dump = tconf->dump();
-        logger->info("# Topic config");
+        std::cout << "# Topic config" << std::endl;
       }
 
-      for (std::list<std::string>::iterator it = dump->begin(); it != dump->end(); ) {
-        ss << *it << " = ";
+      for (std::list<std::string>::iterator it = dump->begin();
+           it != dump->end(); ) {
+        std::cout << *it << " = ";
         it++;
-        ss << *it << "\n";
+        std::cout << *it << std::endl;
         it++;
       }
-      logger->info(ss.str());
-      ss.str(""); ss.clear();
+      std::cout << std::endl;
     }
     exit(0);
   }
@@ -473,18 +461,19 @@ int main (int argc, char **argv) {
      */
     RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
     if (!producer) {
-      logger->error("Failed to create producer: " + errstr);
+      std::cerr << "Failed to create producer: " << errstr << std::endl;
       exit(1);
     }
 
-    logger->error("% Created producer " + producer->name());
+    std::cerr << "% Created producer " << producer->name() << std::endl;
 
     /*
      * Create topic handle.
      */
-    RdKafka::Topic *topic = RdKafka::Topic::create(producer, topic_str, tconf, errstr);
+    RdKafka::Topic *topic = RdKafka::Topic::create(producer, topic_str,
+						   tconf, errstr);
     if (!topic) {
-      logger->error("Failed to create topic: " + errstr);
+      std::cerr << "Failed to create topic: " << errstr << std::endl;
       exit(1);
     }
 
@@ -494,33 +483,30 @@ int main (int argc, char **argv) {
     for (std::string line; run && std::getline(std::cin, line);) {
       if (line.empty()) {
         producer->poll(0);
-	      continue;
+	continue;
       }
 
       /*
        * Produce message
        */
-      RdKafka::ErrorCode resp = producer->produce(
-        topic, 
-        partition, 
-        RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
-			  const_cast<char *>(line.c_str()), 
-        line.size(),
-			  NULL, 
-        NULL
-      );
-
+      RdKafka::ErrorCode resp =
+	producer->produce(topic, partition,
+			  RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
+			  const_cast<char *>(line.c_str()), line.size(),
+			  NULL, NULL);
       if (resp != RdKafka::ERR_NO_ERROR)
-	      logger->error("% Produce failed: " + RdKafka::err2str(resp));
+	std::cerr << "% Produce failed: " <<
+	  RdKafka::err2str(resp) << std::endl;
       else
-	      logger->error("% Produced message (" + std::to_string(line.size()) + " bytes)");
+	std::cerr << "% Produced message (" << line.size() << " bytes)" <<
+	  std::endl;
 
       producer->poll(0);
     }
     run = true;
 
     while (run && producer->outq_len() > 0) {
-      logger->error("Waiting for " + std::to_string(producer->outq_len()));
+      std::cerr << "Waiting for " << producer->outq_len() << std::endl;
       producer->poll(1000);
     }
 
@@ -541,11 +527,11 @@ int main (int argc, char **argv) {
      */
     RdKafka::Consumer *consumer = RdKafka::Consumer::create(conf, errstr);
     if (!consumer) {
-      logger->error("Failed to create consumer: " + errstr);
+      std::cerr << "Failed to create consumer: " << errstr << std::endl;
       exit(1);
     }
 
-    logger->error("% Created consumer " + consumer->name());
+    std::cerr << "% Created consumer " << consumer->name() << std::endl;
 
     /*
      * Create topic handle.
@@ -553,7 +539,7 @@ int main (int argc, char **argv) {
     RdKafka::Topic *topic = RdKafka::Topic::create(consumer, topic_str,
 						   tconf, errstr);
     if (!topic) {
-      logger->error("Failed to create topic: " + errstr);
+      std::cerr << "Failed to create topic: " << errstr << std::endl;
       exit(1);
     }
 
@@ -562,7 +548,8 @@ int main (int argc, char **argv) {
      */
     RdKafka::ErrorCode resp = consumer->start(topic, partition, start_offset);
     if (resp != RdKafka::ERR_NO_ERROR) {
-      logger->error("Failed to start consumer: " + RdKafka::err2str(resp));
+      std::cerr << "Failed to start consumer: " <<
+	RdKafka::err2str(resp) << std::endl;
       exit(1);
     }
 
@@ -600,11 +587,11 @@ int main (int argc, char **argv) {
      */
     RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
     if (!producer) {
-      logger->error("Failed to create producer: " + errstr);
+      std::cerr << "Failed to create producer: " << errstr << std::endl;
       exit(1);
     }
 
-    logger->error("% Created producer " + producer->name());
+    std::cerr << "% Created producer " << producer->name() << std::endl;
 
     /*
      * Create topic handle.
@@ -613,7 +600,7 @@ int main (int argc, char **argv) {
     if(!topic_str.empty()) {
       topic = RdKafka::Topic::create(producer, topic_str, tconf, errstr);
       if (!topic) {
-        logger->error("Failed to create topic: " + errstr);
+        std::cerr << "Failed to create topic: " << errstr << std::endl;
         exit(1);
       }
     }
@@ -625,7 +612,8 @@ int main (int argc, char **argv) {
       RdKafka::ErrorCode err = producer->metadata(topic!=NULL, topic,
                               &metadata, 5000);
       if (err != RdKafka::ERR_NO_ERROR) {
-        logger->error("%% Failed to acquire metadata: " + RdKafka::err2str(err));
+        std::cerr << "%% Failed to acquire metadata: " 
+                  << RdKafka::err2str(err) << std::endl;
               run = 0;
               break;
       }
