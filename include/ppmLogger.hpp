@@ -4,6 +4,8 @@
 #include <string>
 #include "spdlog/spdlog.h"
 
+#include <iostream>
+
 /**
  * @brief The PpmLogger class is intended to be an abstraction layer for the utilization of the spdlog library.
  * 
@@ -11,8 +13,7 @@
 class PpmLogger {
     public:
         PpmLogger(std::string ilogname, std::string elogname);
-        void setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
-        void setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
+
         void set_info_level(spdlog::level::level_enum level);
         void set_error_level(spdlog::level::level_enum level);
         void set_info_pattern(const std::string& pattern);
@@ -37,6 +38,13 @@ class PpmLogger {
         
         std::shared_ptr<spdlog::logger> ilogger;
         std::shared_ptr<spdlog::logger> elogger;
+
+        bool logToFileFlag = true;
+        bool logToConsoleFlag = true;
+
+        void setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
+        void setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
+        void logToConsole(std::string message);
 };
 
 #endif
