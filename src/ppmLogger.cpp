@@ -1,5 +1,17 @@
 #include "../../include/ppmLogger.hpp"
 
+PpmLogger::PpmLogger(std::string ilogname, std::string elogname) {
+    // setup information logger.
+    setInfoLogger(spdlog::rotating_logger_mt("ilog", ilogname, ilogsize, ilognum));
+    set_info_level( iloglevel );
+    set_info_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
+
+    // setup error logger.
+    setErrorLogger(spdlog::rotating_logger_mt("elog", elogname, elogsize, elognum));
+    set_error_level( eloglevel );
+    set_error_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
+}
+
 void PpmLogger::setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
     ilogger = spdlog_logger;
 }
@@ -25,23 +37,23 @@ void PpmLogger::set_error_pattern(const std::string& pattern) {
 }
 
 void PpmLogger::info(const std::string& message) {
-    ilogger->info(message);
+    ilogger->info(message.c_str());
 }
 
 void PpmLogger::error(const std::string& message) {
-    elogger->error(message);
+    elogger->error(message.c_str());
 }
 
 void PpmLogger::trace(const std::string& message) {
-    ilogger->trace(message);
+    ilogger->trace(message.c_str());
 }
 
 void PpmLogger::critical(const std::string& message) {
-    elogger->critical(message);
+    elogger->critical(message.c_str());
 }
 
 void PpmLogger::warn(const std::string& message) {
-    elogger->warn(message);
+    elogger->warn(message.c_str());
 }
 
 void PpmLogger::flush() {

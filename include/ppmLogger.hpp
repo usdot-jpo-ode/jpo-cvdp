@@ -10,7 +10,7 @@
  */
 class PpmLogger {
     public:
-        PpmLogger() = default;
+        PpmLogger(std::string ilogname, std::string elogname);
         void setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
         void setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
         void set_info_level(spdlog::level::level_enum level);
