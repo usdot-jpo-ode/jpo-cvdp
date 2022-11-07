@@ -39,12 +39,16 @@ class PpmLogger {
         std::shared_ptr<spdlog::logger> ilogger;
         std::shared_ptr<spdlog::logger> elogger;
 
-        bool logToFileFlag = true; // TODO: pull this in from an environment variable
-        bool logToConsoleFlag = true; // TODO: pull this in from an environment variable
+        bool logToFileFlag;
+        bool logToConsoleFlag;
 
         void setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
         void setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
         void logToConsole(std::string message);
+        void initializeFlagValuesFromEnvironment();
+        const char* getEnvironmentVariable(std::string var);
+        std::string toLowercase(std::string str);
+        bool convertStringToBool(std::string str);
 };
 
 #endif

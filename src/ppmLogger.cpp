@@ -1,6 +1,9 @@
 #include "../../include/ppmLogger.hpp"
 
 PpmLogger::PpmLogger(std::string ilogname, std::string elogname) {
+    // pull in the file & console flags from the environment
+    initializeFlagValuesFromEnvironment();
+    
     // setup information logger.
     setInfoLogger(spdlog::rotating_logger_mt("ilog", ilogname, ilogsize, ilognum));
     set_info_level( iloglevel );
@@ -94,4 +97,42 @@ void PpmLogger::logToConsole(std::string message) {
 
     // print message to standard output
     std::cout << "[" << dateTimeString << "] " << message << std::endl;
+}
+
+void PpmLogger::initializeFlagValuesFromEnvironment() {
+    std::string logToFileFlagString = getEnvironmentVariable("PPM_LOG_TO_FILE");
+    std::string logToConsoleFlagString = getEnvironmentVariable("PPM_LOG_TO_CONSOLE");
+    logToFileFlag = convertStringToBool(logToFileFlagString);
+    logToConsoleFlag = convertStringToBool(logToConsoleFlagString);
+
+    if (!logToFileFlag && !logToConsoleFlag) {
+        std::cout << "WARNING: PPM_LOG_TO_FILE and PPM_LOG_TO_CONSOLE are both set to false. No logging will occur." << std::endl;
+    }
+}
+
+const char* PpmLogger::getEnvironmentVariable(std::string variableName) {
+    char* variableValue = getenv(variableName.c_str());
+    if (variableValue == NULL) {
+        return "";
+    }
+    return variableValue;
+}
+
+std::string PpmLogger::toLowercase(std::string s) {
+    int counter = 0;
+    char c;
+    while (s[counter]) {
+        c = s[counter];
+        s[counter] = tolower(c);
+        counter++;
+    }
+    return s;
+}
+
+bool PpmLogger::convertStringToBool(std::string value) {
+    std::string lowercaseValue = toLowercase(value);
+    if (lowercaseValue == "true" || lowercaseValue == "1") {
+        return true;
+    }
+    return false;
 }
