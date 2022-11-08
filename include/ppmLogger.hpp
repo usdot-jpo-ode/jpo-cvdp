@@ -28,10 +28,10 @@ class PpmLogger {
         void flush();
 
     private:
-        static constexpr long ilogsize = 1048576 * 5;                   ///> The size of a single information log; these rotate.
-        static constexpr long elogsize = 1048576 * 2;                   ///> The size of a single error log; these rotate.
-        static constexpr int ilognum = 5;                               ///> The number of information logs to rotate.
-        static constexpr int elognum = 2;                               ///> The number of error logs to rotate.
+        long INFO_LOG_SIZE = 1048576 * 5;                   ///> The size of a single information log; these rotate.
+        long ERROR_LOG_SIZE = 1048576 * 2;                   ///> The size of a single error log; these rotate.
+        int INFO_LOG_NUM = 5;                               ///> The number of information logs to rotate.
+        int ERROR_LOG_NUM = 2;                               ///> The number of error logs to rotate.
     
         spdlog::level::level_enum iloglevel = spdlog::level::trace;     ///> Log level for the information log.
         spdlog::level::level_enum eloglevel = spdlog::level::err;       ///> Log level for the error log.
@@ -44,7 +44,6 @@ class PpmLogger {
 
         void setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
         void setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
-        void logToConsole(std::string message);
         void initializeFlagValuesFromEnvironment();
         const char* getEnvironmentVariable(std::string var);
         std::string toLowercase(std::string str);

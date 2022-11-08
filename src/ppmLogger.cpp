@@ -5,12 +5,26 @@ PpmLogger::PpmLogger(std::string ilogname, std::string elogname) {
     initializeFlagValuesFromEnvironment();
     
     // setup information logger.
-    setInfoLogger(spdlog::rotating_logger_mt("ilog", ilogname, ilogsize, ilognum));
+    std::vector<spdlog::sink_ptr> infoSinks;
+    if (logToFileFlag) {
+        infoSinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(ilogname, INFO_LOG_SIZE, INFO_LOG_NUM));
+    }
+    if (logToConsoleFlag) {
+        infoSinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
+    }
+    setInfoLogger(std::make_shared<spdlog::logger>("ilog", begin(infoSinks), end(infoSinks)));
     set_info_level( iloglevel );
     set_info_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
 
     // setup error logger.
-    setErrorLogger(spdlog::rotating_logger_mt("elog", elogname, elogsize, elognum));
+    std::vector<spdlog::sink_ptr> errorSinks;
+    if (logToFileFlag) {
+        errorSinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(elogname, ERROR_LOG_SIZE, ERROR_LOG_NUM));
+    }
+    if (logToConsoleFlag) {
+        errorSinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
+    }
+    setErrorLogger(std::make_shared<spdlog::logger>("elog", begin(errorSinks), end(errorSinks)));
     set_error_level( eloglevel );
     set_error_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
 }
@@ -32,48 +46,23 @@ void PpmLogger::set_error_pattern(const std::string& pattern) {
 }
 
 void PpmLogger::info(const std::string& message) {
-    if (logToFileFlag) {
-        ilogger->info(message.c_str());
-    }
-    if (logToConsoleFlag) {
-        logToConsole("[INFO] " + message);
-    }
+    ilogger->info(message.c_str());
 }
 
 void PpmLogger::error(const std::string& message) {
-    if (logToFileFlag) {
-        elogger->error(message.c_str());
-    }
-    if (logToConsoleFlag) {
-        logToConsole("[ERROR] " + message);
-    }
+    elogger->error(message.c_str());
 }
 
 void PpmLogger::trace(const std::string& message) {
-    if (logToFileFlag) {
-        ilogger->trace(message.c_str());
-    }
-    if (logToConsoleFlag) {
-        logToConsole("[TRACE] " + message);
-    }
+    ilogger->trace(message.c_str());
 }
 
 void PpmLogger::critical(const std::string& message) {
-    if (logToFileFlag) {
-        elogger->critical(message.c_str());
-    }
-    if (logToConsoleFlag) {
-        logToConsole("[CRITICAL] " + message);
-    }
+    elogger->critical(message.c_str());
 }
 
 void PpmLogger::warn(const std::string& message) {
-    if (logToFileFlag) {
-        elogger->warn(message.c_str());
-    }
-    if (logToConsoleFlag) {
-        logToConsole("[WARN] " + message);
-    }
+    elogger->warn(message.c_str());
 }
 
 void PpmLogger::flush() {
@@ -87,16 +76,6 @@ void PpmLogger::setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
 
 void PpmLogger::setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
     elogger = spdlog_logger;
-}
-
-void PpmLogger::logToConsole(std::string message) {
-    // prepare datetime string
-    time_t dateTime = time(0);
-    char* dateTimeString = ctime(&dateTime);
-    dateTimeString[strlen(dateTimeString) - 1] = '\0';
-
-    // print message to standard output
-    std::cout << "[" << dateTimeString << "] " << message << std::endl;
 }
 
 void PpmLogger::initializeFlagValuesFromEnvironment() {
