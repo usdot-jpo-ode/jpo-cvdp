@@ -539,7 +539,7 @@ usage:
         exit(EXIT_FAILURE);
     }
 
-    BSMHandler handler{quad_ptr, pconf};
+    BSMHandler handler{quad_ptr, pconf, logger};
 
     // Consumer setup: bring in topic.J2735BsmRawJSON stream from the ODE (or a pipe to java producer).
     std::shared_ptr<RdKafka::KafkaConsumer> consumer{RdKafka::KafkaConsumer::create(conf, errstr)};

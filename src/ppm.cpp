@@ -483,9 +483,10 @@ bool PPM::msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handl
         case RdKafka::ERR_NO_ERROR:
             /* Real message */
             bsm_recv_count++;
+
             bsm_recv_bytes += message->len();
 
-            logger->trace("Read message at byte offset: " + message->offset() );
+            logger->trace("Read message at byte offset: " + std::to_string(message->offset()) );
 
             ts = message->timestamp();
 
@@ -800,7 +801,7 @@ int PPM::operator()(void) {
         }
 
         // JMC: There was leak in here caused by RapidJSON.  It has been fixed.  The notes are in that class's code.
-        BSMHandler handler{qptr, pconf};
+        BSMHandler handler{qptr, pconf, logger};
 
         std::vector<RdKafka::TopicPartition*> partitions;
         RdKafka::ErrorCode err = consumer->position(partitions);
