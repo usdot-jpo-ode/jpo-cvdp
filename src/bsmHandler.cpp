@@ -383,7 +383,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     return result_ == ResultStatus::SUCCESS;
 }
 
-void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) { // TODO: add method to hpp file
+void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
     bool debug = false;
     int numMembersRedacted = 0;
 
