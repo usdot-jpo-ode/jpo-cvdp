@@ -77,6 +77,11 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
     }
+    
+    search = conf.find("privacy.redaction.coreData");
+    if ( search != conf.end() && search-> second=="ON") {
+        activate<BSMHandler::kCoreDataRedactFlag>();
+    }
 
     search = conf.find("privacy.redaction.partII");
     if ( search != conf.end() && search-> second=="ON") {
@@ -308,6 +313,8 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
+        // handle general redaction
+        handleCoreDataRedaction(data);
         handlePartIIRedaction(data);
         
     }
@@ -374,6 +381,43 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     finalized_ = true;
     
     return result_ == ResultStatus::SUCCESS;
+}
+
+void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) { // TODO: add method to hpp file
+    bool debug = false;
+    int numMembersRedacted = 0;
+
+    // check if coreData redaction is required
+    if (data.HasMember("coreData") && is_active<kCoreDataRedactFlag>()) {
+        if (debug) { std::cout << "coreData redaction is required" << std::endl; }
+
+        // get coreData data
+        rapidjson::Value& coreData = data["coreData"];
+
+        // for each field
+        for (std::string member : rpm.getFields()) {
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(coreData, member, psuccess);
+                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
+            }
+
+            // redact field
+            bool success = false;
+            findAndRemoveAllInstancesOfMember(coreData, member, success);
+            if (success) {
+                numMembersRedacted++;
+            }
+
+            if (debug) {
+                bool psuccess = false;
+                isMemberPresent(coreData, member, psuccess);
+                std::cout << "Is the '" << member << "' member present... After redaction? " << psuccess << std::endl;
+            }
+        }
+
+        if (debug) { std::cout << "Number of members redacted: " << numMembersRedacted << std::endl; }
+    }
 }
 
 void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {

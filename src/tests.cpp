@@ -1535,3 +1535,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][filtering][pa
     }
 
 }
+
+// TODO: add test for core data redaction
+
+// TODO: account for core data redaction flag in existing tests
