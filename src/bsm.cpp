@@ -80,6 +80,14 @@ const std::string& BSM::get_partII() const {
     return partII_;
 }
 
+void BSM::set_coreData( const std::string& s ) {
+    coreData_ = s;
+}
+
+const std::string& BSM::get_coreData() const {
+    return coreData_;
+}
+
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )
 {
     os  << std::setprecision(16) << "Pos: (" << bsm.lat << ", " << bsm.lon << "), ";

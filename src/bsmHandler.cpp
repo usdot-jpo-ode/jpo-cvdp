@@ -313,10 +313,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
-        // handle general redaction
-        handleCoreDataRedaction(data);
-        handlePartIIRedaction(data);
-        
+        handleGeneralRedaction(data); // uses fieldsToRedact.txt 
     }
     else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
@@ -383,6 +380,11 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     return result_ == ResultStatus::SUCCESS;
 }
 
+void BSMHandler::handleGeneralRedaction(rapidjson::Value& data) {
+    handleCoreDataRedaction(data);
+    handlePartIIRedaction(data);
+}
+
 void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
     bool debug = false;
     int numMembersRedacted = 0;
@@ -417,6 +419,8 @@ void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
         }
 
         if (debug) { std::cout << "Number of members redacted: " << numMembersRedacted << std::endl; }
+        std::string coreDataString = convertRapidjsonValueToString(coreData);
+        bsm_.set_coreData(coreDataString);
     }
 }
 
