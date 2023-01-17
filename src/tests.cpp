@@ -1,7 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 #include "../../include/general-redaction/redactionPropertiesManager.hpp"
-#include "../../include/general-redaction/rapidjsonRedactor.hpp"
 
 // NOTE: The test file OPERAND is a <test-spec> (see github.com/philsquared/Catch/blob/master/docs/command-line.md) 
 // <test-spec> is defined as below.
