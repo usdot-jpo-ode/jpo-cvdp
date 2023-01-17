@@ -1,4 +1,4 @@
-#include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
+#include "../../include/general-redaction/redactionPropertiesManager.hpp"
 
 /**
  * @brief Construct a new Redaction Properties Manager object with a default path. Upon instantiation, fields are loaded from a file.

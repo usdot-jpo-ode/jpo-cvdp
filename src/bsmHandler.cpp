@@ -36,7 +36,7 @@
 #include "cvlib.hpp"
 #include "bsmHandler.hpp"
 #include "spdlog/spdlog.h"
-#include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
+#include "../../include/general-redaction/redactionPropertiesManager.hpp"
 
 BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::SUCCESS, "success" },
@@ -400,26 +400,26 @@ void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
         for (std::string member : rpm.getFields()) {
             if (debug) {
                 bool psuccess = false;
-                isMemberPresent(coreData, member, psuccess);
+                rapidjsonRedactor.searchForMemberByName(coreData, member, psuccess);
                 std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
             }
 
             // redact field
             bool success = false;
-            findAndRemoveAllInstancesOfMember(coreData, member, success);
+            rapidjsonRedactor.redactAllInstancesOfMemberByName(coreData, member, success);
             if (success) {
                 numMembersRedacted++;
             }
 
             if (debug) {
                 bool psuccess = false;
-                isMemberPresent(coreData, member, psuccess);
+                rapidjsonRedactor.searchForMemberByName(coreData, member, psuccess);
                 std::cout << "Is the '" << member << "' member present... After redaction? " << psuccess << std::endl;
             }
         }
 
         if (debug) { std::cout << "Number of members redacted: " << numMembersRedacted << std::endl; }
-        std::string coreDataString = convertRapidjsonValueToString(coreData);
+        std::string coreDataString = rapidjsonRedactor.stringifyValue(coreData);
         bsm_.set_coreData(coreDataString);
     }
 }
@@ -440,95 +440,26 @@ void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
         for (std::string member : rpm.getFields()) {
             if (debug) {
                 bool psuccess = false;
-                isMemberPresent(partII, member, psuccess);
+                rapidjsonRedactor.searchForMemberByName(partII, member, psuccess);
                 std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
             }
 
             // redact field
             bool success = false;
-            findAndRemoveAllInstancesOfMember(partII, member.c_str(), success);
+            rapidjsonRedactor.redactAllInstancesOfMemberByName(partII, member.c_str(), success);
             if (success) {
                 numMembersRedacted++;
             }
 
             if (debug) {
                 bool psuccess = false;
-                isMemberPresent(partII, member, psuccess);
+                rapidjsonRedactor.searchForMemberByName(partII, member, psuccess);
                 std::cout << "----- After redaction? " << psuccess << std::endl;
             }
         }
         if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
-        std::string partIIString = convertRapidjsonValueToString(partII);
+        std::string partIIString = rapidjsonRedactor.stringifyValue(partII);
         bsm_.set_partII(partIIString);
-    }
-}
-
-/**
- * @brief Recursively search for a member in a value and remove all instances of it it.
- * 
- * @param value The value to begin searching.
- * @param member The member to remove all instances of.
- * @param success The flag that the caller can check upon return to see if the operation was successful.
- */
-void BSMHandler::findAndRemoveAllInstancesOfMember(rapidjson::Value& value, std::string member, bool& success) {
-    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
-    if (value.IsObject()) {
-        while (value.HasMember(member.c_str())) {
-            value.RemoveMember(member.c_str());
-            success = true;
-        }
-        for (auto& m : value.GetObject()) {
-            std::string type = kTypeNames[m.value.GetType()];
-            if (type == "Object" || type == "Array") {
-                std::string name = m.name.GetString();
-                auto& v = value[name.c_str()];
-                findAndRemoveAllInstancesOfMember(v, member, success);
-            }
-        }
-    }
-    else if (value.IsArray()) {
-        for (auto& m : value.GetArray()) {
-            std::string type = kTypeNames[m.GetType()];
-            if (type == "Object" || type == "Array") {
-                findAndRemoveAllInstancesOfMember(m, member, success);
-            }
-        }
-    }
-}
-
-/**
- * @brief Recursively check if a member is present. Returns upon finding the first instance of the member.
- * 
- * @param value The value to begin searching.
- * @param member The member to remove.
- * @param success The flag that the caller can check upon return to see if the operation was successful.
- */
-void BSMHandler::isMemberPresent(rapidjson::Value& value, std::string member, bool& success) {
-    static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
-    if (success) {
-        // return if search has already succeeded
-        return;
-    }
-    if (value.IsObject()) {
-        if (value.HasMember(member.c_str())) {
-            success = true;
-        }
-        for (auto& m : value.GetObject()) {
-            std::string type = kTypeNames[m.value.GetType()];
-            if (type == "Object" || type == "Array") {
-                std::string name = m.name.GetString();
-                auto& v = value[name.c_str()];
-                isMemberPresent(v, member, success);
-            }
-        }
-    }
-    else if (value.IsArray()) {
-        for (auto& m : value.GetArray()) {
-            std::string type = kTypeNames[m.GetType()];
-            if (type == "Object" || type == "Array") {
-                isMemberPresent(m, member, success);
-            }
-        }
     }
 }
 
@@ -589,9 +520,6 @@ const IdRedactor& BSMHandler::get_id_redactor() const {
     return idr_;
 }
 
-std::string BSMHandler::convertRapidjsonValueToString(rapidjson::Value& value) {
-        rapidjson::StringBuffer buffer;
-        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-        value.Accept(writer);
-        return buffer.GetString();
+RapidjsonRedactor& BSMHandler::getRapidjsonRedactor() {
+    return rapidjsonRedactor;
 }
