@@ -30,27 +30,36 @@ void RapidjsonRedactor::redactAllInstancesOfMemberByName(rapidjson::Value& value
 }
 
 void RapidjsonRedactor::redactMemberByPath(rapidjson::Value& value, std::string path, bool& success) {
-    std::string topLevel = getTopLevelFromPath(path);
+    std::string nextPathElement = getTopLevelFromPath(path);
+    std::string target = getBottomLevelFromPath(path);
+
     if (value.IsObject()) {
-        if (value.HasMember(topLevel.c_str())) {
-            value.RemoveMember(topLevel.c_str());
-            success = true;
-        }
-        for (auto& m : value.GetObject()) {
-            std::string type = kTypeNames[m.value.GetType()];
+        if (value.HasMember(nextPathElement.c_str())) {
+            // get the type of the next path element
+            std::string type = kTypeNames[value[nextPathElement.c_str()].GetType()];
             if (type == "Object" || type == "Array") {
-                std::string name = m.name.GetString();
-                auto& v = value[name.c_str()];
+                // if the next path element is an object or array, recurse
+                auto& v = value[nextPathElement.c_str()];
                 removeTopLevelFromPath(path);
                 redactMemberByPath(v, path, success);
             }
+            else {
+                // if the next path element is the target, remove it
+                if (nextPathElement == target) {
+                    value.RemoveMember(nextPathElement.c_str());
+                    success = true;
+                }
+            }
+        }
+        else {
+            // if the next path element is not a member of the object, return
+            return;
         }
     }
     else if (value.IsArray()) {
         for (auto& m : value.GetArray()) {
             std::string type = kTypeNames[m.GetType()];
             if (type == "Object" || type == "Array") {
-                removeTopLevelFromPath(path);
                 redactMemberByPath(m, path, success);
             }
         }
@@ -90,17 +99,36 @@ void RapidjsonRedactor::searchForMemberByPath(rapidjson::Value& value, std::stri
         // return if search has already succeeded
         return;
     }
-    std::string topLevel = getTopLevelFromPath(path);
+    
+    std::string nextPathElement = getTopLevelFromPath(path);
+    std::string target = getBottomLevelFromPath(path);
+
     if (value.IsObject()) {
-        if (value.HasMember(topLevel.c_str())) {
-            success = true;
+        if (value.HasMember(nextPathElement.c_str())) {
+            // get the type of the next path element
+            std::string type = kTypeNames[value[nextPathElement.c_str()].GetType()];
+            if (type == "Object" || type == "Array") {
+                // if the next path element is an object or array, recurse
+                auto& v = value[nextPathElement.c_str()];
+                removeTopLevelFromPath(path);
+                searchForMemberByPath(v, path, success);
+            }
+            else {
+                // if the next path element is the target, return true
+                if (nextPathElement == target) {
+                    success = true;
+                }
+            }
+        }
+        else {
+            // if the next path element is not a member of the current object, return
+            return;
         }
         for (auto& m : value.GetObject()) {
             std::string type = kTypeNames[m.value.GetType()];
             if (type == "Object" || type == "Array") {
                 std::string name = m.name.GetString();
                 auto& v = value[name.c_str()];
-                removeTopLevelFromPath(path);
                 searchForMemberByPath(v, path, success);
             }
         }
@@ -109,7 +137,6 @@ void RapidjsonRedactor::searchForMemberByPath(rapidjson::Value& value, std::stri
         for (auto& m : value.GetArray()) {
             std::string type = kTypeNames[m.GetType()];
             if (type == "Object" || type == "Array") {
-                removeTopLevelFromPath(path);
                 searchForMemberByPath(m, path, success);
             }
         }
@@ -196,4 +223,12 @@ void RapidjsonRedactor::removeTopLevelFromPath(std::string& path) {
     if (firstDot != std::string::npos) {
         path = path.substr(firstDot + 1);
     }
+}
+
+std::string RapidjsonRedactor::getBottomLevelFromPath(std::string& path) {
+    int lastDot = path.rfind(".");
+    if (lastDot != std::string::npos) {
+        return path.substr(lastDot + 1);
+    }
+    return path;
 }

@@ -127,4 +127,12 @@ class RapidjsonRedactor {
          * @return std::string The path without the top level
          */
         void removeTopLevelFromPath(std::string& path);
+
+        /**
+         * @brief Get the Bottom Level From Path object
+         * 
+         * @param path The path to get the bottom level from
+         * @return std::string The bottom level of the path
+         */
+        std::string getBottomLevelFromPath(std::string& path);
 };
