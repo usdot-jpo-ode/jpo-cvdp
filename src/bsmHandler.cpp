@@ -386,78 +386,24 @@ void BSMHandler::handleGeneralRedaction(rapidjson::Value& data) {
 }
 
 void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
-    bool debug = false;
-    int numMembersRedacted = 0;
-
-    // check if coreData redaction is required
     if (data.HasMember("coreData") && is_active<kCoreDataRedactFlag>()) {
-        if (debug) { std::cout << "coreData redaction is required" << std::endl; }
-
-        // get coreData data
         rapidjson::Value& coreData = data["coreData"];
-
-        // for each field
-        for (std::string member : rpm.getFields()) {
-            if (debug) {
-                bool psuccess = false;
-                rapidjsonRedactor.searchForMemberByName(coreData, member, psuccess);
-                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
-            }
-
-            // redact field
-            bool success = false;
-            rapidjsonRedactor.redactAllInstancesOfMemberByName(coreData, member, success);
-            if (success) {
-                numMembersRedacted++;
-            }
-
-            if (debug) {
-                bool psuccess = false;
-                rapidjsonRedactor.searchForMemberByName(coreData, member, psuccess);
-                std::cout << "Is the '" << member << "' member present... After redaction? " << psuccess << std::endl;
-            }
+        for (std::string memberName : rpm.getFields()) {
+            bool memberRedacted = false;
+            rapidjsonRedactor.redactAllInstancesOfMemberByName(coreData, memberName, memberRedacted);
         }
-
-        if (debug) { std::cout << "Number of members redacted: " << numMembersRedacted << std::endl; }
         std::string coreDataString = rapidjsonRedactor.stringifyValue(coreData);
         bsm_.set_coreData(coreDataString);
     }
 }
 
-void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
-    bool debug = false;
-    
-    int numMembersRedacted = 0;
-
-    // check if partII redaction is required
+void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {    
     if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
-        if (debug) { std::cout << "partII redaction is required" << std::endl; }
-
-        // get partII data
         rapidjson::Value& partII = data["partII"];
-
-        // for each field
-        for (std::string member : rpm.getFields()) {
-            if (debug) {
-                bool psuccess = false;
-                rapidjsonRedactor.searchForMemberByName(partII, member, psuccess);
-                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
-            }
-
-            // redact field
-            bool success = false;
-            rapidjsonRedactor.redactAllInstancesOfMemberByName(partII, member.c_str(), success);
-            if (success) {
-                numMembersRedacted++;
-            }
-
-            if (debug) {
-                bool psuccess = false;
-                rapidjsonRedactor.searchForMemberByName(partII, member, psuccess);
-                std::cout << "----- After redaction? " << psuccess << std::endl;
-            }
+        for (std::string memberName : rpm.getFields()) {
+            bool memberRedacted = false;
+            rapidjsonRedactor.redactAllInstancesOfMemberByName(partII, memberName.c_str(), memberRedacted);
         }
-        if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
         std::string partIIString = rapidjsonRedactor.stringifyValue(partII);
         bsm_.set_partII(partIIString);
     }
