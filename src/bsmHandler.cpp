@@ -381,32 +381,20 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 }
 
 void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
-    handleCoreDataRedaction(document);
-    handlePartIIRedaction(document);
-}
-
-void BSMHandler::handleCoreDataRedaction(rapidjson::Document& document) {
-    if (is_active<kCoreDataRedactFlag>()) {
+    if (is_active<kCoreDataRedactFlag>() || is_active<kPartIIRedactFlag>()) {
         for (std::string memberPath : rpm.getFields()) {
             bool memberRedacted = false;
             rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str(), memberRedacted);
         }
+
+        // store the redacted coreData and partII in the BSM object
         rapidjson::Value& payload = document["payload"];
         rapidjson::Value& data = payload["data"];
+
         rapidjson::Value& coreData = data["coreData"];
         std::string coreDataString = rapidjsonRedactor.stringifyValue(coreData);
         bsm_.set_coreData(coreDataString);
-    }
-}
 
-void BSMHandler::handlePartIIRedaction(rapidjson::Document& document) {    
-    if (is_active<kPartIIRedactFlag>()) {
-        for (std::string memberPath : rpm.getFields()) {
-            bool memberRedacted = false;
-            rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str(), memberRedacted);
-        }
-        rapidjson::Value& payload = document["payload"];
-        rapidjson::Value& data = payload["data"];
         rapidjson::Value& partII = data["partII"];
         std::string partIIString = rapidjsonRedactor.stringifyValue(partII);
         bsm_.set_partII(partIIString);

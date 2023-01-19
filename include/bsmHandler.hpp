@@ -160,22 +160,10 @@ class BSMHandler {
         bool process( const std::string& bsm_json );
     
         /**
-         * @brief Handle general redaction of fields. Calls core data and partII redaction methods.
+         * @brief Handle general redaction of fields, the paths for which are specified in fieldsToRedact.txt
          *
          */
         void handleGeneralRedaction(rapidjson::Document& document);
-
-        /**
-         * @brief Handle redacting necessary coreData fields.
-         *
-         */
-        void handleCoreDataRedaction(rapidjson::Document& document);
-
-        /**
-         * @brief Handle redacting necessary partII fields.
-         *
-         */
-        void handlePartIIRedaction(rapidjson::Document& document);
 
         /**
          * @brief Return the result of the most recent BSM processing.
