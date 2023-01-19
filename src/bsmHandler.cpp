@@ -313,7 +313,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
-        handleGeneralRedaction(data); // uses fieldsToRedact.txt 
+        handleGeneralRedaction(document); // uses fieldsToRedact.txt 
     }
     else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
@@ -380,30 +380,34 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     return result_ == ResultStatus::SUCCESS;
 }
 
-void BSMHandler::handleGeneralRedaction(rapidjson::Value& data) {
-    handleCoreDataRedaction(data);
-    handlePartIIRedaction(data);
+void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
+    handleCoreDataRedaction(document);
+    handlePartIIRedaction(document);
 }
 
-void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
-    if (data.HasMember("coreData") && is_active<kCoreDataRedactFlag>()) {
-        rapidjson::Value& coreData = data["coreData"];
+void BSMHandler::handleCoreDataRedaction(rapidjson::Document& document) {
+    if (is_active<kCoreDataRedactFlag>()) {
         for (std::string memberPath : rpm.getFields()) {
             bool memberRedacted = false;
-            rapidjsonRedactor.redactMemberByPath(coreData, memberPath.c_str(), memberRedacted);
+            rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str(), memberRedacted);
         }
+        rapidjson::Value& payload = document["payload"];
+        rapidjson::Value& data = payload["data"];
+        rapidjson::Value& coreData = data["coreData"];
         std::string coreDataString = rapidjsonRedactor.stringifyValue(coreData);
         bsm_.set_coreData(coreDataString);
     }
 }
 
-void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {    
-    if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
-        rapidjson::Value& partII = data["partII"];
+void BSMHandler::handlePartIIRedaction(rapidjson::Document& document) {    
+    if (is_active<kPartIIRedactFlag>()) {
         for (std::string memberPath : rpm.getFields()) {
             bool memberRedacted = false;
-            rapidjsonRedactor.redactMemberByPath(partII, memberPath.c_str(), memberRedacted);
+            rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str(), memberRedacted);
         }
+        rapidjson::Value& payload = document["payload"];
+        rapidjson::Value& data = payload["data"];
+        rapidjson::Value& partII = data["partII"];
         std::string partIIString = rapidjsonRedactor.stringifyValue(partII);
         bsm_.set_partII(partIIString);
     }

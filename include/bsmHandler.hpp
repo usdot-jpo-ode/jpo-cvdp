@@ -163,19 +163,19 @@ class BSMHandler {
          * @brief Handle general redaction of fields. Calls core data and partII redaction methods.
          *
          */
-        void handleGeneralRedaction(rapidjson::Value& data);
+        void handleGeneralRedaction(rapidjson::Document& document);
 
         /**
          * @brief Handle redacting necessary coreData fields.
          *
          */
-        void handleCoreDataRedaction(rapidjson::Value& data);
+        void handleCoreDataRedaction(rapidjson::Document& document);
 
         /**
          * @brief Handle redacting necessary partII fields.
          *
          */
-        void handlePartIIRedaction(rapidjson::Value& data);
+        void handlePartIIRedaction(rapidjson::Document& document);
 
         /**
          * @brief Return the result of the most recent BSM processing.
