@@ -64,7 +64,7 @@ bool buildBaseConfiguration( ConfigMap& conf ) {
     conf["privacy.redaction.id.inclusions"]    = "ON";
     conf["privacy.redaction.size"]             = "ON";
     conf["privacy.redaction.coreData"]         = "ON";
-    conf["privacy.redaction.partII"]           = "ON";
+    conf["privacy.redaction.general"]           = "ON";
     conf["privacy.filter.geofence"]            = "ON";
     conf["privacy.filter.velocity.min"]        = "2.235";
     conf["privacy.filter.velocity.max"]        = "35.763";
@@ -1136,8 +1136,7 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
         CHECK( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
         CHECK( handler.is_active<BSMHandler::kIdRedactFlag>() );
-        CHECK( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-        CHECK( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
+        CHECK( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
         CHECK( handler.get_json() == "" ); // there was a comment here about json being null when empty, but it appears to be "", not null
     };
 
@@ -1159,11 +1158,8 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
         handler.deactivate<BSMHandler::kSizeRedactFlag>();
         CHECK_FALSE( handler.is_active<BSMHandler::kSizeRedactFlag>() );
 
-        handler.deactivate<BSMHandler::kPartIIRedactFlag>();
-        CHECK_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-
-        handler.deactivate<BSMHandler::kCoreDataRedactFlag>();
-        CHECK_FALSE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
+        handler.deactivate<BSMHandler::kGeneralRedactFlag>();
+        CHECK_FALSE( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
 
         CHECK( handler.get_activation_flag() == 0 );
     }
@@ -1196,14 +1192,12 @@ TEST_CASE( "BSMHandler JSON No Filtering", "[ppm][filtering][alloff]" ) {
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
-    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
-    handler.deactivate<BSMHandler::kCoreDataRedactFlag>();
+    handler.deactivate<BSMHandler::kGeneralRedactFlag>();
 
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
 
     // load up all the test cases.
     std::vector<std::string> json_test_cases;
@@ -1288,14 +1282,12 @@ TEST_CASE( "BSMHandler JSON Id Redaction Only", "[ppm][filtering][idonly]" ) {
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     //handler.activate<BSMHandler::kIdRedactFlag>();
-    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
-    handler.deactivate<BSMHandler::kCoreDataRedactFlag>();
+    handler.deactivate<BSMHandler::kGeneralRedactFlag>();
 
     REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
@@ -1332,14 +1324,12 @@ TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]"
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
     //handler.activate<BSMHandler::kVelocityFilterFlag>();
-    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
-    handler.deactivate<BSMHandler::kCoreDataRedactFlag>();
+    handler.deactivate<BSMHandler::kGeneralRedactFlag>();
 
     REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.json", json_test_cases ) );
@@ -1373,14 +1363,12 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
 
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
-    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
-    handler.deactivate<BSMHandler::kCoreDataRedactFlag>();
+    handler.deactivate<BSMHandler::kGeneralRedactFlag>();
 
     REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
+    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
 
     BSM bsm[6];
 
@@ -1672,7 +1660,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjso
     REQUIRE(numMembersPresentAfterRedaction == 0);
 }
 
-TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][redaction][partIIonly]" ) {
+TEST_CASE( "BSMHandler JSON General Redaction Only", "[ppm][redaction][generalonly]" ) {
     // create redaction properties manager
     RedactionPropertiesManager rpm;
 
@@ -1685,14 +1673,12 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][redaction][partIIonly
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
-    handler.deactivate<BSMHandler::kCoreDataRedactFlag>();
 
-    // activate kPartIIRedactFlag and make sure the other flags are deactivated
-    REQUIRE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
+    // activate kGeneralRedactFlag and make sure the other flags are deactivated
+    REQUIRE( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
 
     // load in test cases
     std::vector<std::string> json_test_cases;
@@ -1720,20 +1706,32 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][redaction][partIIonly
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
 
+        // get coreData string from BSM
+        std::string coreDataString = handler.get_bsm().get_coreData();
+        CHECK( coreDataString != "" );
+
         // get partII string from BSM
         std::string partIIString = handler.get_bsm().get_partII();
         CHECK( partIIString != "" );
 
-        // parse into document
+        // parse into documents
+        rapidjson::Document coreData;
         rapidjson::Document partII;
-        rapidjson::ParseResult parseResult = partII.Parse(partIIString.c_str());
+        rapidjson::ParseResult parseResult = coreData.Parse(coreDataString.c_str());
+        CHECK( parseResult );
+        parseResult = partII.Parse(partIIString.c_str());
         CHECK( parseResult );
 
-        // verify that there are no sensitive members in the coreData field left
+        // verify that there are no sensitive members in the coreData and partII fields left
         int numMembersPresentAfterRedaction = 0;
         for (std::string memberPath : rpm.getFields()) {
             std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
             bool found = false;
+            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
+            if (found) {
+                numMembersPresentAfterRedaction++;
+            }
+            found = false;
             handler.getRapidjsonRedactor().searchForMemberByName(partII, target, found);
             if (found) {
                 numMembersPresentAfterRedaction++;
@@ -1744,7 +1742,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][redaction][partIIonly
 
 }
 
-TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][redaction][partII][allflags]" ) {
+TEST_CASE( "BSMHandler JSON General Redaction w/ All Flags", "[ppm][redaction][general][allflags]" ) {
     // create redaction properties manager
     RedactionPropertiesManager rpm;
 
@@ -1754,11 +1752,10 @@ TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][redaction][pa
     BSMHandler handler{ buildTestQuadTree(), pconf };
 
     // make sure all flags are enabled
-    REQUIRE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
+    REQUIRE( handler.is_active<BSMHandler::kGeneralRedactFlag>() );
     REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
     REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
     REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-    REQUIRE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
 
     // load in test cases
     std::vector<std::string> json_test_cases;
@@ -1786,20 +1783,32 @@ TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][redaction][pa
         // make sure that it was successful
         CHECK( handler.get_result_string() == "success" );
 
+        // get coreData string from BSM
+        std::string coreDataString = handler.get_bsm().get_coreData();
+        CHECK( coreDataString != "" );
+
         // get partII string from BSM
         std::string partIIString = handler.get_bsm().get_partII();
         CHECK( partIIString != "" );
 
-        // parse into document
+        // parse into documents
+        rapidjson::Document coreData;
         rapidjson::Document partII;
-        rapidjson::ParseResult parseResult = partII.Parse(partIIString.c_str());
+        rapidjson::ParseResult parseResult = coreData.Parse(coreDataString.c_str());
+        CHECK( parseResult );
+        parseResult = partII.Parse(partIIString.c_str());
         CHECK( parseResult );
 
-        // verify that there are no sensitive members in the coreData field left
+        // verify that there are no sensitive members in the coreData and partII fields left
         int numMembersPresentAfterRedaction = 0;
         for (std::string memberPath : rpm.getFields()) {
             std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
             bool found = false;
+            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
+            if (found) {
+                numMembersPresentAfterRedaction++;
+            }
+            found = false;
             handler.getRapidjsonRedactor().searchForMemberByName(partII, target, found);
             if (found) {
                 numMembersPresentAfterRedaction++;
@@ -1808,144 +1817,4 @@ TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][redaction][pa
         CHECK( numMembersPresentAfterRedaction == 0 );
     }
 
-}
-
-TEST_CASE( "BSMHandler JSON CoreData Redaction Only", "[ppm][redaction][coredataonly]" ) {
-    // create redaction properties manager
-    RedactionPropertiesManager rpm;
-
-    REQUIRE( rpm.getFields().size() > 0 );
-
-    // create BSMHandler
-    std::unordered_map<std::string,std::string> pconf;
-    REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
-
-    // deactive unrelated flags
-    handler.deactivate<BSMHandler::kVelocityFilterFlag>();
-    handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
-    handler.deactivate<BSMHandler::kIdRedactFlag>();
-    handler.deactivate<BSMHandler::kPartIIRedactFlag>();
-
-    // activate kCoreDataRedactFlag and make sure the other flags are deactivated
-    REQUIRE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-    REQUIRE_FALSE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-
-    // load in test cases
-    std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.coreData.json", json_test_cases ) );
-
-    for ( auto& test_case : json_test_cases ) {
-        // read into rapidjson document
-        rapidjson::Document doc;
-        rapidjson::ParseResult preliminaryParseResult = doc.Parse(test_case.c_str());
-        REQUIRE( preliminaryParseResult );
-
-        int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberPath : rpm.getFields()) {
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
-            if (found) {
-                numMembersPresentBeforeRedaction++;
-            }
-        }
-        REQUIRE( numMembersPresentBeforeRedaction > 0 );
-
-        // process test case to build BSM (redaction will occur here)
-        CHECK( handler.process( test_case ) );
-
-        // make sure that it was successful
-        CHECK( handler.get_result_string() == "success" );
-
-        // get coreData string from BSM
-        std::string coreDataString = handler.get_bsm().get_coreData();
-        CHECK( coreDataString != "" );
-
-        // parse into document
-        rapidjson::Document coreData;
-        rapidjson::ParseResult parseResult = coreData.Parse(coreDataString.c_str());
-        CHECK( parseResult );
-
-        // verify that there are no sensitive members in the coreData field left
-        int numMembersPresentAfterRedaction = 0;
-        for (std::string memberPath : rpm.getFields()) {
-            std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
-            if (found) {
-                numMembersPresentAfterRedaction++;
-            }
-        }
-        CHECK( numMembersPresentAfterRedaction == 0 );
-    }
-}
-
-TEST_CASE( "BSMHandler JSON CoreData Redaction w/ All Flags", "[ppm][redaction][coredata][allflags]" ) {
-    // create redaction properties manager
-    RedactionPropertiesManager rpm;
-
-    REQUIRE( rpm.getFields().size() > 0 );
-
-    // create BSMHandler
-    std::unordered_map<std::string,std::string> pconf;
-    REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
-
-    // make sure all flags are enabled
-    REQUIRE( handler.is_active<BSMHandler::kCoreDataRedactFlag>() );
-    REQUIRE( handler.is_active<BSMHandler::kVelocityFilterFlag>() );
-    REQUIRE( handler.is_active<BSMHandler::kGeofenceFilterFlag>() );
-    REQUIRE( handler.is_active<BSMHandler::kIdRedactFlag>() );
-    REQUIRE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
-
-    // load in test cases
-    std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.coreData.json", json_test_cases ) );
-
-    for ( auto& test_case : json_test_cases ) {
-        // read into rapidjson document
-        rapidjson::Document doc;
-        rapidjson::ParseResult preliminaryParseResult = doc.Parse(test_case.c_str());
-        REQUIRE( preliminaryParseResult );
-
-        int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberPath : rpm.getFields()) {
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
-            if (found) {
-                numMembersPresentBeforeRedaction++;
-            }
-        }
-        REQUIRE( numMembersPresentBeforeRedaction > 0 );
-        
-        // process test case to build BSM (redaction will occur here)
-        CHECK( handler.process( test_case ) );
-
-        // make sure that it was successful
-        CHECK( handler.get_result_string() == "success" );
-
-        // get coreData string from BSM
-        std::string coreDataString = handler.get_bsm().get_coreData();
-        CHECK( coreDataString != "" );
-
-        // parse into document
-        rapidjson::Document coreData;
-        rapidjson::ParseResult parseResult = coreData.Parse(coreDataString.c_str());
-        CHECK( parseResult );
-
-        // verify that there are no sensitive members in the coreData field left
-        int numMembersPresentAfterRedaction = 0;
-        for (std::string memberPath : rpm.getFields()) {
-            std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
-            if (found) {
-                numMembersPresentAfterRedaction++;
-            }
-        }
-        CHECK( numMembersPresentAfterRedaction == 0 );
-    }
 }

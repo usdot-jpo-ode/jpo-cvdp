@@ -77,15 +77,10 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kIdRedactFlag>();
     }
-    
-    search = conf.find("privacy.redaction.coreData");
-    if ( search != conf.end() && search-> second=="ON") {
-        activate<BSMHandler::kCoreDataRedactFlag>();
-    }
 
-    search = conf.find("privacy.redaction.partII");
+    search = conf.find("privacy.redaction.general");
     if ( search != conf.end() && search-> second=="ON") {
-        activate<BSMHandler::kPartIIRedactFlag>();
+        activate<BSMHandler::kGeneralRedactFlag>();
     }
 
     search = conf.find("privacy.filter.geofence.extension");
@@ -381,7 +376,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 }
 
 void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
-    if (is_active<kCoreDataRedactFlag>() || is_active<kPartIIRedactFlag>()) {
+    if (is_active<kGeneralRedactFlag>()) {
         for (std::string memberPath : rpm.getFields()) {
             bool memberRedacted = false;
             rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str(), memberRedacted);
