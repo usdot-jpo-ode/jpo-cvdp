@@ -388,9 +388,9 @@ void BSMHandler::handleGeneralRedaction(rapidjson::Value& data) {
 void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
     if (data.HasMember("coreData") && is_active<kCoreDataRedactFlag>()) {
         rapidjson::Value& coreData = data["coreData"];
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
             bool memberRedacted = false;
-            rapidjsonRedactor.redactAllInstancesOfMemberByName(coreData, memberName, memberRedacted);
+            rapidjsonRedactor.redactMemberByPath(coreData, memberPath.c_str(), memberRedacted);
         }
         std::string coreDataString = rapidjsonRedactor.stringifyValue(coreData);
         bsm_.set_coreData(coreDataString);
@@ -400,9 +400,9 @@ void BSMHandler::handleCoreDataRedaction(rapidjson::Value& data) {
 void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {    
     if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
         rapidjson::Value& partII = data["partII"];
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
             bool memberRedacted = false;
-            rapidjsonRedactor.redactAllInstancesOfMemberByName(partII, memberName.c_str(), memberRedacted);
+            rapidjsonRedactor.redactMemberByPath(partII, memberPath.c_str(), memberRedacted);
         }
         std::string partIIString = rapidjsonRedactor.stringifyValue(partII);
         bsm_.set_partII(partIIString);

@@ -1705,9 +1705,9 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][redaction][partIIonly
         REQUIRE( preliminaryParseResult );
 
         int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(doc, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
             if (found) {
                 numMembersPresentBeforeRedaction++;
             }
@@ -1731,9 +1731,10 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][redaction][partIIonly
 
         // verify that there are no sensitive members in the coreData field left
         int numMembersPresentAfterRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
+            std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(partII, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByName(partII, target, found);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }
@@ -1770,9 +1771,9 @@ TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][redaction][pa
         REQUIRE( preliminaryParseResult );
 
         int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(doc, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
             if (found) {
                 numMembersPresentBeforeRedaction++;
             }
@@ -1796,9 +1797,10 @@ TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][redaction][pa
 
         // verify that there are no sensitive members in the coreData field left
         int numMembersPresentAfterRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
+            std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(partII, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByName(partII, target, found);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }
@@ -1843,9 +1845,9 @@ TEST_CASE( "BSMHandler JSON CoreData Redaction Only", "[ppm][redaction][coredata
         REQUIRE( preliminaryParseResult );
 
         int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(doc, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
             if (found) {
                 numMembersPresentBeforeRedaction++;
             }
@@ -1869,9 +1871,10 @@ TEST_CASE( "BSMHandler JSON CoreData Redaction Only", "[ppm][redaction][coredata
 
         // verify that there are no sensitive members in the coreData field left
         int numMembersPresentAfterRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
+            std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(coreData, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }
@@ -1909,9 +1912,9 @@ TEST_CASE( "BSMHandler JSON CoreData Redaction w/ All Flags", "[ppm][redaction][
         REQUIRE( preliminaryParseResult );
 
         int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(doc, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
             if (found) {
                 numMembersPresentBeforeRedaction++;
             }
@@ -1935,9 +1938,10 @@ TEST_CASE( "BSMHandler JSON CoreData Redaction w/ All Flags", "[ppm][redaction][
 
         // verify that there are no sensitive members in the coreData field left
         int numMembersPresentAfterRedaction = 0;
-        for (std::string memberName : rpm.getFields()) {
+        for (std::string memberPath : rpm.getFields()) {
+            std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
             bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(coreData, memberName, found);
+            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }
