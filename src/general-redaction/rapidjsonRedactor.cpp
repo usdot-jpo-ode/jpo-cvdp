@@ -30,6 +30,10 @@ void RapidjsonRedactor::redactAllInstancesOfMemberByName(rapidjson::Value& value
 }
 
 void RapidjsonRedactor::redactMemberByPath(rapidjson::Value& value, std::string path, bool& success) {
+    if (success) {
+        // return if redaction has already succeeded
+        return;
+    }
     std::string nextPathElement = getTopLevelFromPath(path);
     std::string target = getBottomLevelFromPath(path);
 
@@ -48,6 +52,7 @@ void RapidjsonRedactor::redactMemberByPath(rapidjson::Value& value, std::string 
                 if (nextPathElement == target) {
                     value.RemoveMember(nextPathElement.c_str());
                     success = true;
+                    return;
                 }
             }
         }
