@@ -1682,7 +1682,7 @@ TEST_CASE( "BSMHandler JSON General Redaction Only", "[ppm][redaction][generalon
 
     // load in test cases
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.partII.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.redaction.general.json", json_test_cases ) );
 
     for ( auto& test_case : json_test_cases ) {
         // read into rapidjson document
@@ -1759,7 +1759,7 @@ TEST_CASE( "BSMHandler JSON General Redaction w/ All Flags", "[ppm][redaction][g
 
     // load in test cases
     std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.partII.json", json_test_cases ) );
+    REQUIRE ( loadTestCases( "unit-test-data/test-case.redaction.general.json", json_test_cases ) );
 
     for ( auto& test_case : json_test_cases ) {
         // read into rapidjson document
