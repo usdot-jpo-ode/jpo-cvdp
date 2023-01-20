@@ -18,7 +18,7 @@ payload.data.partII.value.weatherReport.roadFriction
 payload.data.partII.value.weatherReport.friction
 payload.data.partII.value.weatherReport.airTemp
 payload.data.partII.value.weatherReport.airPressure
-payload.data.coreDatatransmission
+payload.data.coreData.transmission
 payload.data.partII.value.speedProfile.speedReports
 payload.data.coreData.brakes.abs
 payload.data.partII.value.events.eventABSactivated
