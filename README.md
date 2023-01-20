@@ -213,7 +213,7 @@ If the RPM_DEBUG environment variable is set to true, debug messages will be log
 General redaction refers to redaction functionality in the BSMHandler that utilizes the 'fieldsToRedact.txt' file to redact specified fields from the 'coreData' and 'partII' sections of BSM messages.
 
 ## How to specify the fields to redact
-The fieldsToRedact.txt file is used by the BSMHandler and lists the fields to be redacted. It should be noted that this file needs to use the LF end-of-line sequence.
+The fieldsToRedact.txt file is used by the BSMHandler and lists the paths to the fields to be redacted. It should be noted that this file needs to use the LF end-of-line sequence.
 
 ### How are fields redacted?
-The keystrings in the fieldsToRedact.txt file area are added to a list and then every keystring in the 'partII' and 'coreData' sections of BSM messages are checked against this list. If there are any matches, the RemoveMember rapidjson method is called and any child nodes become inaccessible.
+The paths in the fieldsToRedact.txt file area are added to a list and then used to search for the fields in the BSM message. If a member is found, it is removed with rapidjson's RemoveMember() function. It should be noted that objects and lists cannot be redacted directly, their children must be redacted instead.
