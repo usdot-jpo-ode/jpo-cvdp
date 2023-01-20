@@ -63,8 +63,7 @@ bool buildBaseConfiguration( ConfigMap& conf ) {
     conf["privacy.redaction.id"]               = "ON";
     conf["privacy.redaction.id.inclusions"]    = "ON";
     conf["privacy.redaction.size"]             = "ON";
-    conf["privacy.redaction.coreData"]         = "ON";
-    conf["privacy.redaction.general"]           = "ON";
+    conf["privacy.redaction.general"]          = "ON";
     conf["privacy.filter.geofence"]            = "ON";
     conf["privacy.filter.velocity.min"]        = "2.235";
     conf["privacy.filter.velocity.max"]        = "35.763";
