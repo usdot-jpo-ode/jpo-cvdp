@@ -1586,6 +1586,25 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjso
         rapidjson::Document document = rapidjsonRedactor.getDocumentFromString(jsonString);
 
         std::string memberPaths[] = {
+            "payload.data.partII.value.lights.leftTurnSignalOn",
+            "payload.data.partII.value.lights.rightTurnSignalOn",
+            "payload.data.partII.value.lights.hazardSignalOn",
+            "payload.data.partII.value.lights.fogLightOn",
+            "payload.data.partII.value.lights.lowBeamHeadlightsOn",
+            "payload.data.partII.value.lights.highBeamHeadlightsOn",
+            "payload.data.partII.value.lights.automaticLightControlOn",
+            "payload.data.partII.value.lights.daytimeRunningLightsOn",
+            "payload.data.partII.value.lights.parkingLightsOn",
+            "payload.data.partII.value.weatherProbe.rainRates.statusFront",
+            "payload.data.partII.value.weatherProbe.rainRates.statusRear",
+            "payload.data.partII.value.weatherProbe.rainRates.rateFront",
+            "payload.data.partII.value.weatherProbe.rainRates.rateRear",
+            "payload.data.partII.value.weatherReport.solarRadiation",
+            "payload.data.partII.value.weatherReport.roadFriction",
+            "payload.data.partII.value.weatherReport.friction",
+            "payload.data.partII.value.weatherReport.airTemp",
+            "payload.data.partII.value.weatherReport.airPressure",
+            "payload.data.coreData.transmission",
             "payload.data.coreData.brakes.abs",
             "payload.data.coreData.brakes.scs",
             "payload.data.coreData.brakes.traction",
@@ -1595,7 +1614,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjso
             "payload.data.coreData.brakes.wheelBrakes.unavailable",
             "payload.data.coreData.brakes.wheelBrakes.leftRear",
             "payload.data.coreData.brakes.wheelBrakes.rightRear",
-            "payload.data.coreData.brakes.auxBrakes",
+            "payload.data.coreData.brakes.auxBrakes"
         };
 
         // get num members present before redaction
@@ -1607,9 +1626,6 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjso
             rapidjsonRedactor.searchForMemberByPath(document, memberPath, success);
 
             numMembersPresentBeforeRedaction += success;
-            if (!success) {
-                std::cout << "did not find " << memberPath << std::endl;
-            }
         }
         REQUIRE(numMembersPresentBeforeRedaction == sizeof(memberPaths)/sizeof(memberPaths[0]));
 
