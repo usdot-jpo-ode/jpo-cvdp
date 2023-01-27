@@ -86,7 +86,7 @@ void RedactionPropertiesManager::addField(std::string fieldToAdd) {
 }
 
 /**
- * @brief Prints the fields. For debugging purposes.
+ * @brief Prints the fields to the console. For debugging purposes.
  * 
  */
 void RedactionPropertiesManager::printFields() {

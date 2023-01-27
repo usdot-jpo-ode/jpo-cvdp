@@ -47,7 +47,7 @@ BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::OTHER, "other" }
         };
 
-BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
+BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf, std::shared_ptr<PpmLogger> logger ):
     activated_{0},
     result_{ ResultStatus::SUCCESS },
     bsm_{},
@@ -56,8 +56,16 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     json_{},
     vf_{ conf },
     idr_{ conf },
-    box_extension_{ 10.0 }
+    box_extension_{ 10.0 },
+    logger_{ logger }
 {
+    if (logger_ == nullptr) {
+        std::cout << "BSMHandler::BSMHandler(): Logger is null! Returning." << std::endl;
+        return;
+    }
+    
+    logger_->trace("BSMHandler::BSMHandler(): Constructor called");
+
     auto search = conf.find("privacy.filter.velocity");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kVelocityFilterFlag>();
@@ -380,7 +388,7 @@ void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
         for (std::string memberPath : rpm.getFields()) {
             bool memberRedacted = rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str());
             if (!memberRedacted) {
-                std::cout << "Member not found while handling general redaction! Path: '" + memberPath + "'" << std::endl;
+                logger_->info("Member not found while handling general redaction! Path: '" + memberPath + "'");
             }
         }
 

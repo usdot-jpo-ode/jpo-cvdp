@@ -54,13 +54,13 @@
 #include "bsmHandler.hpp"
 #include "cvlib.hpp"
 #include "spdlog/spdlog.h"
+#include "ppmLogger.hpp"
 
 class PPM : public tool::Tool {
 
     public:
 
-        std::shared_ptr<spdlog::logger> ilogger;
-        std::shared_ptr<spdlog::logger> elogger;
+        std::shared_ptr<PpmLogger> logger;
 
         static void sigterm (int sig);
 
@@ -96,13 +96,6 @@ class PPM : public tool::Tool {
         static bool bootstrap;                                          ///> flag indicating we need to bootstrap the consumer and producer
         static bool bsms_available;                                     ///> flag to find consumer/produce bsms; set via signals so static.
 
-        static constexpr long ilogsize = 1048576 * 5;                   ///> The size of a single information log; these rotate.
-        static constexpr long elogsize = 1048576 * 2;                   ///> The size of a single error log; these rotate.
-
-        static constexpr int ilognum = 5;                               ///> The number of information logs to rotate.
-        static constexpr int elognum = 2;                               ///> The number of error logs to rotate.
-
-
         bool exit_eof;                                                  ///> flag to cause the application to exit on stream eof.
         int eof_cnt;                                                    ///> counts the number of eofs needed for exit_eof to work; each partition must end.
         int partition_cnt;                                              ///> TODO: the number of partitions being processed; currently 1.
@@ -115,8 +108,6 @@ class PPM : public tool::Tool {
         int64_t bsm_send_bytes;                                         ///> Counter for the nubmer of BSM bytes published.
         int64_t bsm_filt_bytes;                                         ///> Counter for the nubmer of BSM bytes filtered/suppressed.
 
-        spdlog::level::level_enum iloglevel;                            ///> Log level for the information log.
-        spdlog::level::level_enum eloglevel;                            ///> Log level for the error log.
         std::string mode;
         std::string debug;
 

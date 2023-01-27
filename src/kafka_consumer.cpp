@@ -68,12 +68,17 @@
 #endif
 
 #include "../include/bsmHandler.hpp"
+#include "../include/ppmLogger.hpp"
 #include "cvlib.hpp"
+
+#include <sstream>
+
+static std::shared_ptr<PpmLogger> logger = std::make_shared<PpmLogger>("info.log", "error.log");
 
 const char* getEnvironmentVariable(const char* variableName) {
     const char* toReturn = getenv(variableName);
     if (!toReturn) {
-        std::cout << "[ERROR] Something went wrong attempting to retrieve the environment variable " << variableName << std::endl;
+        logger->error("Something went wrong attempting to retrieve the environment variable " + std::string(variableName));
         toReturn = "";
     }
     return toReturn;
@@ -92,58 +97,6 @@ static int verbosity = 1;
 static void sigterm (int sig) {
   run = false;
 }
-
-// JMC: Useful librdkafka reference code for metadata.
-//static void metadata_print (const std::string &topic, const RdKafka::Metadata *metadata) {
-//
-//    std::cout << "Metadata for " << (topic.empty() ? "" : "all topics")
-//        << "(from broker "  << metadata->orig_broker_id()
-//        << ":" << metadata->orig_broker_name() << std::endl;
-//
-//    /* Iterate brokers */
-//    std::cout << " " << metadata->brokers()->size() << " brokers:" << std::endl;
-//
-//    for ( auto ib : *(metadata->brokers()) ) {
-//        std::cout << "  broker " << ib->id() << " at " << ib->host() << ":" << ib->port() << std::endl;
-//    }
-//
-//    /* Iterate topics */
-//    std::cout << metadata->topics()->size() << " topics:" << std::endl;
-//
-//    for ( auto& it : *(metadata->topics()) ) {
-//
-//        std::cout << "  topic \""<< it->topic() << "\" with " << it->partitions()->size() << " partitions:";
-//
-//        if (it->err() != RdKafka::ERR_NO_ERROR) {
-//            std::cout << " " << err2str(it->err());
-//            if (it->err() == RdKafka::ERR_LEADER_NOT_AVAILABLE) std::cout << " (try again)";
-//        }
-//
-//        std::cout << std::endl;
-//
-//        /* Iterate topic's partitions */
-//        for ( auto& ip : *(it->partitions()) ) {
-//            std::cout << "    partition " << ip->id() << ", leader " << ip->leader() << ", replicas: ";
-//
-//            /* Iterate partition's replicas */
-//            RdKafka::PartitionMetadata::ReplicasIterator ir;
-//            for (ir = ip->replicas()->begin(); ir != ip->replicas()->end(); ++ir) {
-//                std::cout << (ir == ip->replicas()->begin() ? "":",") << *ir;
-//            }
-//
-//            /* Iterate partition's ISRs */
-//            std::cout << ", isrs: ";
-//            RdKafka::PartitionMetadata::ISRSIterator iis;
-//            for (iis = ip->isrs()->begin(); iis != ip->isrs()->end() ; ++iis)
-//                std::cout << (iis == ip->isrs()->begin() ? "":",") << *iis;
-//
-//            if (ip->err() != RdKafka::ERR_NO_ERROR)
-//                std::cout << ", " << RdKafka::err2str(ip->err()) << std::endl;
-//            else
-//                std::cout << std::endl;
-//        }
-//    }
-//}
 
 static bool ode_topic_available( const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer ) {
     bool r = false;
@@ -183,7 +136,7 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
             msg_cnt++;
             msg_bytes += message->len();
             if (verbosity >= 3) {
-                std::cerr << "Read msg at offset " << message->offset() << "\n";
+                logger->error("Read msg at offset " + std::to_string(message->offset()));
             }
 
             RdKafka::MessageTimestamp ts;
@@ -198,11 +151,11 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
                     tsname = "log append time";
                 }
 
-                std::cout << "Timestamp: " << tsname << " " << ts.timestamp << "\n";
+                logger->info("Timestamp: " + tsname + " " + std::to_string(ts.timestamp));
             }
 
             if (verbosity >= 2 && message->key()) {
-                std::cout << "Key: " << *message->key() << "\n";
+                logger->info("Key: " + *message->key());
             }
 
             if ( handler.process( payload ) ) {
@@ -216,20 +169,20 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
         case RdKafka::ERR__PARTITION_EOF:
             /* Last message */
             if (exit_eof && ++eof_cnt == partition_cnt) {
-                std::cerr << "%% EOF reached for all " << partition_cnt << " partition(s)" << "\n";
+                logger->info("%% EOF reached for all " + std::to_string(partition_cnt) + " partition(s)");
                 run = false;
             }
             break;
 
         case RdKafka::ERR__UNKNOWN_TOPIC:
         case RdKafka::ERR__UNKNOWN_PARTITION:
-            std::cerr << "Consume failed: " << message->errstr() << "\n";
+            logger->error("Consume failed: " + message->errstr());
             run = false;
             break;
 
         default:
             /* Errors */
-            std::cerr << "Consume failed: " << message->errstr() << "\n";
+            logger->error("Consume failed: " + message->errstr());
             run = false;
     }
 
@@ -272,7 +225,7 @@ bool configure( const std::string& config_file, std::unordered_map<std::string,s
     std::ifstream ifs( config_file );
 
     if (!ifs ) {
-        std::cerr << "cannot open configuration file: " << config_file << "\n";
+        logger->error("cannot open configuration file: " + config_file);
         return false;
     }
 
@@ -338,7 +291,7 @@ int main (int argc, char **argv) {
 
             case 'g':
                 if (conf->set("group.id",  optarg, errstr) != RdKafka::Conf::CONF_OK) {
-                    std::cerr << errstr << "\n";
+                    logger->error(errstr);
                     exit(1);
                 }
                 break;
@@ -346,13 +299,6 @@ int main (int argc, char **argv) {
             case 'b':
                 brokers = optarg;
                 break;
-
-//            case 'z':
-//                if (conf->set("compression.codec", optarg, errstr) != RdKafka::Conf::CONF_OK) {
-//                    std::cerr << errstr << "\n";
-//                    exit(1);
-//                }
-//                break;
 
             case 'o':
                 if (!strcmp(optarg, "end"))
@@ -372,60 +318,7 @@ int main (int argc, char **argv) {
             case 'd':
                 debug = optarg;
                 break;
-
-//            case 'M':
-//                if (conf->set("statistics.interval.ms", optarg, errstr) !=
-//                        RdKafka::Conf::CONF_OK) {
-//                    std::cerr << errstr << "\n";
-//                    exit(1);
-//                }
-//                break;
-
-//            case 'X':
-//                {
-//                    char *name, *val;
-//
-//                    if (!strcmp(optarg, "dump")) {
-//                        do_conf_dump = true;
-//                        continue;
-//                    }
-//
-//                    name = optarg;
-//
-//                    if (!(val = strchr(name, '='))) {
-//                        std::cerr << "%% Expected -X property=value, not " << name << "\n";
-//                        exit(EXIT_FAILURE);
-//                    }
-//
-//                    *val = '\0';
-//                    val++;
-//
-//                    /* Try "topic." prefixed properties on topic
-//                     * conf first, and then fall through to global if
-//                     * it didnt match a topic configuration property. */
-//                    RdKafka::Conf::ConfResult res = RdKafka::Conf::CONF_UNKNOWN;
-//
-//                    if (!strncmp(name, "topic.", strlen("topic.")))
-//                        res = tconf->set(name+strlen("topic."), val, errstr);
-//
-//                    if (res == RdKafka::Conf::CONF_UNKNOWN)
-//                        res = conf->set(name, val, errstr);
-//
-//                    if (res != RdKafka::Conf::CONF_OK) {
-//                        std::cerr << errstr << "\n";
-//                        exit(1);
-//                    }
-//                }
-//                break;
-
-//            case 'f':
-//                if (!strcmp(optarg, "ccb"))
-//                    use_ccb = 1;
-//                else {
-//                    std::cerr << "Unknown option: " << optarg << "\n";
-//                    exit(1);
-//                }
-//                break;
+                
             case 'F':
                 // the file that defines the geofence indirectly.
                 region_file = optarg;
@@ -502,7 +395,7 @@ usage:
 
     if (!debug.empty()) {
         if (conf->set("debug", debug, errstr) != RdKafka::Conf::CONF_OK) {
-            std::cerr << errstr << "\n";
+            logger->error(errstr);
             exit(1);
         }
     }
@@ -524,24 +417,24 @@ usage:
             std::list<std::string> *dump;           // generic handle for both dumps.
             if (pass == 0) {
                 dump = conf->dump();
-                std::cout << "# Global config" << "\n";
+                logger->info("# Global config");
             } else {
                 dump = tconf->dump();
-                std::cout << "# Topic config" << "\n";
+                logger->info("# Topic config");
             }
-
+            std::string toLog = "";
             for (std::list<std::string>::iterator it = dump->begin(); it != dump->end(); ) {
-                std::cout << *it << " = ";
+                toLog = toLog + *it + " = ";
                 it++;
-                std::cout << *it << "\n";
+                toLog = toLog + *it + "\n";
                 it++;
             }
-            std::cout << "\n";
+            logger->info(toLog + "\n");
         }
 
-        std::cout << "# Privacy config \n";
+        logger->info("# Privacy config");
         for ( const auto& m : pconf ) {
-            std::cout << m.first << " = " << m.second << '\n';
+            logger->info(m.first + " = " + m.second);
         }
 
         exit(EXIT_SUCCESS);
@@ -554,7 +447,7 @@ usage:
     std::string kafkaType = getEnvironmentVariable("KAFKA_TYPE");
     std::string error_string = "";
     if (kafkaType == "CONFLUENT") {
-        std::cout << "Setting up Confluent Cloud configuration key/value pairs for Kafka Consumer." << std::endl; // DEBUG
+        logger->info("Setting up Confluent Cloud configuration key/value pairs for Kafka Consumer.");
 
         // get username and password
         std::string username = getEnvironmentVariable("CONFLUENT_KEY");
@@ -571,7 +464,7 @@ usage:
         conf->set("api.version.fallback.ms", "0", error_string);
         conf->set("broker.version.fallback", "0.10.0.0", error_string);
 
-        std::cout << "Finished setting up Confluent Cloud configuration key/value pairs for Kafka Consumer." << std::endl;
+        logger->info("Finished setting up Confluent Cloud configuration key/value pairs for Kafka Consumer.");
     }
     // end of confluent cloud integration
 
@@ -582,7 +475,7 @@ usage:
     if ( search != pconf.end() ) {
         region_file = search->second;
     } else {
-        std::cerr << "No map file specified.\n";
+        logger->error("No map file specified.");
         exit(EXIT_FAILURE);
     }
 
@@ -613,7 +506,7 @@ usage:
 
     } catch ( std::exception& e ) {
 
-        std::cout << e.what() << "\n";
+        logger->error(e.what());
         exit(0);
 
     }
@@ -640,55 +533,55 @@ usage:
 
 
     } catch ( std::exception& e ) {
-        std::cerr << "Problem building geofence: " << e.what() << '\n';
+        logger->error("Problem building geofence: " + std::string(e.what()));
         delete tconf;
         delete conf;
         exit(EXIT_FAILURE);
     }
 
-    BSMHandler handler{quad_ptr, pconf};
+    BSMHandler handler{quad_ptr, pconf, logger};
 
     // Consumer setup: bring in topic.J2735BsmRawJSON stream from the ODE (or a pipe to java producer).
     std::shared_ptr<RdKafka::KafkaConsumer> consumer{RdKafka::KafkaConsumer::create(conf, errstr)};
 
     if (!consumer) {
-        std::cerr << "Failed to create consumer: " << errstr << "\n";
+        logger->error("Failed to create consumer: " + errstr);
         exit(EXIT_FAILURE);
     }
 
-    std::cout << ">> Created Consumer: " << consumer->name() << "\n";
+    logger->info(">> Created Consumer: " + consumer->name());
 
     // grab the topic off the configuration.
     search = pconf.find("privacy.topic.consumer");
     if ( search != pconf.end() ) {
         topics.push_back( search->second );
     } else {
-        std::cerr << "Failure to use configured consumer topic: " << errstr << "\n";
+        logger->error("Failure to use configured consumer topic: " + errstr);
         exit(EXIT_FAILURE);
     }
 
     for ( const std::string& topic : topics ) {
         if ( !ode_topic_available( topic, consumer )) {
-        std::cerr << "The ODE Topic: " << topic << " is not available. This topic must be readable.\n";
-        exit(EXIT_FAILURE);
+            logger->error("The ODE Topic: " + topic + " is not available. This topic must be readable.");
+            exit(EXIT_FAILURE);
         }
     }
 
     // subscribe to the J2735BsmJson topic (or test)
     RdKafka::ErrorCode err = consumer->subscribe(topics);
     if (err) {
-        std::cerr << "Failed to subscribe to " << topics.size() << " topics: " << RdKafka::err2str(err) << "\n";
+        logger->error("Failed to subscribe to " + std::to_string(topics.size()) + " topics: " + RdKafka::err2str(err));
         exit(EXIT_FAILURE);
     }
 
     // Producer setup: will take the filtered BSMs and send them back to the ODE (or a test java consumer).
     RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
     if (!producer) {
-        std::cerr << "Failed to create producer: " << errstr << "\n";
+        logger->error("Failed to create producer: " + errstr);
         exit(EXIT_FAILURE);
     }
 
-    std::cout << ">> Created Producer: " << producer->name() << "\n";
+    logger->info(">> Created Producer: " + producer->name());
 
     if (topic_str.empty()) {
         // maybe it was specified in the configuration file.
@@ -696,7 +589,7 @@ usage:
         if ( search != pconf.end() ) {
             topic_str = search->second;
         } else {
-            std::cerr << "Topic std::String Empty!\n";
+            logger->error("Topic std::String Empty!");
             exit(EXIT_FAILURE);
         }
     } 
@@ -704,7 +597,7 @@ usage:
     // The topic we are publishing filtered BSMs to.
     RdKafka::Topic *topic = RdKafka::Topic::create(producer, topic_str, tconf, errstr);
     if (!topic) {
-        std::cerr << "Failed to create topic: " << errstr << "\n";
+        logger->error("Failed to create topic: " + errstr);
         exit(EXIT_FAILURE);
     } 
 
@@ -726,25 +619,24 @@ usage:
                 case RdKafka::ERR_NO_ERROR:
                     {
                         const BSM& bsm = handler.get_bsm();
-                        std::cout << "Retaining BSM: " << bsm << "\n";
+                        std::stringstream ss;
+                        ss << "Retaining BSM: " << bsm << "\n";
+                        logger->info(ss.str());
 
                         // if we still have a message in the handler, we send it back out to the producer we have made above.
                         status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
-                        //RdKafka::ErrorCode resp = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
                         if (status != RdKafka::ERR_NO_ERROR) {
-                            std::cerr << "% Produce failed: " << RdKafka::err2str( status ) << "\n";
+                            logger->error("% Produce failed: " + RdKafka::err2str( status ));
                         } 
-                        // else {
-                        //     std::cerr << "% Produced message (" << handler.get_bsm_buffer_size() << " bytes)" << "\n";
-                        // }
-                        //break;
                     }
                     break;
 
                 case RdKafka::ERR_INVALID_MSG:
                     {
                         const BSM& bsm = handler.get_bsm();
-                        std::cout << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
+                        std::stringstream ss;
+                        ss << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
+                        logger->info(ss.str());
                     }
                     break;
 
@@ -754,13 +646,7 @@ usage:
 
         }
         delete msg;
-        // producer->poll(0);          // needed when using callbacks.
     }
-
-    //    while (run && producer->outq_len() > 0) {
-    //      std::cerr << "Waiting for " << producer->outq_len() << "\n";
-    //      producer->poll(1000);         // needed when using callbacks.
-    //    }
 
     delete tconf;
     delete conf;
@@ -773,7 +659,7 @@ usage:
 
     consumer->close();
 
-    std::cout << ">> Consumed " << msg_cnt << " messages (" << msg_bytes << " bytes)" << "\n";
+    logger->info(">> Consumed " + std::to_string(msg_cnt) + " messages (" + std::to_string(msg_bytes) + " bytes)");
 
     /*
      * Wait for RdKafka to decommission.
