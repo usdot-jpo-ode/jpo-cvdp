@@ -1450,13 +1450,11 @@ TEST_CASE( "RapidjsonRedactor Search For Member By Name", "[ppm][redaction][rapi
     document.Parse( jsonString );
 
     // check that accelLong that is present is properly identified as present
-    bool accelLongPresent = false;
-    rapidjsonRedactor.searchForMemberByName( document, "accelLong", accelLongPresent );
+    bool accelLongPresent = rapidjsonRedactor.searchForMemberByName( document, "accelLong" );
     CHECK( accelLongPresent == true );
 
     // check that a nonsense member is properly identified as not present
-    bool nonsenseMemberPresent = false;
-    rapidjsonRedactor.searchForMemberByName( document, "asifduha9wehf", nonsenseMemberPresent );
+    bool nonsenseMemberPresent = rapidjsonRedactor.searchForMemberByName( document, "asifduha9wehf" );
     CHECK( nonsenseMemberPresent == false );
 }
 
@@ -1469,23 +1467,19 @@ TEST_CASE( "RapidjsonRedactor Search For Member By Path", "[ppm][redaction][rapi
     document.Parse( jsonString );
 
     // check that accelLong that is present is properly identified as present
-    bool accelLongPresent = false;
-    rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.value.accelLong", accelLongPresent );
+    bool accelLongPresent = rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.value.accelLong" );
     CHECK( accelLongPresent == true );
 
     // check that a nonsense member is properly identified as not present
-    bool nonsenseMemberPresent = false;
-    rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.value.aoiwehfiowafh", nonsenseMemberPresent );
+    bool nonsenseMemberPresent = rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.value.aoiwehfiowafh" );
     CHECK( nonsenseMemberPresent == false );
 
     // check that accelLong with the wrong path is properly identified as not present
-    bool accelLongWrongPathPresent = false;
-    rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.wrongvalue.accelLong", accelLongWrongPathPresent );
+    bool accelLongWrongPathPresent = rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.wrongvalue.accelLong" );
     CHECK( accelLongWrongPathPresent == false );
 
     // check that accelLong with path with wrong top level member is properly identified as not present
-    bool accelLongWrongTopLevelMemberPresent = false;
-    rapidjsonRedactor.searchForMemberByPath( document, "wrongpayload.data.partII.value.accelLong", accelLongWrongTopLevelMemberPresent );
+    bool accelLongWrongTopLevelMemberPresent = rapidjsonRedactor.searchForMemberByPath( document, "wrongpayload.data.partII.value.accelLong" );
     CHECK( accelLongWrongTopLevelMemberPresent == false );
 }
 
@@ -1544,8 +1538,7 @@ TEST_CASE( "RapidjsonRedactor Redact All Instances Of Member By Name", "[ppm][re
     for (int i = 0 ; i < sizeof(members)/sizeof(members[0]); i++) {
         std::string member = members[i];
 
-        bool success = false;
-        rapidjsonRedactor.searchForMemberByName(partII, member, success);
+        bool success = rapidjsonRedactor.searchForMemberByName(partII, member);
 
         numMembersPresentBeforeRedaction += success;
     }
@@ -1556,8 +1549,7 @@ TEST_CASE( "RapidjsonRedactor Redact All Instances Of Member By Name", "[ppm][re
     for (int i = 0 ; i < sizeof(members)/sizeof(members[0]); i++) {
         std::string member = members[i];
 
-        bool rsuccess = false;
-        rapidjsonRedactor.redactAllInstancesOfMemberByName(partII, member, rsuccess);
+        bool rsuccess = rapidjsonRedactor.redactAllInstancesOfMemberByName(partII, member);
 
         numRedactions += rsuccess;
     }
@@ -1568,8 +1560,7 @@ TEST_CASE( "RapidjsonRedactor Redact All Instances Of Member By Name", "[ppm][re
     for (int i = 0 ; i < sizeof(members)/sizeof(members[0]); i++) {
         std::string member = members[i];
 
-        bool success = false;
-        rapidjsonRedactor.searchForMemberByName(partII, member, success);
+        bool success = rapidjsonRedactor.searchForMemberByName(partII, member);
 
         numMembersPresentAfterRedaction += success;
     }
@@ -1622,8 +1613,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjso
         for (int i = 0 ; i < sizeof(memberPaths)/sizeof(memberPaths[0]); i++) {
             std::string memberPath = memberPaths[i];
 
-            bool success = false;
-            rapidjsonRedactor.searchForMemberByPath(document, memberPath, success);
+            bool success = rapidjsonRedactor.searchForMemberByPath(document, memberPath);
 
             numMembersPresentBeforeRedaction += success;
         }
@@ -1634,8 +1624,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjso
         for (int i = 0 ; i < sizeof(memberPaths)/sizeof(memberPaths[0]); i++) {
             std::string memberPath = memberPaths[i];
 
-            bool success = false;
-            rapidjsonRedactor.redactMemberByPath(document, memberPath, success);
+            bool success = rapidjsonRedactor.redactMemberByPath(document, memberPath);
 
             numMembersRedacted += success;
         }
@@ -1646,8 +1635,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjso
         for (int i = 0 ; i < sizeof(memberPaths)/sizeof(memberPaths[0]); i++) {
             std::string memberPath = memberPaths[i];
 
-            bool success = false;
-            rapidjsonRedactor.searchForMemberByPath(document, memberPath, success);
+            bool success = rapidjsonRedactor.searchForMemberByPath(document, memberPath);
 
             numMembersPresentAfterRedaction += success;
         }
@@ -1687,8 +1675,7 @@ TEST_CASE( "BSMHandler JSON General Redaction Only", "[ppm][redaction][generalon
 
         int numMembersPresentBeforeRedaction = 0;
         for (std::string memberPath : rpm.getFields()) {
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
+            bool found = handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath);
             if (found) {
                 numMembersPresentBeforeRedaction++;
             }
@@ -1721,13 +1708,11 @@ TEST_CASE( "BSMHandler JSON General Redaction Only", "[ppm][redaction][generalon
         int numMembersPresentAfterRedaction = 0;
         for (std::string memberPath : rpm.getFields()) {
             std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
+            bool found = handler.getRapidjsonRedactor().searchForMemberByName(coreData, target);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }
-            found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(partII, target, found);
+            found = handler.getRapidjsonRedactor().searchForMemberByName(partII, target);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }
@@ -1764,8 +1749,7 @@ TEST_CASE( "BSMHandler JSON General Redaction w/ All Flags", "[ppm][redaction][g
 
         int numMembersPresentBeforeRedaction = 0;
         for (std::string memberPath : rpm.getFields()) {
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath, found);
+            bool found = handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath);
             if (found) {
                 numMembersPresentBeforeRedaction++;
             }
@@ -1798,13 +1782,11 @@ TEST_CASE( "BSMHandler JSON General Redaction w/ All Flags", "[ppm][redaction][g
         int numMembersPresentAfterRedaction = 0;
         for (std::string memberPath : rpm.getFields()) {
             std::string target = memberPath.substr(0, memberPath.find_last_of('.') + 1);
-            bool found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(coreData, target, found);
+            bool found = handler.getRapidjsonRedactor().searchForMemberByName(coreData, target);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }
-            found = false;
-            handler.getRapidjsonRedactor().searchForMemberByName(partII, target, found);
+            found = handler.getRapidjsonRedactor().searchForMemberByName(partII, target);
             if (found) {
                 numMembersPresentAfterRedaction++;
             }

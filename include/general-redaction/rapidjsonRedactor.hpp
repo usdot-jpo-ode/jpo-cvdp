@@ -21,36 +21,32 @@ class RapidjsonRedactor {
          * 
          * @param value The rapidjson::Value to redact from
          * @param member The name of the member to redact
-         * @param success Whether or not the redaction was successful
          */
-        void redactAllInstancesOfMemberByName(rapidjson::Value& value, std::string member, bool& success);
+        bool redactAllInstancesOfMemberByName(rapidjson::Value& value, std::string member);
 
         /**
          * @brief Redacts all instances of a member by path
          * 
          * @param value The rapidjson::Value to redact from
          * @param path The path to the member to redact
-         * @param success Whether or not the redaction was successful
          */
-        void redactMemberByPath(rapidjson::Value& value, std::string path, bool& success);
+        bool redactMemberByPath(rapidjson::Value& value, std::string path);
 
         /**
          * @brief Searches for a member by name
          * 
          * @param value The rapidjson::Value to search
          * @param member The name of the member to search for
-         * @param success Whether or not the search was successful
          */
-        void searchForMemberByName(rapidjson::Value& value, std::string member, bool& success);
+        bool searchForMemberByName(rapidjson::Value& value, std::string member);
 
         /**
          * @brief Searches for a member by path
          * 
          * @param value The rapidjson::Value to search
          * @param path The path to the member to search for
-         * @param success Whether or not the search was successful
          */
-        void searchForMemberByPath(rapidjson::Value& value, std::string path, bool& success);
+        bool searchForMemberByPath(rapidjson::Value& value, std::string path);
 
         // utility methods
 

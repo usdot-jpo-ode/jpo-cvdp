@@ -308,7 +308,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
             } 
         }
 
-        handleGeneralRedaction(document); // uses fieldsToRedact.txt 
+        handleGeneralRedaction(document); // uses fieldsToRedact.txt
     }
     else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
         if (!metadata.HasMember("receivedMessageDetails")) {
@@ -378,8 +378,10 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
     if (is_active<kGeneralRedactFlag>()) {
         for (std::string memberPath : rpm.getFields()) {
-            bool memberRedacted = false;
-            rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str(), memberRedacted);
+            bool memberRedacted = rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str());
+            if (!memberRedacted) {
+                std::cout << "Member not found while handling general redaction! Path: '" + memberPath + "'" << std::endl;
+            }
         }
 
         // attempt to store the redacted coreData and partII in the BSM object
