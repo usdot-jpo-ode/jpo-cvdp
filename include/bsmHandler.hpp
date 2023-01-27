@@ -36,6 +36,7 @@
 #include "bsm.hpp"
 #include "velocityFilter.hpp"
 #include "idRedactor.hpp"
+#include "ppmLogger.hpp"
 
 /**
  * @mainpage
@@ -134,7 +135,7 @@ class BSMHandler {
          * @param quad_ptr the quad tree containing the map elements.
          * @param conf the user-specified configuration.
          */
-        BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf );
+        BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf, std::shared_ptr<PpmLogger> logger);
 
         /**
          * @brief Predicate indicating whether the BSM's position is within the prescribed geofence.
@@ -273,6 +274,9 @@ class BSMHandler {
         double box_extension_;                      ///< The number of meters to extend the boxes that surround edges and define the geofence.
 
         RedactionPropertiesManager rpm;
+
+        // logger pointer
+        std::shared_ptr<PpmLogger> logger_;
 };
 
 #endif

@@ -47,7 +47,7 @@ BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::OTHER, "other" }
         };
 
-BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
+BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf, std::shared_ptr<PpmLogger> logger ):
     activated_{0},
     result_{ ResultStatus::SUCCESS },
     bsm_{},
@@ -56,8 +56,16 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf ):
     json_{},
     vf_{ conf },
     idr_{ conf },
-    box_extension_{ 10.0 }
+    box_extension_{ 10.0 },
+    logger_{ logger }
 {
+    if (logger_ == nullptr) {
+        std::cout << "BSMHandler::BSMHandler(): Logger is null! Returning." << std::endl;
+        return;
+    }
+    
+    logger_->trace("BSMHandler::BSMHandler(): Constructor called");
+
     auto search = conf.find("privacy.filter.velocity");
     if ( search != conf.end() && search->second=="ON" ) {
         activate<BSMHandler::kVelocityFilterFlag>();
@@ -376,42 +384,31 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     return result_ == ResultStatus::SUCCESS;
 }
 
-void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {
-    bool debug = false;
-    
-    int numMembersRedacted = 0;
-
+void BSMHandler::handlePartIIRedaction(rapidjson::Value& data) {    
     // check if partII redaction is required
     if (data.HasMember("partII") && is_active<kPartIIRedactFlag>()) {
-        if (debug) { std::cout << "partII redaction is required" << std::endl; }
+        logger_->trace("Data has partII and partII redaction is required");
 
-        // get partII data
+        int numMembersRedacted = 0;
+
         rapidjson::Value& partII = data["partII"];
 
-        // for each field
         for (std::string member : rpm.getFields()) {
-            if (debug) {
-                bool psuccess = false;
-                isMemberPresent(partII, member, psuccess);
-                std::cout << "Is the '" << member << "' member present... Before redaction? " << psuccess;
-            }
-
-            // redact field
             bool success = false;
             findAndRemoveAllInstancesOfMember(partII, member.c_str(), success);
             if (success) {
                 numMembersRedacted++;
             }
-
-            if (debug) {
-                bool psuccess = false;
-                isMemberPresent(partII, member, psuccess);
-                std::cout << "----- After redaction? " << psuccess << std::endl;
-            }
         }
-        if (debug) { std::cout << "Members redacted: " << numMembersRedacted << std::endl; }
         std::string partIIString = convertRapidjsonValueToString(partII);
         bsm_.set_partII(partIIString);
+
+        if (numMembersRedacted > 0) {
+            logger_->trace("Redacted " + std::to_string(numMembersRedacted) + " members from partII");
+        }
+        else {
+            logger_->trace("No members needed to be redacted from partII");
+        }
     }
 }
 

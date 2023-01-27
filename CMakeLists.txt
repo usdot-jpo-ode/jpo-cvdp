@@ -46,6 +46,7 @@ set(PPM_SRC "src/redaction-properties/RedactionPropertiesManager.cpp"
             "src/ppm.cpp"
             "src/tool.cpp"
             "src/velocityFilter.cpp"
+            "src/ppmLogger.cpp"
              )
 
 add_executable(ppm ${PPM_SRC})

@@ -27,6 +27,8 @@
 #include "bsmHandler.hpp"
 #include "bsm.hpp"
 
+static std::shared_ptr<PpmLogger> testLogger = std::make_shared<PpmLogger>("testInfo.log", "testError.log");
+
 /**
  * @brief Load the test case JSON data from case_file and return that data in case_data.
  *
@@ -1126,7 +1128,7 @@ TEST_CASE( "BSMHandler Checks", "[ppm][handler]" ) {
 
     ConfigMap pconf;
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ nullptr, pconf };
+    BSMHandler handler{ nullptr, pconf, testLogger };
 
     // FOR EACH SECTION THE TEST CASE IS EXECUTED FROM THE START.
 
@@ -1169,7 +1171,7 @@ TEST_CASE( "BSMHandler JSON Malformed Parsing", "[ppm][filtering][parsing]" ) {
     ConfigMap pconf;
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/test-case.malformed.json", json_test_cases ) );
@@ -1186,7 +1188,7 @@ TEST_CASE( "BSMHandler JSON No Filtering", "[ppm][filtering][alloff]" ) {
     ConfigMap pconf;
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
@@ -1224,7 +1226,7 @@ TEST_CASE( "BSMHandler JSON Full Filtering", "[ppm][filtering][allon]" ) {
     // should redact everything independent of how the set is set.
     pconf["privacy.redaction.id.inclusions"]    = "OFF";
 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     // without any flag set, all JSON data files should pass through the PPM with the following modifications:
     // 1. the santized field should be set.
@@ -1276,7 +1278,7 @@ TEST_CASE( "BSMHandler JSON Id Redaction Only", "[ppm][filtering][idonly]" ) {
     ConfigMap pconf;
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
@@ -1318,7 +1320,7 @@ TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]"
     ConfigMap pconf;
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     handler.deactivate<BSMHandler::kGeofenceFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
@@ -1358,7 +1360,7 @@ TEST_CASE( "BSMHandler JSON Geofence Only Filtering", "[ppm][filtering][geofence
     ConfigMap pconf;
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
     handler.deactivate<BSMHandler::kIdRedactFlag>();
@@ -1431,7 +1433,7 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
     ConfigMap pconf;
 
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     std::vector<std::string> json_test_cases;
     REQUIRE ( loadTestCases( "unit-test-data/error_cases.json", json_test_cases ) );
@@ -1448,7 +1450,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction Only", "[ppm][filtering][partIIonly
     // create BSMHandler
     std::unordered_map<std::string,std::string> pconf;
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     // deactive unrelated flags
     handler.deactivate<BSMHandler::kVelocityFilterFlag>();
@@ -1498,7 +1500,7 @@ TEST_CASE( "BSMHandler JSON PartII Redaction w/ All Flags", "[ppm][filtering][pa
     // create BSMHandler
     std::unordered_map<std::string,std::string> pconf;
     REQUIRE( buildBaseConfiguration( pconf ) ); 
-    BSMHandler handler{ buildTestQuadTree(), pconf };
+    BSMHandler handler{ buildTestQuadTree(), pconf, testLogger };
 
     // make sure all flags are enabled
     REQUIRE( handler.is_active<BSMHandler::kPartIIRedactFlag>() );
