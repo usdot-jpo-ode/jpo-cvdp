@@ -60,7 +60,8 @@ BSMHandler::BSMHandler(Quad::Ptr quad_ptr, const ConfigMap& conf, std::shared_pt
     logger_{ logger }
 {
     if (logger_ == nullptr) {
-        std::cout << "BSMHandler::BSMHandler(): Logger is null" << std::endl;
+        std::cout << "BSMHandler::BSMHandler(): Logger is null! Returning." << std::endl;
+        return;
     }
     
     logger_->trace("BSMHandler::BSMHandler(): Constructor called");
