@@ -393,18 +393,13 @@ void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
         }
 
         // attempt to store the redacted coreData and partII in the BSM object
-        rapidjson::Value& payload = document["payload"];
-        rapidjson::Value& data = payload["data"];
-
-        if (data.HasMember("coreData")) {
-            rapidjson::Value& coreData = data["coreData"];
-            std::string coreDataString = rapidjsonRedactor.stringifyValue(coreData);
+        if (document["payload"]["data"].HasMember("coreData")) {
+            std::string coreDataString = rapidjsonRedactor.stringifyValue(document["payload"]["data"]["coreData"]);
             bsm_.set_coreData(coreDataString);
         }
 
-        if (data.HasMember("partII")) {
-            rapidjson::Value& partII = data["partII"];
-            std::string partIIString = rapidjsonRedactor.stringifyValue(partII);
+        if (document["payload"]["data"].HasMember("partII")) {
+            std::string partIIString = rapidjsonRedactor.stringifyValue(document["payload"]["data"]["partII"]);
             bsm_.set_partII(partIIString);
         }
     }
