@@ -7,13 +7,11 @@
 static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
 
 /**
- * @brief A tool for redacting members of rapidjson::Document and rapidjson::Value objects
+ * @brief A tool for redacting members of rapidjson::Value objects
  * 
  */
 class RapidjsonRedactor {
     public:
-        RapidjsonRedactor();
-
         // redaction methods
         
         /**
@@ -51,42 +49,12 @@ class RapidjsonRedactor {
         // utility methods
 
         /**
-         * @brief Prints a rapidjson::Value to the console
-         * 
-         * @param valueToPrint The rapidjson::Value to print
-         */
-        void printValue(rapidjson::Value& valueToPrint);
-
-        /**
-         * @brief Prints a rapidjson::Document to the console
-         * 
-         * @param document The rapidjson::Document to print
-         */
-        void printDocument(rapidjson::Document& document);
-
-        /**
          * @brief Gets a rapidjson::Document from a string
          * 
          * @param jsonString The string to convert
          * @return rapidjson::Document The converted rapidjson::Document
          */
         rapidjson::Document getDocumentFromString(std::string jsonString);
-
-        /**
-         * @brief Gets a rapidjson::Value from a string
-         * 
-         * @param jsonString The string to convert
-         * @return rapidjson::Value The converted rapidjson::Value
-         */
-        rapidjson::Value getValueFromString(std::string jsonString);
-
-        /**
-         * @brief Gets a string from a rapidjson::Document
-         * 
-         * @param document The rapidjson::Document to convert
-         * @return std::string The converted string
-         */
-        std::string stringifyDocument(rapidjson::Document& document);
 
         /**
          * @brief Gets a string from a rapidjson::Value
@@ -96,17 +64,7 @@ class RapidjsonRedactor {
          */
         std::string stringifyValue(rapidjson::Value& value);
     private:
-        int indent;
-
         // helper methods
-
-        /**
-         * @brief Get indent string for printing
-         * 
-         * @param numSpaces 
-         * @return std::string The indent string
-         */
-        std::string getIndent(int numSpaces);
 
         /**
          * @brief Get the Top Level From Path object    

@@ -1,9 +1,5 @@
 #include "../../include/general-redaction/rapidjsonRedactor.hpp"
 
-RapidjsonRedactor::RapidjsonRedactor() {
-    indent = 0;
-}
-
 bool RapidjsonRedactor::redactAllInstancesOfMemberByName(rapidjson::Value &value, std::string member) {
     if (value.IsObject()) {
         while (value.HasMember(member.c_str())) {
@@ -157,36 +153,6 @@ bool RapidjsonRedactor::searchForMemberByPath(rapidjson::Value &value, std::stri
     return false;
 }
 
-void RapidjsonRedactor::printValue(rapidjson::Value &valueToPrint) {
-    if (valueToPrint.IsObject()) {
-        for (auto &m : valueToPrint.GetObject()) {
-            std::string name = m.name.GetString();
-            std::string type = kTypeNames[m.value.GetType()];
-            std::cout << getIndent(indent) << name << " - " << type << std::endl;
-            if (type == "Object" || type == "Array") {
-                indent++;
-                auto &value = valueToPrint[name.c_str()];
-                printValue(value);
-                indent--;
-            }
-        }
-    }
-    else if (valueToPrint.IsArray()) {
-        for (auto &m : valueToPrint.GetArray()) {
-            std::string type = kTypeNames[m.GetType()];
-            if (type == "Object" || type == "Array") {
-                indent++;
-                printValue(m);
-                indent--;
-            }
-        }
-    }
-}
-
-void RapidjsonRedactor::printDocument(rapidjson::Document &document) {
-    printValue(document);
-}
-
 /**
  * Convert a string into a document.
  */
@@ -197,16 +163,6 @@ rapidjson::Document RapidjsonRedactor::getDocumentFromString(std::string jsonStr
 }
 
 /**
- * Convert a document into a string.
- */
-std::string RapidjsonRedactor::stringifyDocument(rapidjson::Document &document) {
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    document.Accept(writer);
-    return buffer.GetString();
-}
-
-/**
  * Convert a value into a string.
  */
 std::string RapidjsonRedactor::stringifyValue(rapidjson::Value &value) {
@@ -214,14 +170,6 @@ std::string RapidjsonRedactor::stringifyValue(rapidjson::Value &value) {
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     value.Accept(writer);
     return buffer.GetString();
-}
-
-std::string RapidjsonRedactor::getIndent(int numSpaces) {
-    std::string toReturn = "";
-    for (int i = 0; i < numSpaces * 2; i++) {
-        toReturn = toReturn + " ";
-    }
-    return toReturn;
 }
 
 std::string RapidjsonRedactor::getTopLevelFromPath(std::string &path) {
