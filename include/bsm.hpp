@@ -128,6 +128,20 @@ class BSM : public geo::Point {
         const std::string& get_partII() const;
 
         /**
+         * @brief Set the coreData field for the BSM
+         *
+         * @param id the coreData field for the BSM.
+         */
+        void set_coreData( const std::string& s );
+
+        /**
+         * @brief Get the coreData field for the BSM after redaction.
+         *
+         * @return a const reference to the coreData field for the BSM after redaction. If partII redaction is disabled, this will be empty.
+         */
+        const std::string& get_coreData() const;
+
+        /**
          * @brief Get a string representation of this BSM for the log.
          *
          * @return a string for the log that characterizes this BSM.
@@ -148,6 +162,7 @@ class BSM : public geo::Point {
         std::string id_;                        ///< the id of the BSM.
         std::string oid_;                        ///< the original id of the BSM.
         std::string partII_;                    ///< the partII field of the BSM (after redaction)
+        std::string coreData_;                    ///< the coreData field of the BSM (after redaction)
         char* end_;                             ///< pointer to the last character parsed.
         std::string logstring_;           ///< a string to build for logging about the BSM.
 };

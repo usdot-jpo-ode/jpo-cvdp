@@ -32,7 +32,8 @@
 #include <random>
 #include "rapidjson/document.h"
 #include "cvlib.hpp"
-#include "redaction-properties/RedactionPropertiesManager.hpp"
+#include "general-redaction/redactionPropertiesManager.hpp"
+#include "general-redaction/rapidjsonRedactor.hpp"
 #include "bsm.hpp"
 #include "velocityFilter.hpp"
 #include "idRedactor.hpp"
@@ -122,7 +123,7 @@ class BSMHandler {
         static constexpr uint32_t kGeofenceFilterFlag = 0x1 << 1;
         static constexpr uint32_t kIdRedactFlag       = 0x1 << 2;
         static constexpr uint32_t kSizeRedactFlag     = 0x1 << 4;
-        static constexpr uint32_t kPartIIRedactFlag   = 0x1 << 8;
+        static constexpr uint32_t kGeneralRedactFlag  = 0x1 << 8;
 
         // must be static const to compose these flags and use in template specialization.
         static const unsigned flags = rapidjson::kParseDefaultFlags | rapidjson::kParseNumbersAsStringsFlag;
@@ -157,30 +158,12 @@ class BSMHandler {
          *
          */
         bool process( const std::string& bsm_json );
-
+    
         /**
-         * @brief Handle redacting necessary partII fields.
+         * @brief Handle general redaction of fields, the paths for which are specified in fieldsToRedact.txt
          *
          */
-        void handlePartIIRedaction(rapidjson::Value& data);
-
-        /**
-         * @brief Recursively search for a member in a value and remove all instances of it it.
-         * 
-         * @param value The value to begin searching.
-         * @param member The member to remove all instances of.
-         * @param success The flag that the caller can check upon return to see if the operation was successful.
-         */
-        void findAndRemoveAllInstancesOfMember(rapidjson::Value& value, std::string member, bool& success);
-
-        /**
-         * @brief Recursively check if a member is present. Returns upon finding the first instance of the member.
-         * 
-         * @param value The value to begin searching.
-         * @param member The member to remove.
-         * @param success The flag that the caller can check upon return to see if the operation was successful.
-         */
-        void isMemberPresent(rapidjson::Value& value, std::string member, bool& success);
+        void handleGeneralRedaction(rapidjson::Document& document);
 
         /**
          * @brief Return the result of the most recent BSM processing.
@@ -219,14 +202,6 @@ class BSMHandler {
          */
         std::string::size_type get_bsm_buffer_size(); 
 
-        /**
-         * @brief This method converts a variable of rapidjson::Value& type to a string.
-         * 
-         * @param value The rapidjson::Value& variable to convert.
-         * @return string form of the rapidjson::Value& variable
-         */
-        std::string convertRapidjsonValueToString(rapidjson::Value& value);
-
         template<uint32_t FLAG>
         bool is_active() {
             return activated_ & FLAG;
@@ -252,6 +227,8 @@ class BSMHandler {
          * @brief for unit testing only.
          */
         const double get_box_extension() const;
+
+        RapidjsonRedactor& getRapidjsonRedactor();
         
     private:
 
@@ -274,6 +251,7 @@ class BSMHandler {
         double box_extension_;                      ///< The number of meters to extend the boxes that surround edges and define the geofence.
 
         RedactionPropertiesManager rpm;
+        RapidjsonRedactor rapidjsonRedactor;
 
         // logger pointer
         std::shared_ptr<PpmLogger> logger_;
