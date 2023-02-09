@@ -1,4 +1,4 @@
-#include "../../include/general-redaction/rapidjsonRedactor.hpp"
+#include "rapidjsonRedactor.hpp"
 
 bool RapidjsonRedactor::redactAllInstancesOfMemberByName(rapidjson::Value &value, std::string member) {
     if (value.IsObject()) {
