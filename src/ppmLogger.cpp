@@ -1,4 +1,4 @@
-#include "../../include/ppmLogger.hpp"
+#include "ppmLogger.hpp"
 
 PpmLogger::PpmLogger(std::string ilogname, std::string elogname) {
     // pull in the file & console flags from the environment

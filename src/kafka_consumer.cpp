@@ -67,8 +67,8 @@
 #include <unistd.h>
 #endif
 
-#include "../include/bsmHandler.hpp"
-#include "../include/ppmLogger.hpp"
+#include "bsmHandler.hpp"
+#include "ppmLogger.hpp"
 #include "cvlib.hpp"
 
 #include <sstream>

@@ -1,4 +1,4 @@
-#include "../include/bsm.hpp"
+#include "bsm.hpp"
 
 BSM::BSM() :
     geo::Point{90.0, 180.0},

@@ -36,7 +36,7 @@
 #include "cvlib.hpp"
 #include "bsmHandler.hpp"
 #include "spdlog/spdlog.h"
-#include "../../include/general-redaction/redactionPropertiesManager.hpp"
+#include "redactionPropertiesManager.hpp"
 
 BSMHandler::ResultStringMap BSMHandler::result_string_map{
             { ResultStatus::SUCCESS, "success" },

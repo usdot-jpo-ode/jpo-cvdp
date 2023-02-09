@@ -1,4 +1,4 @@
-#include "../include/idRedactor.hpp"
+#include "idRedactor.hpp"
 
 IdRedactor::IdRedactor() :
     inclusion_set_{},

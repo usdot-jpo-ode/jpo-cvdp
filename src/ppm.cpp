@@ -49,7 +49,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../../include/ppm.hpp"
+#include "ppm.hpp"
 #include "spdlog/spdlog.h"
 #include <csignal>
 #include <chrono>

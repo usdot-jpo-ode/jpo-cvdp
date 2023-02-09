@@ -1,4 +1,4 @@
-#include "../include/velocityFilter.hpp"
+#include "velocityFilter.hpp"
 
 VelocityFilter::VelocityFilter() :
     min_{kDefaultMinVelocity},
