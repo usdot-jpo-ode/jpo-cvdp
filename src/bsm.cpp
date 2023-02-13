@@ -1,4 +1,4 @@
-#include "../include/bsm.hpp"
+#include "bsm.hpp"
 
 BSM::BSM() :
     geo::Point{90.0, 180.0},
@@ -78,6 +78,14 @@ void BSM::set_partII( const std::string& s ) {
 
 const std::string& BSM::get_partII() const {
     return partII_;
+}
+
+void BSM::set_coreData( const std::string& s ) {
+    coreData_ = s;
+}
+
+const std::string& BSM::get_coreData() const {
+    return coreData_;
 }
 
 std::ostream& operator<<( std::ostream& os, const BSM& bsm )

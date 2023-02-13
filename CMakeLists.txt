@@ -29,7 +29,7 @@ include_directories(${CVLIB_INCLUDE})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/rapidjson")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/spdlog")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/redaction-properties")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/general-redaction")
 include_directories("/usr/local/include")
 
 if (${APPLE})
@@ -39,13 +39,15 @@ endif ()
 
 #### BUILD TARGET FOR THE PPM ####
 
-set(PPM_SRC "src/redaction-properties/RedactionPropertiesManager.cpp"
+set(PPM_SRC "src/general-redaction/redactionPropertiesManager.cpp"
+            "src/general-redaction/rapidjsonRedactor.cpp"
             "src/bsm.cpp"
             "src/bsmHandler.cpp"
             "src/idRedactor.cpp"
             "src/ppm.cpp"
             "src/tool.cpp"
             "src/velocityFilter.cpp"
+            "src/ppmLogger.cpp"
              )
 
 add_executable(ppm ${PPM_SRC})

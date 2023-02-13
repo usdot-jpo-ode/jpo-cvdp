@@ -1,4 +1,4 @@
-#include "../../include/redaction-properties/RedactionPropertiesManager.hpp"
+#include "redactionPropertiesManager.hpp"
 
 /**
  * @brief Construct a new Redaction Properties Manager object with a default path. Upon instantiation, fields are loaded from a file.
@@ -86,7 +86,7 @@ void RedactionPropertiesManager::addField(std::string fieldToAdd) {
 }
 
 /**
- * @brief Prints the fields. For debugging purposes.
+ * @brief Prints the fields to the console. For debugging purposes.
  * 
  */
 void RedactionPropertiesManager::printFields() {
