@@ -216,3 +216,6 @@ The build_and_run_unit_test.sh script provides an easy method to build and run t
 1. Open the terminal.
 1. Type "sudo su" to run commands as root
 1. Type ./build_and_run_unit_tests.sh to run the script
+
+# See Also: Testing/Troubleshooting
+More information on testing can be found in the [Testing/Troubleshooting](../README.md#Testing/Troubleshooting) section of the README.
