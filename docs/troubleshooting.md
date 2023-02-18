@@ -25,5 +25,11 @@ One instance of this is when the root of a document is an Array, not an Object. 
 ## Error: No CMAKE_CXX_Compiler could be found
 This error can be solved by installing the gcc compiler. In a linux environment, this can be done by typing "apt-get install g++".
 
+## Error: cannot retrieve consumer metadata with error: Local: Broker transport failure.
+This error occurs when the PPM is unable to connect to the local broker. This can be caused by a number of things, including:
+- The broker is not running
+- The broker is using the wrong IP address
+- The PPM is targeting the wrong IP address
+
 # See Also: Testing/Troubleshooting
 More information on troubleshooting can be found in the [Testing/Troubleshooting](../README.md#Testing/Troubleshooting) section of the README.
