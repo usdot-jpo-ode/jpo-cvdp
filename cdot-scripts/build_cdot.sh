@@ -16,5 +16,3 @@ docker tag jpoode_ppm-image:$tag us.gcr.io/$project_name/jpoode_ppm-image:$tag
 
 echo Pushing image to repository...
 docker -- push us.gcr.io/${project_name}/jpoode_ppm-image:$tag
-
-echo Successfully pushed us.gcr.io/${project_name}/jpoode_ppm-image:$tag
