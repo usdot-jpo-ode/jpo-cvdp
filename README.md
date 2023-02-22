@@ -186,7 +186,9 @@ The unit tests are also built when the solution is compiled. For information on 
 The docker-compose-standalone.yml file is meant for local testing/troubleshooting.
 
 To utilize this, pass the -f flag to the docker-compose command as follows:
-> docker-compose -f docker-compose-confluent-cloud.yml up
+> docker-compose -f docker-compose-standalone.yml up
+
+Sometimes kafka will fail to start up properly. If this happens, spin down the containers and try again.
 
 ### Data & Config Files
 Data and config files are expected to be in a location pointed to by the DOCKER_SHARED_VOLUME environment variable.

@@ -257,3 +257,6 @@ This file has four comma-separated elements:
     - The attribute `way_type` determines the width of the geofence around a road segment.
 
 For the WYDOT use case, WYDOT provided a set of edge definitions for I-80 that were converted into the above format.
+
+## See Also: Data & Config Files
+More information on config files can be found in the [Data & Config Files](../README.md#data--config-files) section of the README.
