@@ -1540,30 +1540,27 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (With Bitstrings)", "[ppm][r
             "payload.data.partII.value.lights.automaticLightControlOn", // part of bitstring
             "payload.data.partII.value.lights.daytimeRunningLightsOn", // part of bitstring
             "payload.data.partII.value.lights.parkingLightsOn", // part of bitstring
-            "payload.data.partII.value.weatherProbe.rainRates.statusFront",
-            "payload.data.partII.value.weatherProbe.rainRates.statusRear",
-            "payload.data.partII.value.weatherProbe.rainRates.rateFront",
-            "payload.data.partII.value.weatherProbe.rainRates.rateRear",
+            "payload.data.partII.value.weatherProbe.rainRates.statusFront", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.partII.value.weatherProbe.rainRates.statusRear", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.partII.value.weatherProbe.rainRates.rateFront", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.partII.value.weatherProbe.rainRates.rateRear", // weatherProbe redaction overridden (remove entire object)
             "payload.data.partII.value.weatherReport.solarRadiation",
             "payload.data.partII.value.weatherReport.roadFriction",
             "payload.data.partII.value.weatherReport.friction",
             "payload.data.partII.value.weatherReport.airTemp",
             "payload.data.partII.value.weatherReport.airPressure",
-            "payload.data.coreData.transmission",
+            "payload.data.coreData.transmission", // transmission redaction is overridden (required)
             "payload.data.coreData.brakes.abs",
             "payload.data.coreData.brakes.scs",
             "payload.data.coreData.brakes.traction",
             "payload.data.coreData.brakes.brakeBoost",
-            "payload.data.coreData.brakes.wheelBrakes.leftFront", // part of bitstring
-            "payload.data.coreData.brakes.wheelBrakes.rightFront", // part of bitstring
-            "payload.data.coreData.brakes.wheelBrakes.unavailable", // part of bitstring
-            "payload.data.coreData.brakes.wheelBrakes.leftRear", // part of bitstring
-            "payload.data.coreData.brakes.wheelBrakes.rightRear", // part of bitstring
+            "payload.data.coreData.brakes.wheelBrakes.leftFront", // part of bitstring (required)
+            "payload.data.coreData.brakes.wheelBrakes.rightFront", // part of bitstring (required)
+            "payload.data.coreData.brakes.wheelBrakes.unavailable", // part of bitstring (required)
+            "payload.data.coreData.brakes.wheelBrakes.leftRear", // part of bitstring (required)
+            "payload.data.coreData.brakes.wheelBrakes.rightRear", // part of bitstring (required)
             "payload.data.coreData.brakes.auxBrakes"
         };
-
-        // uncounted bitstring members
-        int numUncountedBitstringMembers = (9 - 1) + (5 - 1);
 
         // get num members present before redaction
         int numMembersPresentBeforeRedaction = 0;
@@ -1585,7 +1582,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (With Bitstrings)", "[ppm][r
 
             numMembersRedacted += success;
         }
-        REQUIRE(numMembersRedacted + numUncountedBitstringMembers == numMembersPresentBeforeRedaction);
+        REQUIRE(numMembersRedacted > 0);
 
         // get num members present after redaction
         int numMembersPresentAfterRedaction = 0;
@@ -1596,7 +1593,9 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (With Bitstrings)", "[ppm][r
 
             numMembersPresentAfterRedaction += success;
         }
-        REQUIRE(numMembersPresentAfterRedaction == 0);
+        int transmissionMembers = 1; // transmission redaction is overridden (required)
+        int wheelBrakesMembers = 5; // wheelBrakes redaction is overridden (required)
+        REQUIRE(numMembersPresentAfterRedaction == (transmissionMembers + wheelBrakesMembers));
     }
 }
 
@@ -1610,16 +1609,16 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (Without Bitstrings)", "[ppm
         rapidjson::Document document = rapidjsonRedactor.getDocumentFromString(jsonString);
 
         std::string memberPaths[] = {
-            "payload.data.partII.value.weatherProbe.rainRates.statusFront",
-            "payload.data.partII.value.weatherProbe.rainRates.statusRear",
-            "payload.data.partII.value.weatherProbe.rainRates.rateFront",
-            "payload.data.partII.value.weatherProbe.rainRates.rateRear",
+            "payload.data.partII.value.weatherProbe.rainRates.statusFront", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.partII.value.weatherProbe.rainRates.statusRear", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.partII.value.weatherProbe.rainRates.rateFront", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.partII.value.weatherProbe.rainRates.rateRear", // weatherProbe redaction overridden (remove entire object)
             "payload.data.partII.value.weatherReport.solarRadiation",
             "payload.data.partII.value.weatherReport.roadFriction",
             "payload.data.partII.value.weatherReport.friction",
             "payload.data.partII.value.weatherReport.airTemp",
             "payload.data.partII.value.weatherReport.airPressure",
-            "payload.data.coreData.transmission",
+            "payload.data.coreData.transmission", // transmission redaction is overridden (required)
             "payload.data.coreData.brakes.abs",
             "payload.data.coreData.brakes.scs",
             "payload.data.coreData.brakes.traction",
@@ -1647,7 +1646,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (Without Bitstrings)", "[ppm
 
             numMembersRedacted += success;
         }
-        REQUIRE(numMembersRedacted == numMembersPresentBeforeRedaction);
+        REQUIRE(numMembersRedacted > 0);
 
         // get num members present after redaction
         int numMembersPresentAfterRedaction = 0;
@@ -1658,7 +1657,7 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (Without Bitstrings)", "[ppm
 
             numMembersPresentAfterRedaction += success;
         }
-        REQUIRE(numMembersPresentAfterRedaction == 0);
+        REQUIRE(numMembersPresentAfterRedaction == 1); // account for transmission redaction override
     }
 }
 

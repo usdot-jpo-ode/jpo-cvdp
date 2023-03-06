@@ -1,5 +1,14 @@
 #include "rapidjsonRedactor.hpp"
 
+/**
+ * Values with overridden redaction behavior:
+ * - angle          (required integer, set to 127)
+ * - transmission   (required string, set to "UNAVAILABLE")
+ * - wheelBrakes    (required bitstring, set first bit to 1 and all others to 0)
+ * - weatherProbe   (optional object, remove if present)
+ * - status         (optional object, remove if present)
+ * - speedProfile   (optional object, remove if present)
+ */
 bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string path) {
     std::string nextPathElement = getTopLevelFromPath(path);
     std::string target = getBottomLevelFromPath(path);
@@ -12,10 +21,42 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
                 // if the next path element is an object or array, recurse
                 auto &nextValue = value[nextPathElement.c_str()];
 
-                // if nextValue is a bitstring, remove it
+                // bitstring handling
                 if (isBitstring(nextValue)) {
+
+                    // wheelBrakes bitstring handling
+                    if (nextPathElement == "wheelBrakes") {
+                        if (target == "unavailable") {
+                            nextValue["unavailable"] = true;
+                        }
+                        if (target == "leftFront") {
+                            nextValue["leftFront"] = false;
+                        }
+                        else if (target == "rightFront") {
+                            nextValue["rightFront"] = false;
+                        }
+                        else if (target == "leftRear") {
+                            nextValue["leftRear"] = false;
+                        }
+                        else if (target == "rightRear") {
+                            nextValue["rightRear"] = false;
+                        }
+                        else {
+                            return false;
+                        }
+                        return true;
+                    }
+
                     value.RemoveMember(nextPathElement.c_str());
                     return true;
+                }
+
+                // weatherProbe, status & speedProfile object handling
+                if (type == "Object") {
+                    if (nextPathElement == "weatherProbe" || nextPathElement == "status" || nextPathElement == "speedProfile") {
+                        value.RemoveMember(nextPathElement.c_str());
+                        return true;
+                    }
                 }
 
                 removeTopLevelFromPath(path);
@@ -24,6 +65,17 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
             else {
                 // if the next path element is the target, remove it
                 if (nextPathElement == target) {
+
+                    // required leaf member handling
+                    if (type == "Number" && target == "angle") {
+                        value["angle"] = 127;
+                        return true;
+                    }
+                    else if (type == "String" && target == "transmission") {
+                        value["transmission"] = "UNAVAILABLE";
+                        return true;
+                    }
+
                     value.RemoveMember(nextPathElement.c_str());
                     return true;
                 }

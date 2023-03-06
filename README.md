@@ -212,10 +212,25 @@ If the RPM_DEBUG environment variable is set to true, debug messages will be log
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
 
 # General Redaction
-General redaction refers to redaction functionality in the BSMHandler that utilizes the 'fieldsToRedact.txt' file to redact specified fields from the 'coreData' and 'partII' sections of BSM messages.
+General redaction refers to redaction functionality in the BSMHandler that utilizes the 'fieldsToRedact.txt' file to redact specified fields from BSM messages.
 
 ## How to specify the fields to redact
 The fieldsToRedact.txt file is used by the BSMHandler and lists the paths to the fields to be redacted. It should be noted that this file needs to use the LF end-of-line sequence.
 
 ### How are fields redacted?
-The paths in the fieldsToRedact.txt file area are added to a list and then used to search for the fields in the BSM message. If a member is found, it is removed with rapidjson's RemoveMember() function. It should be noted that objects and lists cannot be redacted directly, their children must be redacted instead.
+The paths in the fieldsToRedact.txt file area are added to a list and then used to search for the fields in the BSM message. If a member is found, the default behavior is to remove it with rapidjson's RemoveMember() function. It should be noted that by default, only leaf members are able to be removed. There are some exceptions to this which are listed in the [Overridden Redaction Behavior](#overridden-redaction-behavior) section.
+
+## Overridden Redaction Behavior
+Some values will be treated differently than others when redacted. For example, the 'coreData.angle' field will be set to 127 instead of being removed since it is a required field. The following table lists the overridden redaction behavior.
+
+| Field | Redaction Behavior |
+| --- | --- |
+| angle | Set to 127 |
+| transmission | Set to "UNAVAILABLE" |
+| wheelBrakes | Set first bit to 1 and all other bits to 0 |
+| weatherProbe | Remove object |
+| status | Remove object |
+| speedProfile | Remove object |
+
+### Bitstrings
+Since it would be incorrect for a bitstring to be missing bits, the PPM will remove the entire bitstring if any of its bits are redacted. This is done by removing the parent object. For example, if the 'coreData.wheelBrakes.brakeAppliedStatus' field is redacted, the 'coreData.wheelBrakes' object will be removed.
