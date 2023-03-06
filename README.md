@@ -231,6 +231,11 @@ Some values will be treated differently than others when redacted. For example, 
 | weatherProbe | Remove object |
 | status | Remove object |
 | speedProfile | Remove object |
+| traction | Set to "unavailable" |
+| abs | Set to "unavailable" |
+| scs | Set to "unavailable" |
+| brakeBoost | Set to "unavailable" |
+| auxBrakes | Set to "unavailable" |
 
 ### Bitstrings
 Since it would be incorrect for a bitstring to be missing bits, the PPM will remove the entire bitstring if any of its bits are redacted. This is done by removing the parent object. For example, if the 'partII.value.lights.lowBeamHeadlightsOn' field is redacted, the 'partII.value.lights' object will be removed.

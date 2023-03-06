@@ -8,6 +8,11 @@
  * - weatherProbe   (optional object, remove if present)
  * - status         (optional object, remove if present)
  * - speedProfile   (optional object, remove if present)
+ * - traction       (optional string, set to "unavailable")
+ * - abs            (optional string, set to "unavailable")
+ * - scs            (optional string, set to "unavailable")
+ * - brakeBoost     (optional string, set to "unavailable")
+ * - auxBrakes      (optional string, set to "unavailable")
  */
 bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string path) {
     std::string nextPathElement = getTopLevelFromPath(path);
@@ -73,6 +78,26 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
                     }
                     else if (type == "String" && target == "transmission") {
                         value["transmission"] = "UNAVAILABLE";
+                        return true;
+                    }
+                    else if (type == "String" && target == "traction") {
+                        value["traction"] = "unavailable";
+                        return true;
+                    }
+                    else if (type == "String" && target == "abs") {
+                        value["abs"] = "unavailable";
+                        return true;
+                    }
+                    else if (type == "String" && target == "scs") {
+                        value["scs"] = "unavailable";
+                        return true;
+                    }
+                    else if (type == "String" && target == "brakeBoost") {
+                        value["brakeBoost"] = "unavailable";
+                        return true;
+                    }
+                    else if (type == "String" && target == "auxBrakes") {
+                        value["auxBrakes"] = "unavailable";
                         return true;
                     }
 

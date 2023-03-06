@@ -1595,7 +1595,12 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (With Bitstrings)", "[ppm][r
         }
         int transmissionMembers = 1; // transmission redaction is overridden (required)
         int wheelBrakesMembers = 5; // wheelBrakes redaction is overridden (required)
-        REQUIRE(numMembersPresentAfterRedaction == (transmissionMembers + wheelBrakesMembers));
+        int tractionMember = 1;
+        int absMember = 1;
+        int scsMember = 1;
+        int brakeBoost = 1;
+        int auxBrakes = 1;
+        REQUIRE(numMembersPresentAfterRedaction == (transmissionMembers + wheelBrakesMembers + tractionMember + absMember + scsMember + brakeBoost + auxBrakes));
     }
 }
 
@@ -1657,7 +1662,13 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (Without Bitstrings)", "[ppm
 
             numMembersPresentAfterRedaction += success;
         }
-        REQUIRE(numMembersPresentAfterRedaction == 1); // account for transmission redaction override
+        int transmissionMember = 1;
+        int tractionMember = 1;
+        int absMember = 1;
+        int scsMember = 1;
+        int brakeBoost = 1;
+        int auxBrakes = 1;
+        REQUIRE(numMembersPresentAfterRedaction == transmissionMember + tractionMember + absMember + scsMember + brakeBoost + auxBrakes);
     }
 }
 
