@@ -1,6 +1,8 @@
 # Data Flow Diagram
 The purpose of this diagram is to show how data flows through the Privacy Protection Module.
 
+[![Data Flow Diagram](ppm-data-flow.png)](ppm-data-flow.png)
+
 ## Key Explanation
 - The blue rectangles are C++ classes that belong to this repository.
 - The yellow ovals are kafka topics that the PPM consumes from and produces to.
