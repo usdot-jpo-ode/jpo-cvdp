@@ -13,14 +13,6 @@ static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", 
 class RapidjsonRedactor {
     public:
         // redaction methods
-        
-        /**
-         * @brief Redacts all instances of a member by name
-         * 
-         * @param value The rapidjson::Value to redact from
-         * @param member The name of the member to redact
-         */
-        bool redactAllInstancesOfMemberByName(rapidjson::Value& value, std::string member);
 
         /**
          * @brief Redacts all instances of a member by path
@@ -89,4 +81,12 @@ class RapidjsonRedactor {
          * @return std::string The bottom level of the path
          */
         std::string getBottomLevelFromPath(std::string& path);
+
+        /**
+         * @brief Check if a rapidjson value is a bitstring
+         * 
+         * @param value The rapidjson value to check.
+         * @return A boolean signifying whether the value was identified to be a bitstring.
+        */
+        bool isBitstring(rapidjson::Value& value);
 };

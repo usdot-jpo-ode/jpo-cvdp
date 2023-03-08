@@ -34,5 +34,5 @@ payload.data.coreData.brakes.wheelBrakes.leftRear
 payload.data.coreData.brakes.wheelBrakes.rightRear
 payload.data.coreData.brakes.auxBrakes
 payload.data.partII.value.events.eventFlatTire
-payload.data.partII.events.eventDisabledVehicle
+payload.data.partII.value.events.eventDisabledVehicle
 payload.data.partII.value.status.statusDetails
