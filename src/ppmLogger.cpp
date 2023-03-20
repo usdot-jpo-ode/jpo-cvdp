@@ -1,81 +1,56 @@
 #include "ppmLogger.hpp"
 
-PpmLogger::PpmLogger(std::string ilogname, std::string elogname) {
+PpmLogger::PpmLogger(std::string logname) {
     // pull in the file & console flags from the environment
     initializeFlagValuesFromEnvironment();
     
     // setup information logger.
-    std::vector<spdlog::sink_ptr> infoSinks;
+    std::vector<spdlog::sink_ptr> sinks;
     if (logToFileFlag) {
-        infoSinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(ilogname, INFO_LOG_SIZE, INFO_LOG_NUM));
+        sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logname, LOG_SIZE, LOG_NUM));
     }
     if (logToConsoleFlag) {
-        infoSinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
+        sinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
     }
-    setInfoLogger(std::make_shared<spdlog::logger>("ilog", begin(infoSinks), end(infoSinks)));
-    set_info_level( iloglevel );
-    set_info_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
-
-    // setup error logger.
-    std::vector<spdlog::sink_ptr> errorSinks;
-    if (logToFileFlag) {
-        errorSinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(elogname, ERROR_LOG_SIZE, ERROR_LOG_NUM));
-    }
-    if (logToConsoleFlag) {
-        errorSinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
-    }
-    setErrorLogger(std::make_shared<spdlog::logger>("elog", begin(errorSinks), end(errorSinks)));
-    set_error_level( eloglevel );
-    set_error_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
+    setLogger(std::make_shared<spdlog::logger>("ilog", begin(sinks), end(sinks)));
+    set_level( loglevel );
+    set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
 }
 
-void PpmLogger::set_info_level(spdlog::level::level_enum level) {
-    ilogger->set_level( level );
+void PpmLogger::set_level(spdlog::level::level_enum level) {
+    spdlogger->set_level( level );
 }
 
-void PpmLogger::set_error_level(spdlog::level::level_enum level) {
-    elogger->set_level( level );
-}
-
-void PpmLogger::set_info_pattern(const std::string& pattern) {
-    ilogger->set_pattern( pattern );
-}
-
-void PpmLogger::set_error_pattern(const std::string& pattern) {
-    elogger->set_pattern( pattern );
+void PpmLogger::set_pattern(const std::string& pattern) {
+    spdlogger->set_pattern( pattern );
 }
 
 void PpmLogger::info(const std::string& message) {
-    ilogger->info(message.c_str());
+    spdlogger->info(message.c_str());
 }
 
 void PpmLogger::error(const std::string& message) {
-    elogger->error(message.c_str());
+    spdlogger->error(message.c_str());
 }
 
 void PpmLogger::trace(const std::string& message) {
-    ilogger->trace(message.c_str());
+    spdlogger->trace(message.c_str());
 }
 
 void PpmLogger::critical(const std::string& message) {
-    elogger->critical(message.c_str());
+    spdlogger->critical(message.c_str());
 }
 
 void PpmLogger::warn(const std::string& message) {
-    elogger->warn(message.c_str());
+    spdlogger->warn(message.c_str());
 }
 
 void PpmLogger::flush() {
-    ilogger->flush();
-    elogger->flush();
+    spdlogger->flush();
 }
 
-void PpmLogger::setInfoLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
-    ilogger = spdlog_logger;
-}
-
-void PpmLogger::setErrorLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
-    elogger = spdlog_logger;
+void PpmLogger::setLogger(std::shared_ptr<spdlog::logger> spdlog_logger) {
+    spdlogger = spdlog_logger;
 }
 
 void PpmLogger::initializeFlagValuesFromEnvironment() {

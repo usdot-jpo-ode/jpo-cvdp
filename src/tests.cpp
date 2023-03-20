@@ -27,7 +27,7 @@
 #include "bsmHandler.hpp"
 #include "bsm.hpp"
 
-static std::shared_ptr<PpmLogger> testLogger = std::make_shared<PpmLogger>("testInfo.log", "testError.log");
+static std::shared_ptr<PpmLogger> testLogger = std::make_shared<PpmLogger>("test.log");
 
 /**
  * @brief Load the test case JSON data from case_file and return that data in case_data.
