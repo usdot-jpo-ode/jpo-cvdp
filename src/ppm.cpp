@@ -729,7 +729,7 @@ bool PPM::make_loggers( bool remove_files )
         }
     }
     
-    // ilog check for user-defined file locations and names.
+    // log check for user-defined file locations and names.
     if (getOption('i').hasArg()) {
         // replace default.
         logname = string_utilities::basename<std::string>(getOption('i').argument());
@@ -859,8 +859,7 @@ int main( int argc, char* argv[] )
     ppm.addOption( 'v', "log-level", "The info log level [trace,debug,info,warning,error,critical,off]", true );
     ppm.addOption( 'D', "log-dir", "Directory for the log files.", true );
     ppm.addOption( 'R', "log-rm", "Remove specified/default log files if they exist.", false );
-    ppm.addOption( 'i', "ilog", "Information log file name.", true );
-    ppm.addOption( 'e', "elog", "Error log file name.", true );
+    ppm.addOption( 'i', "log", "Log file name.", true );
     ppm.addOption( 'h', "help", "print out some help" );
 
     if (!ppm.parseArgs(argc, argv)) {

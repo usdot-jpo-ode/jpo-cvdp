@@ -16,8 +16,7 @@ line options override parameters specified in the configuration file.** The foll
 
 ```bash
 -h | --help : print out all the command line options.
--e | --elog : Error log file name.
--i | --ilog : Information log file name.
+-i | --log : Log file name.
 -R | --log-rm : Remove specified/default log files if they exist.
 -D | --log-dir : Directory for the log files.
 -v | --log-level : The info log level [trace,debug,info,warning,error,critical,off]
