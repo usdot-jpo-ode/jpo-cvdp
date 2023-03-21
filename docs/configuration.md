@@ -71,11 +71,11 @@ Logging configuration is controlled through the command line, not through the co
 
 - `-i` : The log file's name.
 
-- `-v` : The minimum level of message to write to the information log. From lowest to highest, the message levels are `off`, `trace`, `debug`, `info`,
+- `-v` : The minimum level of message to write to the log. From lowest to highest, the message levels are `off`, `trace`, `debug`, `info`,
          `warning`, `error`, `critical`. As an example, if you specify `info` then all messages that are `info, warning, error, or critical` will be written to
          the log.
 
-The information log will write the configuration it will use as `info` messages when it starts. The information log also record the disposition of the
+The log will write the configuration it will use as `info` messages when it starts. The log also records the disposition of the
 messages it receives. In the example below, the first BSM was retained, or passed on; the second message was suppressed because the vehicle's velocity
 was outside of the thresholds. The information in the parenthesis is the ID, secMark, lat, lon, speed from the BSM. All log messages are preceded
 with a date and time stamp and the level of the log message.
