@@ -61,8 +61,8 @@ the data to different "filtered" topics.
 # PPM Logging
 
 PPM operations are optionally logged to the console or a file.  The file is a rotating log file, i.e., a set number of log files will
-be used to record the PPM's information. By default, the file is located in the home directory of the machine running the PPM and the file is 
-named `log` and  The maximum size of a `log` files is 5MB and 5 files are rotated.
+be used to record the PPM's information. By default, the file is in a `logs` directory from where the ACM is launched and the file is
+named `log`. When using `ppm_no_map.sh`, the file will be in the ~/logs/ directory.The maximum size of a `log` file is 5MB and 5 files are rotated.
 Logging configuration is controlled through the command line, not through the configuration file. The following operation are available:
 
 - `-R` : When the PPM starts remove any log files having either the default or user specified names; otherwise, new log entries will be appended to existing files.
