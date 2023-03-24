@@ -4,7 +4,7 @@ PpmLogger::PpmLogger(std::string logname) {
     // pull in the file & console flags from the environment
     initializeFlagValuesFromEnvironment();
     
-    // setup information logger.
+    // setup logger.
     std::vector<spdlog::sink_ptr> sinks;
     if (logToFileFlag) {
         sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logname, LOG_SIZE, LOG_NUM));
@@ -12,7 +12,7 @@ PpmLogger::PpmLogger(std::string logname) {
     if (logToConsoleFlag) {
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
     }
-    setLogger(std::make_shared<spdlog::logger>("ilog", begin(sinks), end(sinks)));
+    setLogger(std::make_shared<spdlog::logger>("log", begin(sinks), end(sinks)));
     set_level( loglevel );
     set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
 }
