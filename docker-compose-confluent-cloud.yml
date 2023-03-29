@@ -14,6 +14,7 @@ services:
       PPM_LOG_TO_FILE: ${PPM_LOG_TO_FILE}
       PPM_LOG_TO_CONSOLE: ${PPM_LOG_TO_CONSOLE}
       RPM_DEBUG: ${RPM_DEBUG}
+      PPM_LOG_LEVEL: ${PPM_LOG_LEVEL}
     volumes:
       - ${DOCKER_SHARED_VOLUME}:/ppm_data
       
@@ -31,5 +32,6 @@ services:
       PPM_LOG_TO_FILE: ${PPM_LOG_TO_FILE}
       PPM_LOG_TO_CONSOLE: ${PPM_LOG_TO_CONSOLE}
       RPM_DEBUG: ${RPM_DEBUG}
+      PPM_LOG_LEVEL: ${PPM_LOG_LEVEL}
     volumes:
       - ${DOCKER_SHARED_VOLUME}:/ppm_data
