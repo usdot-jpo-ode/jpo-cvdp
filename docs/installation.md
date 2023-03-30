@@ -183,19 +183,7 @@ The Colorado Department of Transportation (CDOT) is deploying the various ODE se
 ## CDOT PPM Module Build
 Several additional files have been added to this project to facilitate the CDOT integration. These files are:
 - cdot-scripts/build_cdot.sh
-- config/cdot_ppmBsm.properties
-- config/cdot_ppmTim.properties
-- data/I-70_I-25_CO-470.edges
 - docker-test/ppm_no_map.sh
-- Dockerfile.cdot
-
-The properties files are modeled after the example ppm_bsm and ppm_tim properties files and differ only in specifying the geofence and the map file specific to CDOT.
-
-### Edges File
-The I-70_I-25_CO-470.edges file is very similar to the I_80.edges file and has the same structure of data. The difference here, is that CDOT has multiple disconnected routes in this file, whereas the existing I_80.edges file is only concerned with the Interstate 80 route across Wyoming. 
-
-### Dockerfile
-The Dockerfile.cdot file is a modified version of the Dockerfile at the project root. Additions have been made to copy the new properties files, as well as starting the container with a modified shell script to run the PPM application. 
 
 ### Shell Scripts
 Two additional scripts have been added to facilitate the CDOT integration. The first, [`ppm_no_map.sh`](../docker-test/ppm_no_map.sh), is modeled after the existing [`ppm.sh`](../docker-test/ppm.sh) script and performs a similar function. This script is used to start the PPM module, but leaves out the hard-coded mapfile name in favor of the properties file configuration. The second script, [`build_cdot.sh`](../cdot-scripts/build_cdot.sh), is used to build the CDOT PPM Docker image, tag the image with a user provided tag, and push that image to a remote repository. This is a simple automation script used to help reduce complexity in the CDOT pipeline.

@@ -207,9 +207,6 @@ Unit tests are built when the PPM is compiled during installation. Those tests c
 $ ./ppm_tests
 ```
 
-[TODO] Need some words about how to pick out particular tests (Catch), and how to use the test case files that were
-integrated in ODE Sprint 19.
-
 ### Utilizing the build_and_run_unit_tests.sh script
 The build_and_run_unit_test.sh script provides an easy method to build and run the PPM's unit tests. It should be noted that this script needs to have the LF end-of-line sequence for it to work.
 
@@ -219,3 +216,6 @@ The build_and_run_unit_test.sh script provides an easy method to build and run t
 1. Open the terminal.
 1. Type "sudo su" to run commands as root
 1. Type ./build_and_run_unit_tests.sh to run the script
+
+# See Also: Testing/Troubleshooting
+More information on testing can be found in the [Testing/Troubleshooting](../README.md#Testing/Troubleshooting) section of the README.
