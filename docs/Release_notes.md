@@ -53,4 +53,28 @@ Fixes in this release:
 Known Issues
 - The do_kafka_test.sh script in the root directory of the project does not run successfully at this time.
 
+### ODE Sprint 38
 
+- ODE-771: Fixed reported bug where the PPM exits when connections to Kafka brokers fail.
+
+### ODE Sprint 15
+
+- ODE-369/ORNL-15: Logging
+- Updated Identifier Redactor to include random assignment in lieu of fixed assignment.
+
+### ODE Sprint 14
+
+- ORNL-17: USDOT Playbook
+
+### ODE Sprint 13
+
+- ODE-290: Integration with the ODE.
+
+### ODE Sprint 12
+
+- ODE-77: Complete documentation
+
+### ODE Sprint 11
+
+- (Partial Complete) ODE-282 Implement a Module that Interfaces with the ODE.
+- (Partially Complete) ODE-77 Implement a PPM that uses a Geofence to Filter BSMs.
