@@ -1,0 +1,37 @@
+version: '2'
+services:
+  ppmbsm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+      KAFKA_TYPE: ${KAFKA_TYPE}
+      CONFLUENT_KEY: ${CONFLUENT_KEY}
+      CONFLUENT_SECRET: ${CONFLUENT_SECRET}
+      PPM_CONFIG_FILE: ppmBsm.properties
+      REDACTION_PROPERTIES_PATH: ${REDACTION_PROPERTIES_PATH}
+      PPM_LOG_TO_FILE: ${PPM_LOG_TO_FILE}
+      PPM_LOG_TO_CONSOLE: ${PPM_LOG_TO_CONSOLE}
+      RPM_DEBUG: ${RPM_DEBUG}
+      PPM_LOG_LEVEL: ${PPM_LOG_LEVEL}
+    volumes:
+      - ${DOCKER_SHARED_VOLUME}:/ppm_data
+      
+  ppmtim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+      KAFKA_TYPE: ${KAFKA_TYPE}
+      CONFLUENT_KEY: ${CONFLUENT_KEY}
+      CONFLUENT_SECRET: ${CONFLUENT_SECRET}
+      PPM_CONFIG_FILE: ppmTim.properties
+      REDACTION_PROPERTIES_PATH: ${REDACTION_PROPERTIES_PATH}
+      PPM_LOG_TO_FILE: ${PPM_LOG_TO_FILE}
+      PPM_LOG_TO_CONSOLE: ${PPM_LOG_TO_CONSOLE}
+      RPM_DEBUG: ${RPM_DEBUG}
+      PPM_LOG_LEVEL: ${PPM_LOG_LEVEL}
+    volumes:
+      - ${DOCKER_SHARED_VOLUME}:/ppm_data

@@ -49,34 +49,10 @@ loitering locations can aid in learning the identity of the driver.
 5. [Configuration and Operation](docs/configuration.md)
 6. [Testing](docs/testing.md)
 7. [Development](docs/coding-standards.md)
+8. [Confluent Cloud Integration](#confluent-cloud-integration)
 
 ## Release Notes
-
-### ODE Sprint 38
-
-- ODE-771: Fixed reported bug where the PPM exits when connections to Kafka brokers fail.
-
-### ODE Sprint 15
-
-- ODE-369/ORNL-15: Logging
-- Updated Identifier Redactor to include random assignment in lieu of fixed assignment.
-
-### ODE Sprint 14
-
-- ORNL-17: USDOT Playbook
-
-### ODE Sprint 13
-
-- ODE-290: Integration with the ODE.
-
-### ODE Sprint 12
-
-- ODE-77: Complete documentation
-
-### ODE Sprint 11
-
-- (Partial Complete) ODE-282 Implement a Module that Interfaces with the ODE.
-- (Partially Complete) ODE-77 Implement a PPM that uses a Geofence to Filter BSMs.
+The current version and release history of the Jpo-cvdp: [Jpo-cvdp Release Notes](<docs/Release_notes.md>)
 
 # Documentation
 
@@ -101,6 +77,11 @@ $ doxygen
 
 The documentation is in HTML and is written to the `<install root>/jpo-cvdp/docs/html` directory. Open `index.html` in a
 browser.
+
+## Class Usage Diagram
+![class usage](./docs/diagrams/class-usage/PPM%20Class%20Usage%20With%20Files.drawio.png)
+
+This diagram shows the usage relationship between the classes of the project. Classes that are in the same file share the same white box. A class that uses another class will have a black arrow pointing to the latter. The PPM class extends the Tool class, and this is shown with a white arrow.
 
 # Development and Collaboration Tools
 
@@ -148,3 +129,88 @@ git config --global core.autocrlf false
 ```bash
 git clone https://github.com/usdot-jpo-ode/jpo-cvdp.git
 ```
+
+# Confluent Cloud Integration
+Rather than using a local kafka instance, this project can utilize an instance of kafka hosted by Confluent Cloud via SASL.
+
+## Environment variables
+### Purpose & Usage
+- The DOCKER_HOST_IP environment variable is used to communicate with the bootstrap server that the instance of Kafka is running on.
+- The KAFKA_TYPE environment variable specifies what type of kafka connection will be attempted and is used to check if Confluent should be utilized.
+- The CONFLUENT_KEY and CONFLUENT_SECRET environment variables are used to authenticate with the bootstrap server.
+
+### Values
+- DOCKER_HOST_IP must be set to the bootstrap server address (excluding the port)
+- KAFKA_TYPE must be set to "CONFLUENT"
+- CONFLUENT_KEY must be set to the API key being utilized for CC
+- CONFLUENT_SECRET must be set to the API secret being utilized for CC
+
+## CC Docker Compose File
+There is a provided docker-compose file (docker-compose-confluent-cloud.yml) that passes the above environment variables into the container that gets created. Further, this file doesn't spin up a local kafka instance since it is not required.
+
+## Note
+This has only been tested with Confluent Cloud but technically all SASL authenticated Kafka brokers can be reached using this method.
+
+# Testing/Troubleshooting
+## Unit Tests
+Unit tests can be built and executed using the build_and_run_unit_tests.sh file inside of the dev container for the project. More information about this can be found [here](./docs/testing.md#utilizing-the-build_and_run_unit_testssh-script).
+
+The unit tests are also built when the solution is compiled. For information on that, check out [this section](./docs/testing.md#unit-testing).
+
+## Standalone Cluster
+The docker-compose-standalone.yml file is meant for local testing/troubleshooting.
+
+To utilize this, pass the -f flag to the docker-compose command as follows:
+> docker-compose -f docker-compose-standalone.yml up
+
+Sometimes kafka will fail to start up properly. If this happens, spin down the containers and try again.
+
+### Data & Config Files
+Data and config files are expected to be in a location pointed to by the DOCKER_SHARED_VOLUME environment variable.
+
+At this time, the PPM assumes that this location is the /ppm_data directory. When run in a docker or k8s solution, an external drive/directory can be mounted to this directory.
+
+In a BSM configuration, the PPM requires the following files to be present in the /ppm_data directory:
+- *.edges
+- ppmBsm.properties
+
+#### fieldsToRedact.txt
+The path to this file is specified by the REDACTION_PROPERTIES_PATH environment variable. If this is not set, field redaction will not take place but the PPM will continue to function. If this is set and the file is not found, the same behavior will occur.
+
+When running the project in the provided dev container, the REDACTION_PROPERTIES_PATH environment variable should be set to the project-level fieldsToRedact.txt file for debugging/experimentation purposes. This is located in /workspaces/jpo-cvdp/config/fieldsToRedact.txt from the perspective of the dev container.
+
+#### RPM Debug
+If the RPM_DEBUG environment variable is set to true, debug messages will be logged to a file by the RedactionPropertiesManager class. This will allow developers to see whether the environment variable is set, whether the file was found and whether a non-zero number of redaction fields were loaded in.
+
+## Some Notes
+- The tests for this project can be run after compilation by running the "ppm_tests" executable.
+- When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
+
+# General Redaction
+General redaction refers to redaction functionality in the BSMHandler that utilizes the 'fieldsToRedact.txt' file to redact specified fields from BSM messages.
+
+## How to specify the fields to redact
+The fieldsToRedact.txt file is used by the BSMHandler and lists the paths to the fields to be redacted. It should be noted that this file needs to use the LF end-of-line sequence.
+
+### How are fields redacted?
+The paths in the fieldsToRedact.txt file area are added to a list and then used to search for the fields in the BSM message. If a member is found, the default behavior is to remove it with rapidjson's RemoveMember() function. It should be noted that by default, only leaf members are able to be removed. There are some exceptions to this which are listed in the [Overridden Redaction Behavior](#overridden-redaction-behavior) section.
+
+## Overridden Redaction Behavior
+Some values will be treated differently than others when redacted. For example, the 'coreData.angle' field will be set to 127 instead of being removed since it is a required field. The following table lists the overridden redaction behavior.
+
+| Field | Redaction Behavior |
+| --- | --- |
+| angle | Set to 127 |
+| transmission | Set to "UNAVAILABLE" |
+| wheelBrakes | Set first bit to 1 and all other bits to 0 |
+| weatherProbe | Remove object |
+| status | Remove object |
+| speedProfile | Remove object |
+| traction | Set to "unavailable" |
+| abs | Set to "unavailable" |
+| scs | Set to "unavailable" |
+| brakeBoost | Set to "unavailable" |
+| auxBrakes | Set to "unavailable" |
+
+### Bitstrings
+Since it would be incorrect for a bitstring to be missing bits, the PPM will remove the entire bitstring if any of its bits are redacted. This is done by removing the parent object. For example, if the 'partII.value.lights.lowBeamHeadlightsOn' field is redacted, the 'partII.value.lights' object will be removed.

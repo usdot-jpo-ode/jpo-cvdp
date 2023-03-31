@@ -174,3 +174,16 @@ Add the following service to the end of the `docker-compose.yml` file in the `jp
 
 Start the ODE containers as normal. Note that the topics for raw BSMs must be created ahead of time.
 
+
+# CDOT Integration with K8s
+
+## Overview
+The Colorado Department of Transportation (CDOT) is deploying the various ODE services within a Kubernetes (K8s) environment. Details of this deployment can be found in the main ODE repository [documentation pages](https://github.com/usdot-jpo-ode/jpo-ode/docs). In general, each submodule image is built as a Docker image and then pushed to the CDOT registry. The images are pulled into containers running within the K8s environment, and additional containers are spun up as load requires.
+
+## CDOT PPM Module Build
+Several additional files have been added to this project to facilitate the CDOT integration. These files are:
+- cdot-scripts/build_cdot.sh
+- docker-test/ppm_no_map.sh
+
+### Shell Scripts
+Two additional scripts have been added to facilitate the CDOT integration. The first, [`ppm_no_map.sh`](../docker-test/ppm_no_map.sh), is modeled after the existing [`ppm.sh`](../docker-test/ppm.sh) script and performs a similar function. This script is used to start the PPM module, but leaves out the hard-coded mapfile name in favor of the properties file configuration. The second script, [`build_cdot.sh`](../cdot-scripts/build_cdot.sh), is used to build the CDOT PPM Docker image, tag the image with a user provided tag, and push that image to a remote repository. This is a simple automation script used to help reduce complexity in the CDOT pipeline.
