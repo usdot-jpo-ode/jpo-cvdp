@@ -52,32 +52,7 @@ loitering locations can aid in learning the identity of the driver.
 8. [Confluent Cloud Integration](#confluent-cloud-integration)
 
 ## Release Notes
-
-### ODE Sprint 38
-
-- ODE-771: Fixed reported bug where the PPM exits when connections to Kafka brokers fail.
-
-### ODE Sprint 15
-
-- ODE-369/ORNL-15: Logging
-- Updated Identifier Redactor to include random assignment in lieu of fixed assignment.
-
-### ODE Sprint 14
-
-- ORNL-17: USDOT Playbook
-
-### ODE Sprint 13
-
-- ODE-290: Integration with the ODE.
-
-### ODE Sprint 12
-
-- ODE-77: Complete documentation
-
-### ODE Sprint 11
-
-- (Partial Complete) ODE-282 Implement a Module that Interfaces with the ODE.
-- (Partially Complete) ODE-77 Implement a PPM that uses a Geofence to Filter BSMs.
+The current version and release history of the Jpo-cvdp: [Jpo-cvdp Release Notes](<docs/Release_notes.md>)
 
 # Documentation
 
