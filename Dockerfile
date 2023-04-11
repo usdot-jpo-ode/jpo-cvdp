@@ -4,7 +4,7 @@ USER root
 WORKDIR /cvdi-stream
 
 # Add build tools.
-RUN apt-get update && apt-get install -y g++
+RUN apt-get update && apt-get install -y software-properties-common wget git make gcc-7 g++-7 gcc-7-base && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
 
 # Install cmake.
 RUN apt install -y libprotobuf-dev protobuf-compiler
