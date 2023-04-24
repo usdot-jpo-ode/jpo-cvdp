@@ -51,6 +51,12 @@
 
 #include "kafka_consumer.hpp"
 
+static bool run = true;
+
+static void sigterm(int sig) {
+    run = false;
+}
+
 bool KafkaConsumer::ode_topic_available(const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer) {
     bool r = false;
 
@@ -385,8 +391,8 @@ usage:
     }
     // end of confluent cloud integration
 
-    // signal(SIGINT, sigterm); // TODO: figure out why sigterm is invalid as an argument
-    // signal(SIGTERM, sigterm); // TODO: figure out why sigterm is invalid as an argument
+    signal(SIGINT, sigterm);
+    signal(SIGTERM, sigterm);
 
     search = pconf.find("privacy.filter.geofence.mapfile");
     if ( search != pconf.end() ) {
@@ -588,10 +594,6 @@ usage:
     RdKafka::wait_destroyed(5000);
 
     return 0;
-}
-
-void KafkaConsumer::sigterm(int sig) {
-    run = false;
 }
 
 const char* KafkaConsumer::getEnvironmentVariable(const char* variableName) {

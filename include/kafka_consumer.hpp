@@ -37,7 +37,6 @@ class KafkaConsumer {
     
     private:
         std::shared_ptr<PpmLogger> logger = std::make_shared<PpmLogger>("log");
-        bool run = true;
         bool exit_eof = false;
         int eof_cnt = 0;
         int partition_cnt = 0;
@@ -45,7 +44,6 @@ class KafkaConsumer {
         int64_t msg_bytes = 0;
         int verbosity = 1;
 
-        void sigterm(int sig);
         const char* getEnvironmentVariable(const char* variableName);
 };
 
