@@ -49,46 +49,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "librdkafka/rdkafkacpp.h"
-#include <unordered_map>
-#include <csignal>
-
-#ifndef _MSC_VER
-#include <sys/time.h>
-#endif
-
-#ifdef _MSC_VER
-#include "../../win32/wingetopt.h"
-#include <atltime.h>
-#elif _AIX
-#include <unistd.h>
-#else
-#include <getopt.h>
-#include <unistd.h>
-#endif
-
-#include "bsmHandler.hpp"
-#include "ppmLogger.hpp"
-#include "cvlib.hpp"
-
-#include <sstream>
-
 #include "kafka_consumer.hpp"
-
-int32_t MyHashPartitionerCb::partitioner_cb (const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
-    return djb_hash(key->c_str(), key->size()) % partition_cnt;
-}
-
-inline unsigned int MyHashPartitionerCb::djb_hash (const char *str, size_t len) {
-    unsigned int hash = 5381;
-    for (size_t i = 0 ; i < len ; i++)
-        hash = ((hash << 5) + hash) + str[i];
-    return hash;
-}
-
-void ExampleConsumeCb::consume_cb(RdKafka::Message &msg, void *opaque) {
-    //msg_consume(&msg, opaque);
-}
 
 bool KafkaConsumer::ode_topic_available(const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer) {
     bool r = false;

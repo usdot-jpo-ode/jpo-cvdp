@@ -25,23 +25,8 @@
 
 #include <sstream>
 
-/* Use of this partitioner is pretty pointless since no key is provided
- * in the produce() call. */
-class MyHashPartitionerCb : public RdKafka::PartitionerCb {
-    public:
-        int32_t partitioner_cb (const RdKafka::Topic *topic, const std::string *key,int32_t partition_cnt, void *msg_opaque);
-    
-    private:
-        inline unsigned int djb_hash (const char *str, size_t len);
-};
-
-/**
- * NOTE: This is supposed to be a little more efficient.
- */
-class ExampleConsumeCb : public RdKafka::ConsumeCb {
-    public:
-        void consume_cb(RdKafka::Message &msg, void *opaque);
-};
+#include "myHashPartitionerCb.hpp"
+#include "exampleConsumeCb.hpp"
 
 class KafkaConsumer {
     public:
