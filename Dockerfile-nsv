@@ -6,14 +6,20 @@ ARG PPM_MAP_FILE
 WORKDIR /cvdi-stream
 
 # Add build tools.
-RUN apt-get update && apt-get install -y g++
+RUN apt-get update && apt-get install -y software-properties-common wget git make gcc-7 g++-7 gcc-7-base && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
 
 # Install cmake.
 RUN apt install -y libprotobuf-dev protobuf-compiler
 RUN apt install -y cmake
 
 # Install librdkafka.
-RUN apt-get install -y libsasl2-dev libsasl2-modules libssl-dev librdkafka-dev
+RUN apt-get install -y sudo
+RUN wget -qO - https://packages.confluent.io/deb/7.3/archive.key | sudo apt-key add -
+RUN add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/7.3 stable main"
+RUN add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+RUN apt update
+RUN apt-get install -y libsasl2-modules libsasl2-modules-gssapi-mit libsasl2-dev libssl-dev 
+RUN apt install -y librdkafka-dev
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
