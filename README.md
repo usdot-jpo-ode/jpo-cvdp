@@ -106,7 +106,7 @@ browser.
 ## Class Usage Diagram
 ![class usage](./docs/diagrams/class-usage/PPM%20Class%20Usage.drawio.png)
 
-This diagram shows the usage relationship between the classes of the project. A class that uses another class will have a black arrow pointing to the latter. The PPM class extends the Tool class, and this is shown with a white arrow.
+This diagram displays how the different classes in the project are used. If one class uses another class, there will be a black arrow pointing to the class it uses. The Tool class is extended by the PPM class, which is represented by a white arrow.
 
 # Development and Collaboration Tools
 
