@@ -14,6 +14,7 @@ services:
       KAFKA_CREATE_TOPICS: "topic.OdeBsmJson:1:1,topic.FilteredOdeBsmJson:1:1,topic.OdeTimJson:1:1,topic.FilteredOdeTimJson:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      
   ppm:
     build:
       context: .
@@ -28,3 +29,12 @@ services:
       - kafka
     links:
       - kafka
+    volumes:
+      - ${DOCKER_SHARED_VOLUME}:/ppm_data
+    environment:
+      REDACTION_PROPERTIES_PATH: ${REDACTION_PROPERTIES_PATH}
+      PPM_LOG_TO_FILE: ${PPM_LOG_TO_FILE}
+      PPM_LOG_TO_CONSOLE: ${PPM_LOG_TO_CONSOLE}
+      RPM_DEBUG: ${RPM_DEBUG}
+      PPM_CONFIG_FILE: ${PPM_CONFIG_FILE}
+      PPM_LOG_LEVEL: ${PPM_LOG_LEVEL}
