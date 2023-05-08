@@ -24,18 +24,26 @@ waitForKafkaToCreateTopics() {
             exit 1
         fi
 
-        ntopics=$(docker exec -it $KAFKA_CONTAINER_NAME /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 | wc -l)
+        ltopics=$(docker exec -it $KAFKA_CONTAINER_NAME /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1)
 
-        expected_topics=4
-        if [ $ntopics == $expected_topics ]; then 
-            echo '[log] found '$expected_topics' topics as expected:'
-            docker exec -it $KAFKA_CONTAINER_NAME /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 2> /dev/null
-            
-            break
-        elif [ $ntopics == "0" ]; then
-            echo '[log] no topics found'
+        # required topics:
+        # - topic.FilteredOdeBsmJson
+        # - topic.FilteredOdeTimJson
+        # - topic.OdeBsmJson
+        # - topic.OdeTimJson
+
+        # use greps to check ltopics for required topics
+        if [ $(echo $ltopics | grep "topic.FilteredOdeBsmJson" | wc -l) == "0" ]; then
+            echo "[log] Kafka has not created topic 'topic.FilteredOdeBsmJson'"
+        elif [ $(echo $ltopics | grep "topic.FilteredOdeTimJson" | wc -l) == "0" ]; then
+            echo "[log] Kafka has not created topic 'topic.FilteredOdeTimJson'"
+        elif [ $(echo $ltopics | grep "topic.OdeBsmJson" | wc -l) == "0" ]; then
+            echo "[log] Kafka has not created topic 'topic.OdeBsmJson'"
+        elif [ $(echo $ltopics | grep "topic.OdeTimJson" | wc -l) == "0" ]; then
+            echo "[log] Kafka has not created topic 'topic.OdeTimJson'"
         else
-            echo '[log] found '$ntopics'/'$expected_topics' topics'
+            echo "[log] Kafka has created all required topics"
+            break
         fi
 
         echo "[log] waiting for Kafka to create topics..."
