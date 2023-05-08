@@ -1,7 +1,7 @@
 #!/bin/sh
 export LD_LIBRARY_PATH=/usr/local/lib
 
-if [[ -z "$DOCKER_HOST_IP" ]]; then
+if [ -z "$DOCKER_HOST_IP" ]; then
     echo "DOCKER_HOST_IP is not set. Exiting."
     exit 1
 fi

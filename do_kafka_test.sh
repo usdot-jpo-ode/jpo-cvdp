@@ -6,7 +6,11 @@ BSM_DATA_FILE=data/I_80_test.json
 TIM_DATA_FILE=data/I_80_test_TIMS.json
 
 setup() {
-    echo "[log] setting up test environment"
+    # exit if DOCKER_HOST_IP is not set
+    if [ -z $DOCKER_HOST_IP ]; then
+        echo "[log] DOCKER_HOST_IP is not set. Exiting."
+        exit 1
+    fi
     ./start_kafka.sh
 }
 
@@ -14,7 +18,7 @@ waitForKafkaToCreateTopics() {
     # Wait until Kafka creates our topics.
     while true; do
         # if kafka container is not running, exit
-        if [[ $(docker ps | grep $KAFKA_CONTAINER_NAME | wc -l) == "0" ]]; then
+        if [ $(docker ps | grep $KAFKA_CONTAINER_NAME | wc -l) == "0" ]; then
             echo "Kafka container '$KAFKA_CONTAINER_NAME' is not running. Exiting."
             ./stop_kafka.sh
             exit 1
@@ -23,12 +27,12 @@ waitForKafkaToCreateTopics() {
         ntopics=$(docker exec -it $KAFKA_CONTAINER_NAME /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 | wc -l)
 
         expected_topics=4
-        if [[ $ntopics == $expected_topics ]]; then 
+        if [ $ntopics == $expected_topics ]; then 
             echo '[log] found '$expected_topics' topics as expected:'
             docker exec -it $KAFKA_CONTAINER_NAME /opt/kafka/bin/kafka-topics.sh --list --zookeeper 172.17.0.1 2> /dev/null
             
             break
-        elif [[ $ntopics == "0" ]]; then
+        elif [ $ntopics == "0" ]; then
             echo '[log] no topics found'
         else
             echo '[log] found '$ntopics'/'$expected_topics' topics'
@@ -51,25 +55,37 @@ buildPPMImage() {
 startPPMContainer() {
     # Start the PPM in a new container.
     PPM_CONTAINER_NAME=ppm_kafka
-    if [[ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) != "0" ]]; then
+    if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) != "0" ]; then
         echo "[log] stopping existing PPM container"
         docker stop $PPM_CONTAINER_NAME > /dev/null
     fi
-    echo "[log] starting PPM in new container"
     docker rm -f $PPM_CONTAINER_NAME > /dev/null
-    dockerHostIp=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $KAFKA_CONTAINER_NAME)
+
+    dockerHostIp=$DOCKER_HOST_IP
     echo "[log] docker host ip: '$dockerHostIp'"
-    docker run --name $PPM_CONTAINER_NAME -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$tag /cvdi-stream/docker-test/ppm_standalone.sh --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true
+
+    # make sure ip can be pinged
+    while true; do
+        if ping -c 1 $dockerHostIp &> /dev/null; then
+            echo "[log] docker host ip is pingable"
+            break
+        else
+            echo "[log] docker host ip is not pingable. Exiting."
+            exit 1
+        fi
+    done
+    echo "[log] starting PPM in new container"
+    docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$tag /cvdi-stream/docker-test/ppm_standalone.sh
 
     # wait until container spins up
     while true; do
-        if [[ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]]; then
+        if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]; then
             echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."
             exit 1
         fi
 
         nlines=$(docker logs $PPM_CONTAINER_NAME 2>&1 | wc -l)
-        if [[ $nlines == "0" ]]; then
+        if [ $nlines == "0" ]; then
             echo "[log] waiting for PPM to start..."
         else
             echo "--- PPM LOGS ---"
