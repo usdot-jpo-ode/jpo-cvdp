@@ -24,5 +24,7 @@ while true; do
         cat tmp.out
 
         break
+    else
+        echo "[log] waiting for data..."
     fi
 done
