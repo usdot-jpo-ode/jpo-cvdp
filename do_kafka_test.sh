@@ -18,12 +18,6 @@ setup() {
         exit 1
     fi
 
-    if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) != "0" ]; then
-        echo "Stopping existing PPM container"
-        docker stop $PPM_CONTAINER_NAME > /dev/null
-    fi
-    docker rm -f $PPM_CONTAINER_NAME > /dev/null
-
     ./start_kafka.sh
 }
 
@@ -113,7 +107,7 @@ run_tests() {
     echo ""
     echo ""
 
-    echo -e $YELLOW"Test 10/$numberOfTests"$NC
+    echo -e $YELLOW"Test 10/$numberOfTests (2 tests in one)"$NC
     ./test-scripts/standalone_multi.sh $MAP_FILE config/bsm-test/c6.properties config/tim-test/c3.properties $BSM_DATA_FILE $TIM_DATA_FILE 48 23
 }
 

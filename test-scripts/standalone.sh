@@ -10,8 +10,11 @@
 PPM_CONTAINER_NAME=ppm_kafka
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
+SECONDS_TO_WAIT_FOR_PPM_READINESS=20
 
 startPPMContainer() {
+    stopPPMContainer
+    
     # Start the PPM in a new container.
     dockerHostIp=$DOCKER_HOST_IP
 
@@ -27,8 +30,8 @@ startPPMContainer() {
     echo "Starting PPM in new container"
     docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
 
-    echo "Giving PPM container time to spin up"
-    sleep 10
+    echo "Giving $PPM_CONTAINER_NAME $SECONDS_TO_WAIT_FOR_PPM_READINESS seconds to spin up"
+    sleep $SECONDS_TO_WAIT_FOR_PPM_READINESS
 
     if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]; then
         echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."
@@ -105,6 +108,7 @@ echo "**************************"
 
 startPPMContainer
 
+# Produce the test data.
 if [ $4 = "BSM" ]; then
     docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_bsm_test.sh $OFFSET
 elif [ $4 = "TIM" ]; then
