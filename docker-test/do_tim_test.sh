@@ -1,6 +1,10 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=/usr/local/lib
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
 broker=$DOCKER_HOST_IP:9092
 
 echo "**************************"
@@ -30,10 +34,14 @@ while true; do
         break
     else
         if [[ $attempts > $max_attempts ]]; then
-            echo "[log] no data received after $max_attempts attempts, exiting..."
+            echo "No data received after $max_attempts attempts. Exiting..."
+            echo "~~~~~~~~~~~~~~~~~~~~~~~~~~"
+            echo -e $RED"TEST FAILED!"$NC
+            echo "~~~~~~~~~~~~~~~~~~~~~~~~~~"
             exit 1
         fi
-        echo "[log] waiting for data..."
     fi
 done
-echo "number of attempts taken: $attempts"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo -e $GREEN"TEST PASSED!"$NC
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~"

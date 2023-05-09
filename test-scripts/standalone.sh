@@ -14,19 +14,17 @@ PPM_IMAGE_NAME=jpo-cvdp_ppm
 startPPMContainer() {
     # Start the PPM in a new container.
     dockerHostIp=$DOCKER_HOST_IP
-    echo "[log] docker host ip: '$dockerHostIp'"
 
     # make sure ip can be pinged
     while true; do
         if ping -c 1 $dockerHostIp &> /dev/null; then
-            echo "[log] docker host ip is pingable"
             break
         else
-            echo "[log] docker host ip is not pingable. Exiting."
+            echo "Docker host ip $dockerHostIp is not pingable. Exiting."
             exit 1
         fi
     done
-    echo "[log] starting PPM in new container"
+    echo "Starting PPM in new container"
     docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
 
     # wait until container spins up
@@ -35,20 +33,26 @@ startPPMContainer() {
             echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."
             exit 1
         fi
-        break
+
+        container_logs=$(docker logs $PPM_CONTAINER_NAME 2>&1)
+        indicator="BSMHandler::BSMHandler(): Constructor called"
+        if [ $(echo $container_logs | grep "$indicator" | wc -l) != "0" ]; then
+            echo "PPM container is ready"
+            break
+        fi
+
         sleep 1
-        echo "[log] waiting for PPM to start..."
     done
 
     container_logs=$(docker logs $PPM_CONTAINER_NAME 2>&1)
     if [ $(echo $container_logs | grep "Failed to make shape" | wc -l) != "0" ]; then
-        echo "[log] Warning: PPM failed to make shape."
+        echo "Warning: PPM failed to make shape."
     fi
 }
 
 stopPPMContainer() {
     if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) != "0" ]; then
-        echo "[log] stopping existing PPM container"
+        echo "Stopping existing PPM container"
         docker stop $PPM_CONTAINER_NAME > /dev/null
     fi
     docker rm -f $PPM_CONTAINER_NAME > /dev/null
@@ -105,16 +109,14 @@ else
 fi
 
 echo "**************************"
-echo "Running standalone test with "$1 $2 $3 $4
+echo "Running standalone test in $PPM_CONTAINER_NAME container with "$1 $2 $3 $4
 echo "**************************"
 
 startPPMContainer
 
 if [ $4 = "BSM" ]; then
-    echo "[log] performing bsm test in $PPM_CONTAINER_NAME container"
     docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_bsm_test.sh $OFFSET
 elif [ $4 = "TIM" ]; then
-    echo "[log] performing tim test in $PPM_CONTAINER_NAME container"
     docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_tim_test.sh $OFFSET
 fi
 
