@@ -1,4 +1,8 @@
 #!/bin/sh
+
+# This script starts the PPM tool with the specified configuration file, using the DOCKER_HOST_IP
+# environment variable to connect to a Kafka broker.
+
 export LD_LIBRARY_PATH=/usr/local/lib
 
 if [ -z "$DOCKER_HOST_IP" ]; then

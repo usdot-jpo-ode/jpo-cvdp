@@ -1,11 +1,18 @@
 #!/bin/bash
 
-# NOTE that this script will hang if the offsets are wrong. In other words,
-# only use this for testing/demo; NOT production.
+# This script sets up and runs a standalone test for a PPM container. The 
+# PPM is started in a Docker container using a specified image and waits for it to become
+# ready. The script takes in three input files: ROAD_FILE, CONFIG, TEST_DATA, and a type
+# argument (BSM or TIM). It checks if the input files exist and copies them to a test data
+# directory. If the OFFSET argument is provided, it is used as the offset in the topic that
+# will be consumed and displayed in the output. If not, the default value of 0 is used.
 
-# There are three input files: ROAD_FILE, CONFIG, TEST_DATA.
-# Offset is the offset in the topic that will be consumed and displayed in the
-# output
+# The script then produces the test data by executing either do_bsm_test.sh or do_tim_test.sh
+# depending on the type argument, passing in the OFFSET value as an argument. The PPM container
+# is then stopped, and the script ends.
+
+# This script should only be used for testing or demo purposes, as it may hang if the offsets are wrong. It also
+# checks if the required configuration and test data files exist before proceeding with the test.
 
 PPM_CONTAINER_NAME=ppm_kafka
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
@@ -27,7 +34,7 @@ startPPMContainer() {
             exit 1
         fi
     done
-    echo "Starting PPM in new container"
+    echo "Starting PPM in new container '$PPM_CONTAINER_NAME'"
     docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
 
     echo "Giving $PPM_CONTAINER_NAME $SECONDS_TO_WAIT_FOR_PPM_READINESS seconds to spin up"
@@ -46,7 +53,7 @@ startPPMContainer() {
 
 stopPPMContainer() {
     if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) != "0" ]; then
-        echo "Stopping existing PPM container"
+        echo "Stopping existing PPM container '$PPM_CONTAINER_NAME'"
         docker stop $PPM_CONTAINER_NAME > /dev/null
     fi
     docker rm -f $PPM_CONTAINER_NAME > /dev/null

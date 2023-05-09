@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# This script produces and consumes messages from Kafka topics. It reads a JSON file containing raw
+# TIM data, processes it with a Python script, and then sends the output to a Kafka topic. Then it
+# consumes the filtered messages from the Kafka topic, using a specified offset, and checks if
+# any messages were received. If no messages were received after a certain number of attempts, the
+# script exits with an error message. Otherwise, the script exits with a success message.
+
 export LD_LIBRARY_PATH=/usr/local/lib
 
 RED='\033[0;31m'

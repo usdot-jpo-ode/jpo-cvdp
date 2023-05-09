@@ -1,9 +1,12 @@
 #!/bin/bash
 
-# NOTE that this script will hang if the offsets are wrong. In other words,
-# only use this for testing/demo; NOT production.
+# This script starts two PPM containers, one for BSMs and one for TIMs, in separate Docker containers.
+# It first checks if all necessary input files exist, creates necessary directories, and copies the input
+# files to those directories. It then starts the PPM containers, waits for them to spin up, produces test
+# data, and finally stops the containers.
 
-# Test two ppm modules at once, as two docker containers.
+# This script should only be used for testing or demo purposes, as it may hang if the offsets are wrong. It also
+# checks if the required configuration and test data files exist before proceeding with the test.
 
 PPM_BSM_CONTAINER_NAME=ppm_bsm_kafka
 PPM_TIM_CONTAINER_NAME=ppm_tim_kafka

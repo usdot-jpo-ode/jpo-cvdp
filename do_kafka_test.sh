@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# This script tests the PPM against a kafka cluster. It sets up variables for container and input data
+# file names. It starts a Kafka container using another script and checks that required topics are created.
+# If the container or topics are missing, the script exits. It builds a Docker image using the current
+# directory and specified name/tag. It runs a series of tests using a script with different properties
+# and input data files, outputting results to the console. It stops the Kafka container after the tests
+# are completed. The script performs five steps: set up the test environment, wait for Kafka to create
+# topics, build the PPM image, run the tests, and clean up.
+
 CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
