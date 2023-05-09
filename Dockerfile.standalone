@@ -27,8 +27,5 @@ ADD ./unit-test-data /cvdi-stream/unit-test-data
 # Do the build.
 RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvdi-stream-build && cmake /cvdi-stream && make
 
-# install python for testing
-RUN apt-get install -y python3
-
 # Add test data. This changes frequently so keep it low in the file.
 ADD ./docker-test /cvdi-stream/docker-test
