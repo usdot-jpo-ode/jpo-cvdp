@@ -27,22 +27,13 @@ startPPMContainer() {
     echo "Starting PPM in new container"
     docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
 
-    # wait until container spins up
-    while true; do
-        if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]; then
-            echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."
-            exit 1
-        fi
+    echo "Giving PPM container time to spin up"
+    sleep 10
 
-        container_logs=$(docker logs $PPM_CONTAINER_NAME 2>&1)
-        indicator="BSMHandler::BSMHandler(): Constructor called"
-        if [ $(echo $container_logs | grep "$indicator" | wc -l) != "0" ]; then
-            echo "PPM container is ready"
-            break
-        fi
-
-        sleep 1
-    done
+    if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]; then
+        echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."
+        exit 1
+    fi
 
     container_logs=$(docker logs $PPM_CONTAINER_NAME 2>&1)
     if [ $(echo $container_logs | grep "Failed to make shape" | wc -l) != "0" ]; then
