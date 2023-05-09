@@ -6,6 +6,54 @@
 # There are three input files: ROAD_FILE, CONFIG, TEST_DATA.
 # Offset is the offset in the topic that will be consumed and displayed in the
 # output
+
+PPM_CONTAINER_NAME=ppm_kafka
+PPM_IMAGE_TAG=do-kafka-test-ppm-image
+PPM_IMAGE_NAME=jpo-cvdp_ppm
+
+startPPMContainer() {
+    # Start the PPM in a new container.
+    dockerHostIp=$DOCKER_HOST_IP
+    echo "[log] docker host ip: '$dockerHostIp'"
+
+    # make sure ip can be pinged
+    while true; do
+        if ping -c 1 $dockerHostIp &> /dev/null; then
+            echo "[log] docker host ip is pingable"
+            break
+        else
+            echo "[log] docker host ip is not pingable. Exiting."
+            exit 1
+        fi
+    done
+    echo "[log] starting PPM in new container"
+    docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
+
+    # wait until container spins up
+    while true; do
+        if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]; then
+            echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."
+            exit 1
+        fi
+        break
+        sleep 1
+        echo "[log] waiting for PPM to start..."
+    done
+
+    container_logs=$(docker logs $PPM_CONTAINER_NAME 2>&1)
+    if [ $(echo $container_logs | grep "Failed to make shape" | wc -l) != "0" ]; then
+        echo "[log] Warning: PPM failed to make shape."
+    fi
+}
+
+stopPPMContainer() {
+    if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) != "0" ]; then
+        echo "[log] stopping existing PPM container"
+        docker stop $PPM_CONTAINER_NAME > /dev/null
+    fi
+    docker rm -f $PPM_CONTAINER_NAME > /dev/null
+}
+
 USAGE="standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [BSM | TIM] [OFFSET]"
 
 if [ -z $1 ] || [ ! -f $1 ]; then
@@ -60,14 +108,14 @@ echo "**************************"
 echo "Running standalone test with "$1 $2 $3 $4
 echo "**************************"
 
-PPM_CONTAINER_NAME=ppm_kafka
+startPPMContainer
 
 if [ $4 = "BSM" ]; then
     echo "[log] performing bsm test in $PPM_CONTAINER_NAME container"
     docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_bsm_test.sh $OFFSET
-    # Produce the test data.
 elif [ $4 = "TIM" ]; then
     echo "[log] performing tim test in $PPM_CONTAINER_NAME container"
     docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_tim_test.sh $OFFSET
-    # Produce the test data.
 fi
+
+stopPPMContainer
