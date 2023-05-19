@@ -32,6 +32,8 @@
  * (https://github.com/edenhill/librdkafka)
  */
 
+// NOTE: THIS FILE IS DEPRECATED AS OF 5/18/2023 AND IS NOT RECOMMENDED FOR USE.
+
 #include <iostream>
 #include <string>
 #include <cstdlib>
