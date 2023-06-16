@@ -59,7 +59,7 @@ waitForKafkaToCreateTopics() {
 }
 
 buildPPMImage() {
-    docker build . -t $PPM_IMAGE_NAME:$PPM_IMAGE_TAG
+    docker build . -t $PPM_IMAGE_NAME:$PPM_IMAGE_TAG -f Dockerfile.testing
 }
 
 run_tests() {
