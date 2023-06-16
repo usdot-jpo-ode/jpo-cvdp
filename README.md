@@ -207,6 +207,9 @@ When running the project in the provided dev container, the REDACTION_PROPERTIES
 #### RPM Debug
 If the RPM_DEBUG environment variable is set to true, debug messages will be logged to a file by the RedactionPropertiesManager class. This will allow developers to see whether the environment variable is set, whether the file was found and whether a non-zero number of redaction fields were loaded in.
 
+## Build & Exec Script
+The [`build_and_exec.sh`](./build_and_exec.sh) script can be used to build a tagged image of the PPM, run the container & enter it with an interactive shell. This script can be used to test the PPM in a standalone environment.
+
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
