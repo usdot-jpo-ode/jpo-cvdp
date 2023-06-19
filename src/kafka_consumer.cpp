@@ -549,9 +549,6 @@ usage:
                     logger->info(ss.str());
                 }
                 break;
-
-            default:
-                ;
         }
 
         delete msg;
