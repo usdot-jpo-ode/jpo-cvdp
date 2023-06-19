@@ -207,6 +207,17 @@ When running the project in the provided dev container, the REDACTION_PROPERTIES
 #### RPM Debug
 If the RPM_DEBUG environment variable is set to true, debug messages will be logged to a file by the RedactionPropertiesManager class. This will allow developers to see whether the environment variable is set, whether the file was found and whether a non-zero number of redaction fields were loaded in.
 
+## Kafka Test Script
+The [do_kafka_test.sh](./do_kafka_test.sh) script is designed to perform integration tests on a Kafka instance. To execute the tests, this script relies on the following scripts: standalone.sh, standalone_multi.sh, do_bsm_test.sh, and do_tim_test.sh.
+
+To ensure proper execution, it is recommended to run this script in WSL (Windows Subsystem for Linux).
+
+The DOCKER_HOST_IP environment variable must be set to the IP address of the host machine. This is required for the script to function properly. This can be set by using the following command:
+
+```
+export DOCKER_HOST_IP=$(ifconfig | zgrep -m 1 -oP '(?<=inet\s)\d+(\.\d+){3}')
+```
+
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
