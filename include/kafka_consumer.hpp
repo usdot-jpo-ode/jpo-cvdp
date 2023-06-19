@@ -25,9 +25,6 @@
 
 #include <sstream>
 
-#include "myHashPartitionerCb.hpp"
-#include "exampleConsumeCb.hpp"
-
 class KafkaConsumer {
     public:
         bool ode_topic_available(const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer);
