@@ -49,56 +49,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "librdkafka/rdkafkacpp.h"
-#include <unordered_map>
-#include <csignal>
-
-#ifndef _MSC_VER
-#include <sys/time.h>
-#endif
-
-#ifdef _MSC_VER
-#include "../win32/wingetopt.h"
-#include <atltime.h>
-#elif _AIX
-#include <unistd.h>
-#else
-#include <getopt.h>
-#include <unistd.h>
-#endif
-
-#include "bsmHandler.hpp"
-#include "ppmLogger.hpp"
-#include "cvlib.hpp"
-
-#include <sstream>
-
-static std::shared_ptr<PpmLogger> logger = std::make_shared<PpmLogger>("info.log", "error.log");
-
-const char* getEnvironmentVariable(const char* variableName) {
-    const char* toReturn = getenv(variableName);
-    if (!toReturn) {
-        logger->error("Something went wrong attempting to retrieve the environment variable " + std::string(variableName));
-        toReturn = "";
-    }
-    return toReturn;
-}
+#include "kafka_consumer.hpp"
 
 static bool run = true;
-static bool exit_eof = false;
 
-static int eof_cnt = 0;
-static int partition_cnt = 0;
-static long msg_cnt = 0;
-static int64_t msg_bytes = 0;
-
-static int verbosity = 1;
-
-static void sigterm (int sig) {
-  run = false;
+static void sigterm(int sig) {
+    run = false;
 }
 
-static bool ode_topic_available( const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer ) {
+bool KafkaConsumer::ode_topic_available(const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer) {
     bool r = false;
 
     RdKafka::Metadata* md;
@@ -118,11 +77,7 @@ static bool ode_topic_available( const std::string& topic, std::shared_ptr<RdKaf
     return r;
 }
 
-/**
- * @brief
- */
-RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler) {
-
+RdKafka::ErrorCode KafkaConsumer::msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler) {
     // payload is a void *
     // len is a size_t
     std::string payload(static_cast<const char*>(message->payload()), message->len());
@@ -189,36 +144,7 @@ RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandl
     return message->err();
 }
 
-/* Use of this partitioner is pretty pointless since no key is provided
- * in the produce() call. */
-class MyHashPartitionerCb : public RdKafka::PartitionerCb {
-    public:
-        int32_t partitioner_cb (const RdKafka::Topic *topic, const std::string *key,
-                int32_t partition_cnt, void *msg_opaque) {
-            return djb_hash(key->c_str(), key->size()) % partition_cnt;
-        }
-    private:
-
-        static inline unsigned int djb_hash (const char *str, size_t len) {
-            unsigned int hash = 5381;
-            for (size_t i = 0 ; i < len ; i++)
-                hash = ((hash << 5) + hash) + str[i];
-            return hash;
-        }
-};
-
-/**
- * NOTE: This is supposed to be a little more efficient.
- */
-class ExampleConsumeCb : public RdKafka::ConsumeCb {
-    public:
-        void consume_cb (RdKafka::Message &msg, void *opaque) {
-            //msg_consume(&msg, opaque);
-        }
-};
-
-bool configure( const std::string& config_file, std::unordered_map<std::string,std::string>& pconf, RdKafka::Conf *conf, RdKafka::Conf *tconf ) {
-
+bool KafkaConsumer::configure(const std::string& config_file, std::unordered_map<std::string,std::string>& pconf, RdKafka::Conf *conf, RdKafka::Conf *tconf) {
     std::string line;
     std::string errstr;
     std::vector<std::string> pieces;
@@ -243,10 +169,7 @@ bool configure( const std::string& config_file, std::unordered_map<std::string,s
     return true;
 }
 
-#ifndef _PPM_TESTS
-
-int main (int argc, char **argv) {
-
+int KafkaConsumer::execute(int argc, char **argv) {
     std::unordered_map<std::string, std::string> pconf;
 
     std::string brokers = "localhost";
@@ -265,7 +188,6 @@ int main (int argc, char **argv) {
 
     int opt;                                            // command line option.
 
-    int use_ccb = 0;                                    // consumer callback use flag.
     bool do_conf_dump = false;
 
     int64_t start_offset = RdKafka::Topic::OFFSET_BEGINNING;
@@ -400,17 +322,7 @@ usage:
         }
     }
 
-    ExampleConsumeCb ex_consume_cb;
-
-    if(use_ccb) {
-        conf->set("consume_cb", &ex_consume_cb, errstr);
-    }
-
-    // ExampleEventCb ex_event_cb;
-    // conf->set("event_cb", &ex_event_cb, errstr);
-
     if (do_conf_dump) {
-    //if (true) {
         // dump the configuration and then exit.
         // TODO: build a dump method into the conf..?
         for (int pass = 0 ; pass < 2 ; pass++) {
@@ -608,43 +520,37 @@ usage:
 
         RdKafka::Message *msg = consumer->consume(1000);
 
-        if (!use_ccb) {
+        status = msg_consume(msg, NULL, handler);
 
-            status = msg_consume(msg, NULL, handler);
+        switch (status) {
+            case RdKafka::ERR__TIMED_OUT:
+                break;
 
-            switch (status) {
-                case RdKafka::ERR__TIMED_OUT:
-                    break;
+            case RdKafka::ERR_NO_ERROR:
+                {
+                    const BSM& bsm = handler.get_bsm();
+                    std::stringstream ss;
+                    ss << "Retaining BSM: " << bsm << "\n";
+                    logger->info(ss.str());
 
-                case RdKafka::ERR_NO_ERROR:
-                    {
-                        const BSM& bsm = handler.get_bsm();
-                        std::stringstream ss;
-                        ss << "Retaining BSM: " << bsm << "\n";
-                        logger->info(ss.str());
+                    // if we still have a message in the handler, we send it back out to the producer we have made above.
+                    status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
+                    if (status != RdKafka::ERR_NO_ERROR) {
+                        logger->error("% Produce failed: " + RdKafka::err2str( status ));
+                    } 
+                }
+                break;
 
-                        // if we still have a message in the handler, we send it back out to the producer we have made above.
-                        status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
-                        if (status != RdKafka::ERR_NO_ERROR) {
-                            logger->error("% Produce failed: " + RdKafka::err2str( status ));
-                        } 
-                    }
-                    break;
-
-                case RdKafka::ERR_INVALID_MSG:
-                    {
-                        const BSM& bsm = handler.get_bsm();
-                        std::stringstream ss;
-                        ss << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
-                        logger->info(ss.str());
-                    }
-                    break;
-
-                default:
-                    ;
-            }
-
+            case RdKafka::ERR_INVALID_MSG:
+                {
+                    const BSM& bsm = handler.get_bsm();
+                    std::stringstream ss;
+                    ss << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
+                    logger->info(ss.str());
+                }
+                break;
         }
+
         delete msg;
     }
 
@@ -662,15 +568,31 @@ usage:
     logger->info(">> Consumed " + std::to_string(msg_cnt) + " messages (" + std::to_string(msg_bytes) + " bytes)");
 
     /*
-     * Wait for RdKafka to decommission.
-     * This is not strictly needed (with check outq_len() above), but
-     * allows RdKafka to clean up all its resources before the application
-     * exits so that memory profilers such as valgrind wont complain about
-     * memory leaks.
-     */
+    * Wait for RdKafka to decommission.
+    * This is not strictly needed (with check outq_len() above), but
+    * allows RdKafka to clean up all its resources before the application
+    * exits so that memory profilers such as valgrind wont complain about
+    * memory leaks.
+    */
     RdKafka::wait_destroyed(5000);
 
     return 0;
+}
+
+const char* KafkaConsumer::getEnvironmentVariable(const char* variableName) {
+    const char* toReturn = getenv(variableName);
+    if (!toReturn) {
+        logger->error("Something went wrong attempting to retrieve the environment variable " + std::string(variableName));
+        toReturn = "";
+    }
+    return toReturn;
+}
+
+#ifndef _PPM_TESTS
+
+int main(int argc, char **argv) {
+    KafkaConsumer test;
+    test.execute(argc, argv);
 }
 
 #endif

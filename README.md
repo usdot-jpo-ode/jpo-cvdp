@@ -104,9 +104,9 @@ The documentation is in HTML and is written to the `<install root>/jpo-cvdp/docs
 browser.
 
 ## Class Usage Diagram
-![class usage](./docs/diagrams/class-usage/PPM%20Class%20Usage%20With%20Files.drawio.png)
+![class usage](./docs/diagrams/class-usage/PPM%20Class%20Usage.drawio.png)
 
-This diagram shows the usage relationship between the classes of the project. Classes that are in the same file share the same white box. A class that uses another class will have a black arrow pointing to the latter. The PPM class extends the Tool class, and this is shown with a white arrow.
+This diagram displays how the different classes in the project are used. If one class uses another class, there will be a black arrow pointing to the class it uses. The Tool class is extended by the PPM class, which is represented by a white arrow.
 
 # Development and Collaboration Tools
 
@@ -206,6 +206,9 @@ When running the project in the provided dev container, the REDACTION_PROPERTIES
 
 #### RPM Debug
 If the RPM_DEBUG environment variable is set to true, debug messages will be logged to a file by the RedactionPropertiesManager class. This will allow developers to see whether the environment variable is set, whether the file was found and whether a non-zero number of redaction fields were loaded in.
+
+## Build & Exec Script
+The [`build_and_exec.sh`](./build_and_exec.sh) script can be used to build a tagged image of the PPM, run the container & enter it with an interactive shell. This script can be used to test the PPM in a standalone environment.
 
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
