@@ -1702,14 +1702,16 @@ TEST_CASE( "BSMHandler JSON General Redaction Only", "[ppm][redaction][generalon
         rapidjson::ParseResult preliminaryParseResult = doc.Parse(test_case.c_str());
         REQUIRE( preliminaryParseResult );
 
-        int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberPath : rpm.getFields()) {
-            bool found = handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath);
-            if (found) {
-                numMembersPresentBeforeRedaction++;
+        if (rpm.getNumFields() > 0) {
+            int numMembersPresentBeforeRedaction = 0;
+            for (std::string memberPath : rpm.getFields()) {
+                bool found = handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath);
+                if (found) {
+                    numMembersPresentBeforeRedaction++;
+                }
             }
+            REQUIRE( numMembersPresentBeforeRedaction > 0 );
         }
-        REQUIRE( numMembersPresentBeforeRedaction > 0 );
 
         // process test case to build BSM (redaction will occur here)
         CHECK( handler.process( test_case ) );
@@ -1776,14 +1778,16 @@ TEST_CASE( "BSMHandler JSON General Redaction w/ All Flags", "[ppm][redaction][g
         rapidjson::ParseResult preliminaryParseResult = doc.Parse(test_case.c_str());
         REQUIRE( preliminaryParseResult );
 
-        int numMembersPresentBeforeRedaction = 0;
-        for (std::string memberPath : rpm.getFields()) {
-            bool found = handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath);
-            if (found) {
-                numMembersPresentBeforeRedaction++;
+        if (rpm.getNumFields() > 0) {
+            int numMembersPresentBeforeRedaction = 0;
+            for (std::string memberPath : rpm.getFields()) {
+                bool found = handler.getRapidjsonRedactor().searchForMemberByPath(doc, memberPath);
+                if (found) {
+                    numMembersPresentBeforeRedaction++;
+                }
             }
+            REQUIRE( numMembersPresentBeforeRedaction > 0 );
         }
-        REQUIRE( numMembersPresentBeforeRedaction > 0 );
 
         // process test case to build BSM (redaction will occur here)
         CHECK( handler.process( test_case ) );
