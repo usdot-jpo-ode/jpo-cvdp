@@ -6,9 +6,6 @@ on:
       - "develop"
       - "master"
       - "release/*"
-  pull_request:
-      types: [opened, synchronize, reopened]
-
 jobs:
   jpo-security-svcs:
     runs-on: ubuntu-latest
