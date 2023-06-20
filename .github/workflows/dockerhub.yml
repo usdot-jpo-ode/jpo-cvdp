@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - "develop"
-
+      - "master"
+      - "release/*"
 jobs:
   dockerhub-Jpo-ode:
     runs-on: ubuntu-latest
