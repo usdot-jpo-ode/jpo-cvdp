@@ -188,7 +188,6 @@ int KafkaConsumer::execute(int argc, char **argv) {
 
     int opt;                                            // command line option.
 
-    int use_ccb = 0;                                    // consumer callback use flag.
     bool do_conf_dump = false;
 
     int64_t start_offset = RdKafka::Topic::OFFSET_BEGINNING;
@@ -323,17 +322,7 @@ usage:
         }
     }
 
-    ExampleConsumeCb ex_consume_cb;
-
-    if(use_ccb) {
-        conf->set("consume_cb", &ex_consume_cb, errstr);
-    }
-
-    // ExampleEventCb ex_event_cb;
-    // conf->set("event_cb", &ex_event_cb, errstr);
-
     if (do_conf_dump) {
-    //if (true) {
         // dump the configuration and then exit.
         // TODO: build a dump method into the conf..?
         for (int pass = 0 ; pass < 2 ; pass++) {
@@ -529,43 +518,37 @@ usage:
 
         RdKafka::Message *msg = consumer->consume(1000);
 
-        if (!use_ccb) {
+        status = msg_consume(msg, NULL, handler);
 
-            status = msg_consume(msg, NULL, handler);
+        switch (status) {
+            case RdKafka::ERR__TIMED_OUT:
+                break;
 
-            switch (status) {
-                case RdKafka::ERR__TIMED_OUT:
-                    break;
+            case RdKafka::ERR_NO_ERROR:
+                {
+                    const BSM& bsm = handler.get_bsm();
+                    std::stringstream ss;
+                    ss << "Retaining BSM: " << bsm << "\n";
+                    logger->info(ss.str());
 
-                case RdKafka::ERR_NO_ERROR:
-                    {
-                        const BSM& bsm = handler.get_bsm();
-                        std::stringstream ss;
-                        ss << "Retaining BSM: " << bsm << "\n";
-                        logger->info(ss.str());
+                    // if we still have a message in the handler, we send it back out to the producer we have made above.
+                    status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
+                    if (status != RdKafka::ERR_NO_ERROR) {
+                        logger->error("% Produce failed: " + RdKafka::err2str( status ));
+                    } 
+                }
+                break;
 
-                        // if we still have a message in the handler, we send it back out to the producer we have made above.
-                        status = producer->produce(topic, partition, RdKafka::Producer::RK_MSG_COPY, (void *)handler.get_json().c_str(), handler.get_bsm_buffer_size(), NULL, NULL);
-                        if (status != RdKafka::ERR_NO_ERROR) {
-                            logger->error("% Produce failed: " + RdKafka::err2str( status ));
-                        } 
-                    }
-                    break;
-
-                case RdKafka::ERR_INVALID_MSG:
-                    {
-                        const BSM& bsm = handler.get_bsm();
-                        std::stringstream ss;
-                        ss << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
-                        logger->info(ss.str());
-                    }
-                    break;
-
-                default:
-                    ;
-            }
-
+            case RdKafka::ERR_INVALID_MSG:
+                {
+                    const BSM& bsm = handler.get_bsm();
+                    std::stringstream ss;
+                    ss << "Filtering BSM [" << handler.get_result_string() << "] : " << bsm << "\n";
+                    logger->info(ss.str());
+                }
+                break;
         }
+
         delete msg;
     }
 
