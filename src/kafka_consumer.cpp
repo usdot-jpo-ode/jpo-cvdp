@@ -91,7 +91,7 @@ RdKafka::ErrorCode KafkaConsumer::msg_consume(RdKafka::Message* message, void* o
             msg_cnt++;
             msg_bytes += message->len();
             if (verbosity >= 3) {
-                logger->error("Read msg at offset " + std::to_string(message->offset()));
+                logger->info("Read msg at offset " + std::to_string(message->offset()));
             }
 
             RdKafka::MessageTimestamp ts;
@@ -213,7 +213,7 @@ int KafkaConsumer::execute(int argc, char **argv) {
 
             case 'g':
                 if (conf->set("group.id",  optarg, errstr) != RdKafka::Conf::CONF_OK) {
-                    logger->error(errstr);
+                    logger->critical(errstr);
                     exit(1);
                 }
                 break;
@@ -317,7 +317,7 @@ usage:
 
     if (!debug.empty()) {
         if (conf->set("debug", debug, errstr) != RdKafka::Conf::CONF_OK) {
-            logger->error(errstr);
+            logger->critical(errstr);
             exit(1);
         }
     }
@@ -387,7 +387,7 @@ usage:
     if ( search != pconf.end() ) {
         region_file = search->second;
     } else {
-        logger->error("No map file specified.");
+        logger->critical("No map file specified.");
         exit(EXIT_FAILURE);
     }
 
@@ -417,10 +417,8 @@ usage:
         }
 
     } catch ( std::exception& e ) {
-
-        logger->error(e.what());
+        logger->critical(e.what());
         exit(0);
-
     }
 
     // Declare a quad with the given bounds.
@@ -444,8 +442,8 @@ usage:
         }
 
 
-    } catch ( std::exception& e ) {
-        logger->error("Problem building geofence: " + std::string(e.what()));
+    } catch (std::exception& e) {
+        logger->critical("Problem building geofence: " + std::string(e.what()));
         delete tconf;
         delete conf;
         exit(EXIT_FAILURE);
@@ -457,7 +455,7 @@ usage:
     std::shared_ptr<RdKafka::KafkaConsumer> consumer{RdKafka::KafkaConsumer::create(conf, errstr)};
 
     if (!consumer) {
-        logger->error("Failed to create consumer: " + errstr);
+        logger->critical("Failed to create consumer: " + errstr);
         exit(EXIT_FAILURE);
     }
 
@@ -468,13 +466,13 @@ usage:
     if ( search != pconf.end() ) {
         topics.push_back( search->second );
     } else {
-        logger->error("Failure to use configured consumer topic: " + errstr);
+        logger->critical("Failure to use configured consumer topic: " + errstr);
         exit(EXIT_FAILURE);
     }
 
     for ( const std::string& topic : topics ) {
         if ( !ode_topic_available( topic, consumer )) {
-            logger->error("The ODE Topic: " + topic + " is not available. This topic must be readable.");
+            logger->critical("The ODE Topic: " + topic + " is not available. This topic must be readable.");
             exit(EXIT_FAILURE);
         }
     }
@@ -482,14 +480,14 @@ usage:
     // subscribe to the J2735BsmJson topic (or test)
     RdKafka::ErrorCode err = consumer->subscribe(topics);
     if (err) {
-        logger->error("Failed to subscribe to " + std::to_string(topics.size()) + " topics: " + RdKafka::err2str(err));
+        logger->critical("Failed to subscribe to " + std::to_string(topics.size()) + " topics: " + RdKafka::err2str(err));
         exit(EXIT_FAILURE);
     }
 
     // Producer setup: will take the filtered BSMs and send them back to the ODE (or a test java consumer).
     RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
     if (!producer) {
-        logger->error("Failed to create producer: " + errstr);
+        logger->critical("Failed to create producer: " + errstr);
         exit(EXIT_FAILURE);
     }
 
@@ -501,7 +499,7 @@ usage:
         if ( search != pconf.end() ) {
             topic_str = search->second;
         } else {
-            logger->error("Topic std::String Empty!");
+            logger->critical("Topic std::String Empty!");
             exit(EXIT_FAILURE);
         }
     } 
@@ -509,7 +507,7 @@ usage:
     // The topic we are publishing filtered BSMs to.
     RdKafka::Topic *topic = RdKafka::Topic::create(producer, topic_str, tconf, errstr);
     if (!topic) {
-        logger->error("Failed to create topic: " + errstr);
+        logger->critical("Failed to create topic: " + errstr);
         exit(EXIT_FAILURE);
     } 
 
@@ -582,7 +580,7 @@ usage:
 const char* KafkaConsumer::getEnvironmentVariable(const char* variableName) {
     const char* toReturn = getenv(variableName);
     if (!toReturn) {
-        logger->error("Something went wrong attempting to retrieve the environment variable " + std::string(variableName));
+        logger->warn("The '" + std::string(variableName) + "' environment variable was not set.");
         toReturn = "";
     }
     return toReturn;
