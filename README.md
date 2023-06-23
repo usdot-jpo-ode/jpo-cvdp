@@ -212,10 +212,14 @@ The [`build_and_exec.sh`](./build_and_exec.sh) script can be used to build a tag
 
 This script should be run outside of the dev container in an environment where Docker is available.
 
+It should be noted that this script needs to use the LF end-of-line sequence.
+
 ## Kafka Test Script
 The [do_kafka_test.sh](./do_kafka_test.sh) script is designed to perform integration tests on a Kafka instance. To execute the tests, this script relies on the following scripts: standalone.sh, standalone_multi.sh, do_bsm_test.sh, and do_tim_test.sh.
 
 To ensure proper execution, it is recommended to run this script outside of the dev container where docker is available. This is because the script will spin up a standalone kafka instance and will not be able to access the docker daemon from within the dev container.
+
+It should be noted that this file needs to use the LF end-of-line sequence.
 
 The DOCKER_HOST_IP environment variable must be set to the IP address of the host machine. This is required for the script to function properly. This can be set by using the following command:
 
