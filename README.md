@@ -234,6 +234,8 @@ The DOCKER_HOST_IP environment variable must be set to the IP address of the hos
 export DOCKER_HOST_IP=$(ifconfig | zgrep -m 1 -oP '(?<=inet\s)\d+(\.\d+){3}')
 ```
 
+WSL will sometimes hang indefinitely while script waits for kafka to create topics. When this happens, running `wsl --shutdown` in a windows command prompt and restarting the docker services is recommended.
+
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
