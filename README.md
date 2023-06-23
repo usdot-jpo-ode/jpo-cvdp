@@ -210,6 +210,8 @@ If the RPM_DEBUG environment variable is set to true, debug messages will be log
 ## Build & Exec Script
 The [`build_and_exec.sh`](./build_and_exec.sh) script can be used to build a tagged image of the PPM, run the container & enter it with an interactive shell. This script can be used to test the PPM in a standalone environment.
 
+This script should be run outside of the dev container in an environment where Docker is available.
+
 ## Kafka Test Script
 The [do_kafka_test.sh](./do_kafka_test.sh) script is designed to perform integration tests on a Kafka instance. To execute the tests, this script relies on the following scripts: standalone.sh, standalone_multi.sh, do_bsm_test.sh, and do_tim_test.sh.
 
