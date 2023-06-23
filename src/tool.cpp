@@ -281,7 +281,7 @@ bool Tool::parseArgs(int argc, char* argv[])
                 return false;
 
             case 1 :
-                std::cout << "not sure what this does... case 1. optarg = " << optarg << std::endl;
+                std::cerr << "Unknown case 1. optarg = " << optarg << std::endl;
                 break;
 
             case '?' :

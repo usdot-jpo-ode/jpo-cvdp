@@ -69,12 +69,6 @@ class RedactionPropertiesManager {
          */
         void addField(std::string fieldToAdd);
 
-        /**
-         * @brief Prints the fields. For debugging purposes.
-         * 
-         */
-        void printFields();
-
     private:
         bool debug;
         std::vector<std::string> fieldsToRedact;
