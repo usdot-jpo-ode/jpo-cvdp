@@ -25,11 +25,51 @@
 
 #include <sstream>
 
+/**
+ * @brief This class is used to consume messages from Kafka
+ * 
+ */
 class KafkaConsumer {
     public:
+        /**
+         * @brief Check if topic is available
+         * 
+         * @param topic The name of the topic
+         * @param consumer The RdKafka::KafkaConsumer object
+         * @return true if topic is available
+         * @return false if topic is not available
+         */
         bool ode_topic_available(const std::string& topic, std::shared_ptr<RdKafka::KafkaConsumer> consumer);
+
+        /**
+         * @brief Consume message
+         * 
+         * @param message The RdKafka::Message object to be consumed
+         * @param opaque The opaque object
+         * @param handler The BSMHandler object
+         * @return RdKafka::ErrorCode The error code
+         */
         RdKafka::ErrorCode msg_consume(RdKafka::Message* message, void* opaque, BSMHandler& handler);
+
+        /**
+         * @brief Configure Kafka consumer
+         * 
+         * @param config_file The path to the configuration file
+         * @param pconf The unordered map of configuration parameters
+         * @param conf The RdKafka::Conf object
+         * @param tconf The RdKafka::Conf object
+         * @return true if configuration is successful
+         * @return false if configuration is not successful
+         */
         bool configure(const std::string& config_file, std::unordered_map<std::string,std::string>& pconf, RdKafka::Conf *conf, RdKafka::Conf *tconf);
+        
+        /**
+         * @brief Execute Kafka consumer
+         * 
+         * @param argc The number of arguments
+         * @param argv The array of arguments
+         * @return int reflecting the exit status
+         */
         int execute(int argc, char **argv);
     
     private:
