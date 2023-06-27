@@ -73,14 +73,54 @@ class KafkaConsumer {
         int execute(int argc, char **argv);
     
     private:
+        /**
+         * @brief Pointer to the PPM logger instance
+         * 
+         */
         std::shared_ptr<PpmLogger> logger = std::make_shared<PpmLogger>("log");
+        
+        /**
+         * @brief Exit flag
+         * 
+         */
         bool exit_eof = false;
+
+        /**
+         * @brief Counter for EOF
+         * 
+         */
         int eof_cnt = 0;
+
+        /**
+         * @brief Counter for partition
+         * 
+         */
         int partition_cnt = 0;
+
+        /**
+         * @brief Counter for messages
+         * 
+         */
         long msg_cnt = 0;
+
+        /**
+         * @brief Number of bytes in messages
+         * 
+         */
         int64_t msg_bytes = 0;
+
+        /**
+         * @brief Verbosity level
+         * 
+         */
         int verbosity = 1;
 
+        /**
+         * @brief Retrieve environment variable
+         * 
+         * @param variableName The name of the environment variable
+         * @return const char* The value of the environment variable
+         */
         const char* getEnvironmentVariable(const char* variableName);
 };
 
