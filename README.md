@@ -104,9 +104,9 @@ The documentation is in HTML and is written to the `<install root>/jpo-cvdp/docs
 browser.
 
 ## Class Usage Diagram
-![class usage](./docs/diagrams/class-usage/PPM%20Class%20Usage%20With%20Files.drawio.png)
+![class usage](./docs/diagrams/class-usage/PPM%20Class%20Usage.drawio.png)
 
-This diagram shows the usage relationship between the classes of the project. Classes that are in the same file share the same white box. A class that uses another class will have a black arrow pointing to the latter. The PPM class extends the Tool class, and this is shown with a white arrow.
+This diagram displays how the different classes in the project are used. If one class uses another class, there will be a black arrow pointing to the class it uses. The Tool class is extended by the PPM class, which is represented by a white arrow.
 
 # Development and Collaboration Tools
 
@@ -161,8 +161,8 @@ Rather than using a local kafka instance, this project can utilize an instance o
 ## Environment variables
 ### Purpose & Usage
 - The DOCKER_HOST_IP environment variable is used to communicate with the bootstrap server that the instance of Kafka is running on.
-- The KAFKA_TYPE environment variable specifies what type of kafka connection will be attempted and is used to check if Confluent should be utilized.
-- The CONFLUENT_KEY and CONFLUENT_SECRET environment variables are used to authenticate with the bootstrap server.
+- The KAFKA_TYPE environment variable specifies what type of kafka connection will be attempted and is used to check if Confluent should be utilized. If this is not set to "CONFLUENT", the PPM will attempt to connect to a local kafka instance.
+- The CONFLUENT_KEY and CONFLUENT_SECRET environment variables are used to authenticate with the bootstrap server. These are the API key and secret that are generated when a new API key is created in Confluent Cloud. These are only used if the KAFKA_TYPE environment variable is set to "CONFLUENT".
 
 ### Values
 - DOCKER_HOST_IP must be set to the bootstrap server address (excluding the port)
@@ -206,6 +206,9 @@ When running the project in the provided dev container, the REDACTION_PROPERTIES
 
 #### RPM Debug
 If the RPM_DEBUG environment variable is set to true, debug messages will be logged to a file by the RedactionPropertiesManager class. This will allow developers to see whether the environment variable is set, whether the file was found and whether a non-zero number of redaction fields were loaded in.
+
+## Build & Exec Script
+The [`build_and_exec.sh`](./build_and_exec.sh) script can be used to build a tagged image of the PPM, run the container & enter it with an interactive shell. This script can be used to test the PPM in a standalone environment.
 
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
