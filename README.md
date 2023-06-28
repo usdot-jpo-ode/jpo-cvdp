@@ -161,8 +161,8 @@ Rather than using a local kafka instance, this project can utilize an instance o
 ## Environment variables
 ### Purpose & Usage
 - The DOCKER_HOST_IP environment variable is used to communicate with the bootstrap server that the instance of Kafka is running on.
-- The KAFKA_TYPE environment variable specifies what type of kafka connection will be attempted and is used to check if Confluent should be utilized.
-- The CONFLUENT_KEY and CONFLUENT_SECRET environment variables are used to authenticate with the bootstrap server.
+- The KAFKA_TYPE environment variable specifies what type of kafka connection will be attempted and is used to check if Confluent should be utilized. If this is not set to "CONFLUENT", the PPM will attempt to connect to a local kafka instance.
+- The CONFLUENT_KEY and CONFLUENT_SECRET environment variables are used to authenticate with the bootstrap server. These are the API key and secret that are generated when a new API key is created in Confluent Cloud. These are only used if the KAFKA_TYPE environment variable is set to "CONFLUENT".
 
 ### Values
 - DOCKER_HOST_IP must be set to the bootstrap server address (excluding the port)
