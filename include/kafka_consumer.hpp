@@ -55,9 +55,9 @@ class KafkaConsumer {
          * @brief Configure Kafka consumer
          * 
          * @param config_file The path to the configuration file
-         * @param pconf The unordered map of configuration parameters
-         * @param conf The RdKafka::Conf object
-         * @param tconf The RdKafka::Conf object
+         * @param pconf The privacy configuration object
+         * @param conf The global configuration object
+         * @param tconf The topic configuration object
          * @return true if configuration is successful
          * @return false if configuration is not successful
          */
