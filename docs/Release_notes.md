@@ -1,6 +1,29 @@
 Jpo-cvdp Release Notes
 ----------------------------
 
+Version 1.1.0, released July 5th 2023
+----------------------------------------
+
+### **Summary**
+The jpo-cvdp 1.1.0 new release version brings several enhancements and fixes as follows:
+
+Enhancements in this release:
+- Switched to using Confluent’s librdkafka package instead of the default package provided by Ubuntu because the former was more up-to-date.
+- Modified class usage diagram to reflect changes to `kafka_consumer.cpp`
+- The `kafka_consumer.cpp` file was not being compiled, so we added a new target to the CMakeLists.txt file and made other necessary changes. Additionally, we included comments in the CMakeLists.txt file to improve readability and assist future project contributors.
+- Added a section on the `build_and_exec.sh` script to the README.
+- Added missing environment variables to docker-compose files.
+- Added github actions docker workflows.
+
+Fixes in this release:
+- Refactored the `kafka_consumer.cpp` file to align with object-oriented design principles.
+- Reviewed and adjusted log levels for each log statement as needed.
+- Replaced instances of `std::cout` and `std::cerr` with the logger wherever possible, except for a few specific cases.
+- Expanded on environment variable descriptions in README.
+
+Known Issues
+- The do_kafka_test.sh script located in the root directory of the project is currently not running successfully.
+
 Version 1.0.0, released Mar 30th 2023
 ----------------------------------------
 
