@@ -32,6 +32,7 @@
 #      Cyber and Information Security Research (CISR) Group Oak Ridge National
 #      Laboratory
 #      865-804-5161 (mobile)
+
 cmake_minimum_required(VERSION 2.6)
 project(CVDIGeofenceTest)
 

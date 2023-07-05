@@ -86,18 +86,6 @@ void RedactionPropertiesManager::addField(std::string fieldToAdd) {
 }
 
 /**
- * @brief Prints the fields to the console. For debugging purposes.
- * 
- */
-void RedactionPropertiesManager::printFields() {
-    logToFile("printing fields");
-    std::cout << "=== Fields to Redact ===" << std::endl;
-    for (std::string field: fieldsToRedact) {
-        std::cout << field.c_str() << std::endl;
-    }
-}
-
-/**
     * @brief Logs the message to a file if the debug flag is set to true.
     * 
     * @param message 
@@ -106,7 +94,7 @@ void RedactionPropertiesManager::logToFile(std::string message) {
     if (debug) {
         std::fstream logFile("rpm_log.txt", std::ios_base::app);
         if (!logFile) {
-            std::cout << "error opening file" << std::endl;
+            std::cerr << "error opening file" << std::endl;
         }
         logFile << message << std::endl;
         logFile.close();

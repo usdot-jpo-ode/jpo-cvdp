@@ -759,14 +759,13 @@ int PPM::operator()(void) {
     signal(SIGTERM, sigterm);
 
     try {
-
         // throws for mapfile and other items.
-        if ( !configure() ) return EXIT_FAILURE;
+        if (!configure()) {
+            return EXIT_FAILURE;
+        }
 
-    } catch ( std::exception& e ) {
-
-        // don't use logger in case we cannot configure it correctly.
-        std::cerr << "Fatal std::Exception: " << e.what() << std::endl;
+    } catch (std::exception& e) {
+        logger->critical("Fatal std::Exception: " + std::string(e.what()));
         return EXIT_FAILURE;
     }
 
@@ -793,7 +792,7 @@ int PPM::operator()(void) {
         RdKafka::ErrorCode err = consumer->position(partitions);
 
         if (err) {
-            logger->info("err " + RdKafka::err2str(err));
+            logger->error("err " + RdKafka::err2str(err));
         } else {
             for (auto *partition : partitions) {
                 logger->info("topar " + partition->topic() + " " + std::to_string(partition->offset()));
@@ -833,7 +832,7 @@ int PPM::operator()(void) {
 const char* PPM::getEnvironmentVariable(const char* variableName) {
     const char* toReturn = getenv(variableName);
     if (!toReturn) {
-        logger->error("Something went wrong attempting to retrieve the environment variable " + std::string(variableName));
+        logger->warn("The environment variable '" + std::string(variableName) + "' was not set.");
         toReturn = "";
     }
     return toReturn;
@@ -845,36 +844,36 @@ int main( int argc, char* argv[] )
 {
     PPM ppm{"ppm","Privacy Protection Module"};
 
-    ppm.addOption( 'c', "config", "Configuration for Kafka and Privacy Protection Module.", true );
-    ppm.addOption( 'C', "config-check", "Check the configuration and output the settings.", false );
-    ppm.addOption( 'u', "unfiltered-topic", "The unfiltered consume topic.", true );
-    ppm.addOption( 'f', "filtered-topic", "The unfiltered produce topic.", true );
-    ppm.addOption( 'p', "partition", "Consumer topic partition from which to read.", true );
-    ppm.addOption( 'g', "group", "Consumer group identifier", true );
-    ppm.addOption( 'b', "broker", "List of broker addresses (localhost:9092)", true );
-    ppm.addOption( 'o', "offset", "Byte offset to start reading in the consumed topic.", true );
-    ppm.addOption( 'x', "exit", "Exit consumer when last message in partition has been received.", false );
-    ppm.addOption( 'd', "debug", "debug level.", true );
-    ppm.addOption( 'm', "mapfile", "Map data file to specify the geofence.", true );
-    ppm.addOption( 'v', "log-level", "The info log level [trace,debug,info,warning,error,critical,off]", true );
-    ppm.addOption( 'D', "log-dir", "Directory for the log files.", true );
-    ppm.addOption( 'R', "log-rm", "Remove specified/default log files if they exist.", false );
-    ppm.addOption( 'i', "log", "Log file name.", true );
-    ppm.addOption( 'h', "help", "print out some help" );
+    ppm.addOption('c', "config", "Configuration for Kafka and Privacy Protection Module.", true);
+    ppm.addOption('C', "config-check", "Check the configuration and output the settings.", false);
+    ppm.addOption('u', "unfiltered-topic", "The unfiltered consume topic.", true);
+    ppm.addOption('f', "filtered-topic", "The unfiltered produce topic.", true);
+    ppm.addOption('p', "partition", "Consumer topic partition from which to read.", true);
+    ppm.addOption('g', "group", "Consumer group identifier", true);
+    ppm.addOption('b', "broker", "List of broker addresses (localhost:9092)", true);
+    ppm.addOption('o', "offset", "Byte offset to start reading in the consumed topic.", true);
+    ppm.addOption('x', "exit", "Exit consumer when last message in partition has been received.", false);
+    ppm.addOption('d', "debug", "debug level.", true);
+    ppm.addOption('m', "mapfile", "Map data file to specify the geofence.", true);
+    ppm.addOption('v', "log-level", "The info log level [trace,debug,info,warning,error,critical,off]", true);
+    ppm.addOption('D', "log-dir", "Directory for the log files.", true);
+    ppm.addOption('R', "log-rm", "Remove specified/default log files if they exist.", false);
+    ppm.addOption('i', "log", "Log file name.", true);
+    ppm.addOption('h', "help", "print out some help");
 
     if (!ppm.parseArgs(argc, argv)) {
         ppm.usage();
-        exit( EXIT_FAILURE );
+        exit(EXIT_FAILURE);
     }
 
     if (ppm.optIsSet('h')) {
         ppm.help();
-        exit( EXIT_SUCCESS );
+        exit(EXIT_SUCCESS);
     }
 
     // can set levels if needed here.
-    if ( !ppm.make_loggers( ppm.optIsSet('R') )) {
-        exit( EXIT_FAILURE );
+    if (!ppm.make_loggers(ppm.optIsSet('R'))) {
+        exit(EXIT_FAILURE);
     }
 
     // configuration check.
@@ -882,18 +881,18 @@ int main( int argc, char* argv[] )
         try {
             if (ppm.configure()) {
                 ppm.print_configuration();
-                exit( EXIT_SUCCESS );
+                exit(EXIT_SUCCESS);
             } else {
-                ppm.logger->error( "current configuration settings do not work; exiting." );
-                exit( EXIT_FAILURE );
+                ppm.logger->critical("current configuration settings do not work; exiting.");
+                exit(EXIT_FAILURE);
             }
-        } catch ( std::exception& e ) {
-            ppm.logger->error( "std::exception: " + std::string( e.what() ));
-            exit( EXIT_FAILURE );
+        } catch (std::exception& e) {
+            ppm.logger->critical("std::exception: " + std::string(e.what()));
+            exit(EXIT_FAILURE);
         }
     }
 
-    exit( ppm.run() );
+    exit(ppm.run());
 }
 
 #endif
