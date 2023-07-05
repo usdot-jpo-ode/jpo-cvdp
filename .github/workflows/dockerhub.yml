@@ -7,7 +7,7 @@ on:
       - "master"
       - "release/*"
 jobs:
-  dockerhub-Jpo-ode:
+  dockerhub-Jpo-cvdp:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
