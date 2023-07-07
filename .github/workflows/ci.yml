@@ -1,0 +1,65 @@
+name: cvdp
+on: 
+ push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:jammy-20230126
+      env:
+        REDACTION_PROPERTIES_PATH: "/__w/jpo-cvdp/jpo-cvdp/config/fieldsToRedact.txt"
+        BUILD_WRAPPER_OUT_DIR: "$GITHUB_WORKSPACE/bw-output"
+      options: "--user root"
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+      - name: Install Deps
+        run: |
+          apt update
+          apt-get -y install sudo wget curl gnupg lsb-release gcovr unzip
+          sudo apt-get -y install software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu  $(lsb_release -cs)  stable"
+          #curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+          sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          sudo apt-get -y update
+          sudo apt-get -y install docker-ce   
+      - name: set up Cmake
+        uses: jwlawson/actions-setup-cmake@v1.13  
+        with:
+          cmake-version: '3.16'  
+      - name: install g++
+        run: |
+          sudo apt-get -y install build-essential
+          sudo apt -y install cmake g++ libprotobuf-dev protobuf-compiler
+          sudo apt -y install apt-transport-https ca-certificates curl software-properties-common
+          export CXX="g++"          
+      - name: install librdkafka
+        run: |
+          git clone --depth 1 https://github.com/confluentinc/librdkafka.git librdkafka
+          cd librdkafka
+          cmake -H. -B_cmake_build
+          cmake --build _cmake_build
+          cmake --build _cmake_build --target install  
+      - name: Install sonar-scanner and build-wrapper
+        uses: SonarSource/sonarcloud-github-c-cpp@v1                      
+      - name: Build and Test
+        run: |
+          cd $GITHUB_WORKSPACE
+          chmod   755  -R /__w/jpo-cvdp/jpo-cvdp
+          export LD_LIBRARY_PATH=/usr/local/lib 
+          build-wrapper-linux-x86-64 --out-dir $GITHUB_WORKSPACE/bw-output ./build.sh     
+          mkdir coverage
+          cd coverage 
+          gcov $GITHUB_WORKSPACE/cv-lib/src/*.cpp --object-directory /__w/jpo-cvdp/jpo-cvdp/build/cv-lib/CMakeFiles/CVLib.dir/src/
+          gcov $GITHUB_WORKSPACE/src/*.cpp --object-directory /__w/jpo-cvdp/jpo-cvdp/build/CMakeFiles/ppm_tests.dir/src/     
+      - name: Run sonar-scanner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+            cd $GITHUB_WORKSPACE 
+            sonar-scanner
