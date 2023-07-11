@@ -12,7 +12,6 @@ PPM_BSM_CONTAINER_NAME=ppm_bsm_kafka
 PPM_TIM_CONTAINER_NAME=ppm_tim_kafka
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
-SECONDS_TO_WAIT_FOR_PPM_READINESS=20
 
 USAGE="standalone_multi.sh [MAP_FILE] [BSM_CONFIG] [TIM_CONFIG] [BSM_TEST_FILE] [TIM_TEST_FILE] [BSM_OFFSET] [TIM_OFSET]"
 
@@ -37,8 +36,15 @@ startPPMContainer() {
     echo "Starting PPM in new container"
     docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v $data_source:/ppm_data -d -p $ppm_container_port':8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
 
-    echo "Giving $PPM_CONTAINER_NAME $SECONDS_TO_WAIT_FOR_PPM_READINESS seconds to spin up"
-    sleep $SECONDS_TO_WAIT_FOR_PPM_READINESS
+    echo "Waiting for $PPM_CONTAINER_NAME to spin up"
+    # while num lines of docker logs is less than 100, sleep 1
+    secondsWaited=0
+    while [ $(docker logs $PPM_CONTAINER_NAME | wc -l) -lt 100 ]; do
+        sleep 1
+        secondsWaited=$((secondsWaited+1))
+    done
+    echo "$PPM_CONTAINER_NAME is ready after $secondsWaited seconds"
+
 
     if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]; then
         echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."

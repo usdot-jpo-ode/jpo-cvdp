@@ -30,7 +30,10 @@ setup() {
 }
 
 waitForKafkaToCreateTopics() {
+    maxAttempts=100
+    attempts=0
     while true; do
+        attempts=$((attempts+1))
         if [ $(docker ps | grep $KAFKA_CONTAINER_NAME | wc -l) == "0" ]; then
             echo "Kafka container '$KAFKA_CONTAINER_NAME' is not running. Exiting."
             ./stop_kafka.sh
@@ -55,6 +58,12 @@ waitForKafkaToCreateTopics() {
         fi
 
         sleep 1
+
+        if [ $attempts -ge $maxAttempts ]; then
+            echo "Kafka has not created all required topics after $maxAttempts attempts. Exiting."
+            ./stop_kafka.sh
+            exit 1
+        fi
     done
 }
 
