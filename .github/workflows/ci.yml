@@ -43,7 +43,11 @@ jobs:
          cmake --build _cmake_build
          cmake --build _cmake_build --target install  
      - name: Install sonar-scanner and build-wrapper
-       uses: SonarSource/sonarcloud-github-c-cpp@v1  # This Action Installs sonar cloud and build wrapper to run sonar scan analysis                 
+       uses: SonarSource/sonarcloud-github-c-cpp@v1  # This Action Installs sonar cloud and build wrapper to run sonar scan analysis  
+     - name: Set up Docker Buildx
+       uses: docker/setup-buildx-action@v2
+     - name: Build
+       uses: docker/build-push-action@v3       
      - name: Build and Generate test coverage
        run: |
          cd $GITHUB_WORKSPACE
