@@ -48,6 +48,8 @@ jobs:
        run: |
          cd $GITHUB_WORKSPACE
          chmod   755  -R /__w/jpo-cvdp/jpo-cvdp
+         cat /usr/include/asm-generic/signal.h
+         cat /usr/include/x86_64-linux-gnu/asm/signal.h
          export LD_LIBRARY_PATH=/usr/local/lib 
          build-wrapper-linux-x86-64 --out-dir $GITHUB_WORKSPACE/bw-output ./build.sh     
          mkdir coverage
