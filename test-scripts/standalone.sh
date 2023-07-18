@@ -14,7 +14,7 @@
 # This script should only be used for testing or demo purposes, as it may hang if the offsets are wrong. It also
 # checks if the required configuration and test data files exist before proceeding with the test.
 
-PPM_CONTAINER_NAME=ppm_kafka
+PPM_CONTAINER_NAME=test_ppm_instance
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
 

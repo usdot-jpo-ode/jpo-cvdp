@@ -8,8 +8,8 @@
 # This script should only be used for testing or demo purposes, as it may hang if the offsets are wrong. It also
 # checks if the required configuration and test data files exist before proceeding with the test.
 
-PPM_BSM_CONTAINER_NAME=ppm_bsm_kafka
-PPM_TIM_CONTAINER_NAME=ppm_tim_kafka
+PPM_BSM_CONTAINER_NAME=test_ppm_bsm_instance
+PPM_TIM_CONTAINER_NAME=test_ppm_tim_instance
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
 

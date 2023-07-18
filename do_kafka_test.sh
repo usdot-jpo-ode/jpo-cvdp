@@ -16,7 +16,7 @@ KAFKA_CONTAINER_NAME=jpo-cvdp-kafka-1
 MAP_FILE=data/I_80.edges
 BSM_DATA_FILE=data/I_80_test.json
 TIM_DATA_FILE=data/I_80_test_TIMS.json
-PPM_CONTAINER_NAME=ppm_kafka
+PPM_CONTAINER_NAME=test_ppm_instance
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
 
