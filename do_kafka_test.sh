@@ -12,7 +12,8 @@ CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-KAFKA_CONTAINER_NAME=jpo-cvdp-kafka-1
+CURRENT_DIR_NAME=${PWD##*/}
+KAFKA_CONTAINER_NAME=$CURRENT_DIR_NAME-kafka-1
 MAP_FILE=data/I_80.edges
 BSM_DATA_FILE=data/I_80_test.json
 TIM_DATA_FILE=data/I_80_test_TIMS.json
