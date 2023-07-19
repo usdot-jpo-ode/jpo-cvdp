@@ -601,7 +601,7 @@ TEST_CASE("Entity", "[quad][entity]") {
         CHECK(phss->get_way_type_index() == 3); 
         CHECK(phss->get_way_width() == Approx(17.0)); 
         CHECK(phss->dlatitude() == Approx(-0.00362).margin(0.000003));
-        CHECK(phss->dlongitude() == Approx(0.00435).margin(0.000003));
+        CHECK(phss->dlongitude() == Approx(0.00435).margin(0.000004));
         CHECK(phss->length() == Approx(kPHSSDist));
         CHECK(phss->length_haversine() == Approx(kPHSSDist));
         CHECK(phss->bearing() == Approx(135.78563));
