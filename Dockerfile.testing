@@ -1,22 +1,38 @@
-FROM ubuntu:18.04
+FROM alpine:3.12
 USER root
 
 WORKDIR /cvdi-stream
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Add build tools.
-RUN apt-get update && apt-get install -y software-properties-common wget git make gcc-7 g++-7 gcc-7-base && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
+# update the package manager
+RUN apk update
 
-# Install cmake.
-RUN apt install -y libprotobuf-dev protobuf-compiler
-RUN apt install -y cmake
+# add build tools
+RUN apk add --upgrade --no-cache --virtual .build-deps \
+    build-base \
+    cmake \
+    git \
+    wget \
+    gcc \
+    g++ \
+    linux-headers \
+    make \
+    musl-dev \
+    openssl-dev \
+    protobuf-dev \
+    protobuf-c-dev \
+    sudo \
+    bash
 
-# Install librdkafka.
-RUN apt-get install -y libsasl2-dev libsasl2-modules libssl-dev librdkafka-dev
+# add librdkafka from edge branch
+RUN sed -i -e 's/v3\.4/edge/g' /etc/apk/repositories \
+    && apk upgrade --update-cache --available \
+    && apk add --no-cache librdkafka librdkafka-dev
 
-# install python for testing
-RUN apt-get install -y python3
+# add python3 for testing
+RUN apk add --upgrade --no-cache python3 python3-dev
+
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
