@@ -31,13 +31,18 @@ max_attempts=5
 while true; do
     attempts=$((attempts+1))
 
-    /cvdi-stream-build/kafka-test/kafka_tool -C -b $broker -p 0 -t topic.FilteredOdeBsmJson -e -o $offset 2> con.err | /cvdi-stream/docker-test/test_out.py > tmp.out
+    timeout 5 /cvdi-stream-build/kafka-test/kafka_tool -C -b $broker -p 0 -t topic.FilteredOdeBsmJson -e -o $offset 2> con.err | /cvdi-stream/docker-test/test_out.py > tmp.out
+    if [[ $? != 0 ]]; then
+        echo "Error: Kafka consumer timed out."
+        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        echo -e $RED"TEST FAILED!"$NC
+        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        exit 1
+    fi
 
     lines=$(cat tmp.out | wc -l)
-
     if [[ $lines != "0" ]]; then 
         cat tmp.out
-
         break
     else
         if [[ $attempts > $max_attempts ]]; then

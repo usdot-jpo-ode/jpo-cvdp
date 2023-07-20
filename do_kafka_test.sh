@@ -27,6 +27,18 @@ setup() {
         exit 1
     fi
 
+    # print setup info
+    echo "=== Setup Info ==="
+    echo "DOCKER_HOST_IP: $DOCKER_HOST_IP"
+    echo "KAFKA_CONTAINER_NAME: $KAFKA_CONTAINER_NAME"
+    echo "MAP_FILE: $MAP_FILE"
+    echo "BSM_DATA_FILE: $BSM_DATA_FILE"
+    echo "TIM_DATA_FILE: $TIM_DATA_FILE"
+    echo "PPM_CONTAINER_NAME: $PPM_CONTAINER_NAME"
+    echo "PPM_IMAGE_TAG: $PPM_IMAGE_TAG"
+    echo "PPM_IMAGE_NAME: $PPM_IMAGE_NAME"
+    echo "=================="
+
     ./start_kafka.sh
 }
 
