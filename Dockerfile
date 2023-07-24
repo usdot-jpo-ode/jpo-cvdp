@@ -1,4 +1,5 @@
-FROM alpine:3.12
+# === BUILDER IMAGE ===
+FROM alpine:3.12 as builder
 USER root
 
 WORKDIR /cvdi-stream
@@ -8,7 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # update the package manager
 RUN apk update
 
-# add build tools
+# add build dependencies
 RUN apk add --upgrade --no-cache --virtual .build-deps \
     build-base \
     cmake \
@@ -39,8 +40,31 @@ ADD ./kafka-test /cvdi-stream/kafka-test
 ADD ./unit-test-data /cvdi-stream/unit-test-data
 ADD ./config /cvdi-stream/config
 
-# Do the build.
+# do the build
 RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvdi-stream-build && cmake /cvdi-stream && make
+
+# === RUNTIME IMAGE ===
+FROM alpine:3.12
+USER root
+
+WORKDIR /cvdi-stream
+
+# add runtime dependencies
+RUN apk add --upgrade --no-cache \
+    bash \
+    libstdc++ \
+    libgcc \
+    libprotobuf \
+    protobuf
+
+# add librdkafka from edge branch
+RUN sed -i -e 's/v3\.4/edge/g' /etc/apk/repositories \
+    && apk upgrade --update-cache --available \
+    && apk add --no-cache librdkafka librdkafka-dev
+
+# copy the built files from the builder
+COPY --from=builder /cvdi-stream-build/ /cvdi-stream-build/
+COPY --from=builder /cvdi-stream /cvdi-stream
 
 # Add test data. This changes frequently so keep it low in the file.
 ADD ./docker-test /cvdi-stream/docker-test
