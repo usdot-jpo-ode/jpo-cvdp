@@ -13,15 +13,9 @@ RUN apk update
 RUN apk add --upgrade --no-cache --virtual .build-deps \
     cmake \
     g++ \
-    make
-
-# add librdkafka from edge branch
-RUN sed -i -e 's/v3\.4/edge/g' /etc/apk/repositories \
-    && apk upgrade --update-cache --available \
-    && apk add --no-cache librdkafka librdkafka-dev
-
-# add python3 for testing
-RUN apk add --upgrade --no-cache python3 python3-dev
+    make \
+    librdkafka \
+    librdkafka-dev
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
@@ -44,12 +38,9 @@ WORKDIR /cvdi-stream
 # add runtime dependencies
 RUN apk add --upgrade --no-cache \
     bash \
-    python3
-
-# add librdkafka from edge branch
-RUN sed -i -e 's/v3\.4/edge/g' /etc/apk/repositories \
-    && apk upgrade --update-cache --available \
-    && apk add --no-cache librdkafka librdkafka-dev
+    python3 \
+    librdkafka \
+    librdkafka-dev
 
 # copy the built files from the builder
 COPY --from=builder /cvdi-stream-build/ /cvdi-stream-build/
