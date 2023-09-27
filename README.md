@@ -185,6 +185,32 @@ If the RPM_DEBUG environment variable is set to true, debug messages will be log
 ## Build & Exec Script
 The [`build_and_exec.sh`](./build_and_exec.sh) script can be used to build a tagged image of the PPM, run the container & enter it with an interactive shell. This script can be used to test the PPM in a standalone environment.
 
+This script should be run outside of the dev container in an environment where Docker is available.
+
+It should be noted that this script needs to use the LF end-of-line sequence.
+
+## Kafka Test Script
+The [do_kafka_test.sh](./do_kafka_test.sh) script is designed to perform integration tests on a Kafka instance. To execute the tests, this script relies on the following scripts: standalone.sh, standalone_multi.sh, do_bsm_test.sh, and do_tim_test.sh.
+
+To ensure proper execution, it is recommended to run this script outside of the dev container where docker is available. This is because the script will spin up a standalone kafka instance and will not be able to access the docker daemon from within the dev container.
+
+It should be noted that this script and any dependent scripts need to use the LF end-of-line sequence. These include the following:
+- do_kafka_test.sh
+- standalone.sh
+- standalone_multi.sh
+- do_bsm_test.sh
+- do_tim_test.sh
+- test_in.py
+- test_out.py
+
+The DOCKER_HOST_IP environment variable must be set to the IP address of the host machine. This is required for the script to function properly. This can be set by using the following command:
+
+```
+export DOCKER_HOST_IP=$(ifconfig | zgrep -m 1 -oP '(?<=inet\s)\d+(\.\d+){3}')
+```
+
+WSL will sometimes hang while the script waits for kafka to create topics. The script should exit after a number of attempts, but if it does not, running `wsl --shutdown` in a windows command prompt and restarting the docker services is recommended.
+
 ## Some Notes
 - The tests for this project can be run after compilation by running the "ppm_tests" executable.
 - When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.

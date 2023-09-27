@@ -5,6 +5,8 @@ ARG PPM_MAP_FILE
 
 WORKDIR /cvdi-stream
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Add build tools.
 RUN apt-get update && apt-get install -y software-properties-common wget git make gcc-7 g++-7 gcc-7-base && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 100
 
@@ -30,6 +32,7 @@ ADD ./kafka-test /cvdi-stream/kafka-test
 ADD ./unit-test-data /cvdi-stream/unit-test-data
 ADD config/${PPM_CONFIG_FILE} /cvdi-stream/config/
 ADD data/${PPM_MAP_FILE} /cvdi-stream/config/
+ADD ./config /cvdi-stream/config
 
 # Do the build.
 RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvdi-stream-build && cmake /cvdi-stream && make
