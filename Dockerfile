@@ -37,5 +37,5 @@ RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvd
 ADD ./docker-test /cvdi-stream/docker-test
 
 # Run the tool.
-RUN chmod 7777 /cvdi-stream/docker-test/ppm_no_map.sh
+RUN chmod 777 /cvdi-stream/docker-test/ppm_no_map.sh
 CMD ["/cvdi-stream/docker-test/ppm_no_map.sh"]
