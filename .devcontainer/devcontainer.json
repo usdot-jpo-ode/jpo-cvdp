@@ -19,13 +19,6 @@
 		"ms-vscode.cmake-tools"
 	],
 
-	"features": {
-		"docker-from-docker": {
-			"version": "latest",
-			"moby": true
-		}
-	},
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
