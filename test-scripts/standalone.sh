@@ -34,7 +34,7 @@ startPPMContainer() {
         fi
     done
     echo "Starting PPM in new container '$PPM_CONTAINER_NAME'"
-    docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
+    docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true --env PPM_LOG_LEVEL=DEBUG -v /tmp/docker-test/data:/ppm_data -d -p '8080:8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
 
     echo "Waiting for $PPM_CONTAINER_NAME to spin up"
     # while num lines of docker logs is less than 100, sleep 1
