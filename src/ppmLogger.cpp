@@ -13,7 +13,27 @@ PpmLogger::PpmLogger(std::string logname) {
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
     }
     setLogger(std::make_shared<spdlog::logger>("log", begin(sinks), end(sinks)));
+
+    // use PPM_LOG_LEVEL environment variable to set the log level
+    std::string logLevelString = getEnvironmentVariable("PPM_LOG_LEVEL");
+    std::string lowercaseLogLevelString = toLowercase(logLevelString);
+    if (lowercaseLogLevelString == "trace") {
+        loglevel = spdlog::level::trace;
+    } else if (lowercaseLogLevelString == "debug") {
+        loglevel = spdlog::level::debug;
+    } else if (lowercaseLogLevelString == "info") {
+        loglevel = spdlog::level::info;
+    } else if (lowercaseLogLevelString == "warn") {
+        loglevel = spdlog::level::warn;
+    } else if (lowercaseLogLevelString == "error") {
+        loglevel = spdlog::level::err;
+    } else if (lowercaseLogLevelString == "critical") {
+        loglevel = spdlog::level::critical;
+    } else {
+        std::cout << "WARNING: PPM_LOG_LEVEL is not set to a valid value. Using default." << std::endl;
+    }
     set_level( loglevel );
+    
     set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
 }
 
