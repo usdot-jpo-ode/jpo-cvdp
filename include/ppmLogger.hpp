@@ -38,9 +38,11 @@ class PpmLogger {
 
         void setLogger(std::shared_ptr<spdlog::logger> spdlog_logger);
         void initializeFlagValuesFromEnvironment();
+        void setLogLevelFromEnvironment();
         const char* getEnvironmentVariable(std::string var);
         std::string toLowercase(std::string str);
         bool convertStringToBool(std::string str);
+        std::string getCurrentLogLevelAsString();
 };
 
 #endif
