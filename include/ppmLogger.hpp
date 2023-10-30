@@ -29,7 +29,7 @@ class PpmLogger {
         long LOG_SIZE = 1048576 * 5;                   ///> The size of a single log; these rotate.
         int LOG_NUM = 5;                               ///> The number of logs to rotate.
     
-        spdlog::level::level_enum loglevel = spdlog::level::trace;     ///> Log level for the log.
+        spdlog::level::level_enum loglevel = spdlog::level::err;     ///> Log level for the log.
         
         std::shared_ptr<spdlog::logger> spdlogger;
 

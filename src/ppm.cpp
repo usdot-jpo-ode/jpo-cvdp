@@ -245,19 +245,19 @@ void PPM::print_configuration() const
 bool PPM::configure() {
 
     if ( optIsSet('v') ) {
-        if ( "trace" == optString('v') ) {
+        if ( "TRACE" == optString('v') ) {
             logger->set_level( spdlog::level::trace );
-        } else if ( "debug" == optString('v') ) {
-            logger->set_level( spdlog::level::trace );
-        } else if ( "info" == optString('v') ) {
-            logger->set_level( spdlog::level::trace );
-        } else if ( "warning" == optString('v') ) {
+        } else if ( "DEBUG" == optString('v') ) {
+            logger->set_level( spdlog::level::debug );
+        } else if ( "INFO" == optString('v') ) {
+            logger->set_level( spdlog::level::info );
+        } else if ( "WARNING" == optString('v') ) {
             logger->set_level( spdlog::level::warn );
-        } else if ( "error" == optString('v') ) {
+        } else if ( "ERROR" == optString('v') ) {
             logger->set_level( spdlog::level::err );
-        } else if ( "critical" == optString('v') ) {
+        } else if ( "CRITICAL" == optString('v') ) {
             logger->set_level( spdlog::level::critical );
-        } else if ( "off" == optString('v') ) {
+        } else if ( "OFF" == optString('v') ) {
             logger->set_level( spdlog::level::off );
         } else {
             logger->warn("information logger level was configured but unreadable; using default.");
