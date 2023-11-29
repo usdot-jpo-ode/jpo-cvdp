@@ -243,27 +243,6 @@ void PPM::print_configuration() const
 }
 
 bool PPM::configure() {
-
-    if ( optIsSet('v') ) {
-        if ( "trace" == optString('v') ) {
-            logger->set_level( spdlog::level::trace );
-        } else if ( "debug" == optString('v') ) {
-            logger->set_level( spdlog::level::trace );
-        } else if ( "info" == optString('v') ) {
-            logger->set_level( spdlog::level::trace );
-        } else if ( "warning" == optString('v') ) {
-            logger->set_level( spdlog::level::warn );
-        } else if ( "error" == optString('v') ) {
-            logger->set_level( spdlog::level::err );
-        } else if ( "critical" == optString('v') ) {
-            logger->set_level( spdlog::level::critical );
-        } else if ( "off" == optString('v') ) {
-            logger->set_level( spdlog::level::off );
-        } else {
-            logger->warn("information logger level was configured but unreadable; using default.");
-        }
-    } // else it is already set to default.
-
     logger->trace("starting configure()");
 
     std::string line;
@@ -855,7 +834,6 @@ int main( int argc, char* argv[] )
     ppm.addOption('x', "exit", "Exit consumer when last message in partition has been received.", false);
     ppm.addOption('d', "debug", "debug level.", true);
     ppm.addOption('m', "mapfile", "Map data file to specify the geofence.", true);
-    ppm.addOption('v', "log-level", "The info log level [trace,debug,info,warning,error,critical,off]", true);
     ppm.addOption('D', "log-dir", "Directory for the log files.", true);
     ppm.addOption('R', "log-rm", "Remove specified/default log files if they exist.", false);
     ppm.addOption('i', "log", "Log file name.", true);

@@ -1,10 +1,70 @@
 #!/bin/bash
 
-# NOTE that this script will hang if the offsets are wrong. In other words,
-# only use this for testing/demo; NOT production.
+# This script starts two PPM containers, one for BSMs and one for TIMs, in separate Docker containers.
+# It first checks if all necessary input files exist, creates necessary directories, and copies the input
+# files to those directories. It then starts the PPM containers, waits for them to spin up, produces test
+# data, and finally stops the containers.
 
-# Test two ppm modules at once, as two docker containers.
+# This script should only be used for testing or demo purposes, as it may hang if the offsets are wrong. It also
+# checks if the required configuration and test data files exist before proceeding with the test.
+
+PPM_BSM_CONTAINER_NAME=test_ppm_bsm_instance
+PPM_TIM_CONTAINER_NAME=test_ppm_tim_instance
+PPM_IMAGE_TAG=do-kafka-test-ppm-image
+PPM_IMAGE_NAME=jpo-cvdp_ppm
+
 USAGE="standalone_multi.sh [MAP_FILE] [BSM_CONFIG] [TIM_CONFIG] [BSM_TEST_FILE] [TIM_TEST_FILE] [BSM_OFFSET] [TIM_OFSET]"
+
+startPPMContainer() {
+    # Start the PPM in a new container.
+    dockerHostIp=$DOCKER_HOST_IP
+    PPM_CONTAINER_NAME=$1
+    data_source=$2
+    ppm_container_port=$3
+
+    stopPPMContainer $PPM_CONTAINER_NAME
+
+    # make sure ip can be pinged
+    while true; do
+        if ping -c 1 $dockerHostIp &> /dev/null; then
+            break
+        else
+            echo "Docker host ip $dockerHostIp is not pingable. Exiting."
+            exit 1
+        fi
+    done
+    echo "Starting PPM in new container"
+    docker run --name $PPM_CONTAINER_NAME --env DOCKER_HOST_IP=$dockerHostIp --env PPM_LOG_TO_CONSOLE=true --env PPM_LOG_TO_FILE=true --env PPM_LOG_LEVEL=DEBUG -v $data_source:/ppm_data -d -p $ppm_container_port':8080' $PPM_IMAGE_NAME:$PPM_IMAGE_TAG /cvdi-stream/docker-test/ppm_standalone.sh
+
+    echo "Waiting for $PPM_CONTAINER_NAME to spin up"
+    # while num lines of docker logs is less than 100, sleep 1
+    secondsWaited=0
+    while [ $(docker logs $PPM_CONTAINER_NAME | wc -l) -lt 100 ]; do
+        sleep 1
+        secondsWaited=$((secondsWaited+1))
+    done
+    echo "$PPM_CONTAINER_NAME is ready after $secondsWaited seconds"
+
+
+    if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) == "0" ]; then
+        echo "PPM container '$PPM_CONTAINER_NAME' is not running. Exiting."
+        exit 1
+    fi
+
+    container_logs=$(docker logs $PPM_CONTAINER_NAME 2>&1)
+    if [ $(echo $container_logs | grep "Failed to make shape" | wc -l) != "0" ]; then
+        echo "Warning: PPM failed to make shape."
+    fi
+}
+
+stopPPMContainer() {
+    PPM_CONTAINER_NAME=$1
+    if [ $(docker ps | grep $PPM_CONTAINER_NAME | wc -l) != "0" ]; then
+        echo "Stopping existing PPM container"
+        docker stop $PPM_CONTAINER_NAME > /dev/null
+    fi
+    docker rm -f $PPM_CONTAINER_NAME > /dev/null
+}
 
 if [ -z $1 ] || [ ! -f $1 ]; then
     echo "Map file: "$1" not found!"
@@ -68,16 +128,16 @@ echo "**************************"
 echo "Running standalone multi PPM test with "$1 $2 $3 $4 $5 $6 $7
 echo "**************************"
 
+dockerHostIp=$DOCKER_HOST_IP
 # Start the BSM PPM in a new container.
-docker run --name ppm_bsm_kafka -v /tmp/docker-test/bsm-data:/ppm_data -it --rm -p '8080:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
-# Start the TIM PPM in a new container.
-docker run --name ppm_tim_kafka -v /tmp/docker-test/tim-data:/ppm_data -it --rm -p '8081:8080' -d jpocvdp_ppm:latest /cvdi-stream/docker-test/ppm_standalone.sh > /dev/null
+startPPMContainer $PPM_BSM_CONTAINER_NAME /tmp/docker-test/bsm-data 8080
 
-sleep 10
+# Start the TIM PPM in a new container.
+startPPMContainer $PPM_TIM_CONTAINER_NAME /tmp/docker-test/tim-data 8081
 
 # Produce the test data.
-docker exec ppm_bsm_kafka /cvdi-stream/docker-test/do_bsm_test.sh $BSM_OFFSET
-docker exec ppm_tim_kafka /cvdi-stream/docker-test/do_tim_test.sh $TIM_OFFSET
+docker exec $PPM_BSM_CONTAINER_NAME /cvdi-stream/docker-test/do_bsm_test.sh $BSM_OFFSET
+docker exec $PPM_TIM_CONTAINER_NAME /cvdi-stream/docker-test/do_tim_test.sh $TIM_OFFSET
 
-docker stop ppm_bsm_kafka > /dev/null
-docker stop ppm_tim_kafka > /dev/null
+stopPPMContainer $PPM_BSM_CONTAINER_NAME
+stopPPMContainer $PPM_TIM_CONTAINER_NAME

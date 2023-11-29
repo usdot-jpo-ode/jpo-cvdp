@@ -1,6 +1,28 @@
 Jpo-cvdp Release Notes
 ----------------------------
 
+Version 1.2.0, released November 2023
+----------------------------------------
+
+### **Summary**
+The changes for the jpo-cvdp 1.2.0 release involve the addition of CI/CD configuration, a new build.sh script, an updated catch dependency, modified sonar properties, adjusted unit tests for accuracy, standardized logging level strings to uppercase and fixes for the `do_kafka_test.sh` script.
+- Added CI/CD configuration
+- Added `build.sh` script
+- Updated catch dependency
+- Modified sonar properties.
+- Modified a unit test to use reasonable accuracy.
+- Standardized logging level strings to uppercase.
+- Fixed the `do_kafka_test.sh` script
+- Changed default logging level to ‘ERROR’ instead of ‘TRACE’
+- Directly accessed PPM_LOG_LEVEL in PpmLogger class instead of using ‘v’ opt string.
+- Set PPM_LOG_LEVEL to DEBUG in `standalone.sh` and `standalone_multi.sh` scripts
+- Removed `docker-from-docker` feature from .devcontainer spec
+- Replaced instances of `chmod 7777` in dockerfiles with `chmod 777`
+
+Known Issues:
+-	No known issues at this time.
+
+
 Version 1.1.0, released July 5th 2023
 ----------------------------------------
 

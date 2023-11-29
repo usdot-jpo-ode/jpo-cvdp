@@ -1,10 +1,8 @@
 #include "ppmLogger.hpp"
 
 PpmLogger::PpmLogger(std::string logname) {
-    // pull in the file & console flags from the environment
     initializeFlagValuesFromEnvironment();
     
-    // setup logger.
     std::vector<spdlog::sink_ptr> sinks;
     if (logToFileFlag) {
         sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logname, LOG_SIZE, LOG_NUM));
@@ -13,7 +11,8 @@ PpmLogger::PpmLogger(std::string logname) {
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_mt>());
     }
     setLogger(std::make_shared<spdlog::logger>("log", begin(sinks), end(sinks)));
-    set_level( loglevel );
+
+    setLogLevelFromEnvironment();
     set_pattern("[%C%m%d %H:%M:%S.%f] [%l] %v");
 }
 
@@ -64,6 +63,51 @@ void PpmLogger::initializeFlagValuesFromEnvironment() {
     }
 }
 
+/**
+ * @brief Sets the log level based on the PPM_LOG_LEVEL environment variable.
+ * The log level is set to the default in the following cases:
+ * - PPM_LOG_LEVEL is not set
+ * - PPM_LOG_LEVEL is set to an unrecognized value (including empty string or number)
+ */
+void PpmLogger::setLogLevelFromEnvironment() {
+    std::string logLevelString = getEnvironmentVariable("PPM_LOG_LEVEL");
+    if (logLevelString == "") {
+        std::cout << "WARNING: PPM_LOG_LEVEL is not set. Using default: " << getCurrentLogLevelAsString() << std::endl;
+        return;
+    }
+    
+    std::string lowercaseLogLevelString = toLowercase(logLevelString);
+    if (lowercaseLogLevelString == "trace") {
+        loglevel = spdlog::level::trace;
+    }
+    else if (lowercaseLogLevelString == "debug") {
+        loglevel = spdlog::level::debug;
+    }
+    else if (lowercaseLogLevelString == "info") {
+        loglevel = spdlog::level::info;
+    }
+    else if (lowercaseLogLevelString == "warn") {
+        loglevel = spdlog::level::warn;
+    }
+    else if (lowercaseLogLevelString == "error") {
+        loglevel = spdlog::level::err;
+    }
+    else if (lowercaseLogLevelString == "critical") {
+        loglevel = spdlog::level::critical;
+    }
+    else {
+        std::cout << "WARNING: PPM_LOG_LEVEL is set but is not recognized. Using default: " << getCurrentLogLevelAsString() << std::endl;
+    }
+    set_level( loglevel );
+    info("Log level set to " + getCurrentLogLevelAsString());
+}
+
+/**
+ * @brief Retrieves the value of an environment variable.
+ * 
+ * @param variableName The name of the environment variable to retrieve.
+ * @return const char* The value of the environment variable or an empty string if the variable is not set.
+ */
 const char* PpmLogger::getEnvironmentVariable(std::string variableName) {
     char* variableValue = getenv(variableName.c_str());
     if (variableValue == NULL) {
@@ -89,4 +133,30 @@ bool PpmLogger::convertStringToBool(std::string value) {
         return true;
     }
     return false;
+}
+
+std::string PpmLogger::getCurrentLogLevelAsString() {
+    std::string toReturn = "";
+    if (loglevel == spdlog::level::trace) {
+        toReturn = "TRACE";
+    }
+    else if (loglevel == spdlog::level::debug) {
+        toReturn = "DEBUG";
+    }
+    else if (loglevel == spdlog::level::info) {
+        toReturn = "INFO";
+    }
+    else if (loglevel == spdlog::level::warn) {
+        toReturn = "WARN";
+    }
+    else if (loglevel == spdlog::level::err) {
+        toReturn = "ERROR";
+    }
+    else if (loglevel == spdlog::level::critical) {
+        toReturn = "CRITICAL";
+    }
+    else {
+        toReturn = "UNKNOWN";
+    }
+    return toReturn;
 }

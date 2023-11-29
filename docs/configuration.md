@@ -19,7 +19,6 @@ line options override parameters specified in the configuration file.** The foll
 -i | --log : Log file name.
 -R | --log-rm : Remove specified/default log files if they exist.
 -D | --log-dir : Directory for the log files.
--v | --log-level : The info log level [trace,debug,info,warning,error,critical,off]
 -t | --produce-topic : the name of the topic where filtered messages are published.
 -p | --partition : the partition from which to consume raw messages.
 -C | --config-check : Check whether the configuration will work and output all the settings.

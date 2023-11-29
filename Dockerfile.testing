@@ -13,13 +13,10 @@ RUN apt install -y libprotobuf-dev protobuf-compiler
 RUN apt install -y cmake
 
 # Install librdkafka.
-RUN apt-get install -y sudo
-RUN wget -qO - https://packages.confluent.io/deb/7.3/archive.key | sudo apt-key add -
-RUN add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/7.3 stable main"
-RUN add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
-RUN apt update
-RUN apt-get install -y libsasl2-modules libsasl2-modules-gssapi-mit libsasl2-dev libssl-dev 
-RUN apt install -y librdkafka-dev
+RUN apt-get install -y libsasl2-dev libsasl2-modules libssl-dev librdkafka-dev
+
+# install python for testing
+RUN apt-get install -y python3
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
@@ -35,3 +32,7 @@ RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvd
 
 # Add test data. This changes frequently so keep it low in the file.
 ADD ./docker-test /cvdi-stream/docker-test
+
+# Run the tool.
+RUN chmod 777 /cvdi-stream/docker-test/ppm_no_map.sh
+CMD ["/cvdi-stream/docker-test/ppm_no_map.sh"]
