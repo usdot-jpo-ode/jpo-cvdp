@@ -22,9 +22,9 @@ PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
 
 setup() {
-    if [ -z $DOCKER_HOST_IP ]; then
-        echo "DOCKER_HOST_IP is not set. Exiting."
-        exit 1
+    if [ -z $DOCKER_HOST_IP ]
+    then
+        export DOCKER_HOST_IP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | grep -v '10.*' | head -n 1)
     fi
 
     # print setup info
