@@ -13,7 +13,6 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 
-KAFKA_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep kafka)
 MAP_FILE=data/I_80.edges
 BSM_DATA_FILE=data/I_80_test.json
 TIM_DATA_FILE=data/I_80_test_TIMS.json
@@ -36,7 +35,7 @@ setup() {
     # print setup info
     echo "=== Setup Info ==="
     echo "DOCKER_HOST_IP: $DOCKER_HOST_IP"
-    echo "KAFKA_CONTAINER_NAME: $KAFKA_CONTAINER_NAME"
+    echo "KAFKA_CONTAINER_NAME is resolved dynamically"
     echo "MAP_FILE: $MAP_FILE"
     echo "BSM_DATA_FILE: $BSM_DATA_FILE"
     echo "TIM_DATA_FILE: $TIM_DATA_FILE"
@@ -51,6 +50,7 @@ setup() {
 waitForKafkaToCreateTopics() {
     maxAttempts=100
     attempts=0
+    KAFKA_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep kafka)
     while true; do
         attempts=$((attempts+1))
         if [ $(docker ps | grep $KAFKA_CONTAINER_NAME | wc -l) == "0" ]; then
