@@ -1,5 +1,20 @@
+# === RUNTIME DEPENDENCIES IMAGE ===
+FROM alpine:3.12 as runtime-deps
+USER root
+
+WORKDIR /cvdi-stream
+
+# update the package manager
+RUN apk update
+
+# add runtime dependencies
+RUN apk add --upgrade --no-cache \
+    bash \
+    librdkafka \
+    librdkafka-dev
+
 # === BUILDER IMAGE ===
-FROM alpine:3.12 as builder
+FROM runtime-deps as builder
 USER root
 ARG PPM_CONFIG_FILE
 ARG PPM_MAP_FILE
@@ -8,16 +23,11 @@ WORKDIR /cvdi-stream
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# update the package manager
-RUN apk update
-
 # add build dependencies
 RUN apk add --upgrade --no-cache --virtual .build-deps \
     cmake \
     g++ \
-    make \
-    librdkafka \
-    librdkafka-dev
+    make
 
 # add the source and build files
 ADD CMakeLists.txt /cvdi-stream
@@ -34,16 +44,10 @@ ADD ./config /cvdi-stream/config
 RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvdi-stream-build && cmake /cvdi-stream && make
 
 # === RUNTIME IMAGE ===
-FROM alpine:3.12
+FROM runtime-deps
 USER root
 
 WORKDIR /cvdi-stream
-
-# add runtime dependencies
-RUN apk add --upgrade --no-cache \
-    bash \
-    librdkafka \
-    librdkafka-dev
 
 # copy the built files from the builder
 COPY --from=builder /cvdi-stream-build/ /cvdi-stream-build/
