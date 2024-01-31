@@ -43,11 +43,11 @@ jobs:
          cmake --build _cmake_build
          cmake --build _cmake_build --target install  
      - name: Install sonar-scanner and build-wrapper
-       uses: SonarSource/sonarcloud-github-c-cpp@v1  # This Action Installs sonar cloud and build wrapper to run sonar scan analysis  
+       uses: sonarsource/sonarcloud-github-c-cpp@v2  # This Action Installs sonar cloud and build wrapper to run sonar scan analysis  
      - name: Set up Docker Buildx
-       uses: docker/setup-buildx-action@v2
+       uses: docker/setup-buildx-action@v3
      - name: Build
-       uses: docker/build-push-action@v3       
+       uses: docker/build-push-action@v5
      - name: Build and Generate test coverage
        run: |
          cd $GITHUB_WORKSPACE
@@ -72,9 +72,7 @@ jobs:
          name: jpo-cvdp
          path: /home/runner/work/jpo-cvdp/jpo-cvdp/bw-output       
      - name: Setup SonarScanner
-       uses: warchant/setup-sonar-scanner@v4 # This action is used to setup sonar scanner with required versions.
-       with:
-         version: 4.8.0.2856
+       uses: warchant/setup-sonar-scanner@v7 # This action is used to setup sonar scanner with required versions.
      - name: Generate sonar properties file
        run: |
          cat <<EOF > /tmp/sonar-scanner.properties
