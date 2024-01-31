@@ -10,6 +10,7 @@ RUN apk update
 # add runtime dependencies
 RUN apk add --upgrade --no-cache \
     bash \
+    python3 \
     librdkafka \
     librdkafka-dev
 
