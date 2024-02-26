@@ -12,8 +12,7 @@ CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-CURRENT_DIR_NAME=${PWD##*/}
-KAFKA_CONTAINER_NAME=$CURRENT_DIR_NAME-kafka-1
+
 MAP_FILE=data/I_80.edges
 BSM_DATA_FILE=data/I_80_test.json
 TIM_DATA_FILE=data/I_80_test_TIMS.json
@@ -22,15 +21,21 @@ PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
 
 setup() {
-    if [ -z $DOCKER_HOST_IP ]; then
-        echo "DOCKER_HOST_IP is not set. Exiting."
+    if [ -z $DOCKER_HOST_IP ]
+    then
+        export DOCKER_HOST_IP=$(ifconfig | grep -A 1 'inet ' | grep -v 'inet6\|127.0.0.1' | awk '{print $2}' | grep -E '^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-1]\.|^192\.168\.' | head -n 1)
+    fi
+    if [ -z $DOCKER_HOST_IP ]
+    then
+        echo "DOCKER_HOST_IP is not set and could not be determined. Exiting."
         exit 1
     fi
+
 
     # print setup info
     echo "=== Setup Info ==="
     echo "DOCKER_HOST_IP: $DOCKER_HOST_IP"
-    echo "KAFKA_CONTAINER_NAME: $KAFKA_CONTAINER_NAME"
+    echo "KAFKA_CONTAINER_NAME is resolved dynamically"
     echo "MAP_FILE: $MAP_FILE"
     echo "BSM_DATA_FILE: $BSM_DATA_FILE"
     echo "TIM_DATA_FILE: $TIM_DATA_FILE"
@@ -45,6 +50,7 @@ setup() {
 waitForKafkaToCreateTopics() {
     maxAttempts=100
     attempts=0
+    KAFKA_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep kafka)
     while true; do
         attempts=$((attempts+1))
         if [ $(docker ps | grep $KAFKA_CONTAINER_NAME | wc -l) == "0" ]; then

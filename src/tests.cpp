@@ -628,10 +628,24 @@ TEST_CASE("Entity", "[quad][entity]") {
     ss << *phss_area;
     
     SECTION("Area") {
-        // The check below works on os x but not on Ubunutu.
-        // CHECK(ss.str() == "[35.95255324700415,-83.93236639356081, 35.94893124700415,-83.92801339666028, 35.94882475295794,-83.92814860324864, 35.95244675295795,-83.93250160634807, ]");
-        // The check below works on Ubuntu but not os x.
-        CHECK(ss.str() == "[35.95255324700415,-83.93236639356081, 35.94893124700415,-83.92801339666028, 35.94882475295794,-83.92814860324864, 35.95244675295794,-83.93250160634807, ]");
+        // decrease the precision of the output "[x.xxx, x.xxx, x.xxx, ]" for testing
+        int precision = 7; 
+        std::string copyOfAreaString = ss.str();
+        copyOfAreaString.erase(std::remove(copyOfAreaString.begin(), copyOfAreaString.end(), ' '), copyOfAreaString.end());
+        for (int currentCharIndex = 0; currentCharIndex < copyOfAreaString.size(); currentCharIndex++) {
+            if (copyOfAreaString[currentCharIndex] == '.') {
+                int nextCommaIndex = currentCharIndex + 1;
+                while (copyOfAreaString[nextCommaIndex] != ',') {
+                    nextCommaIndex++;
+                }
+                int offset = currentCharIndex + (precision + 1);
+                int count = nextCommaIndex - currentCharIndex - (precision + 1);
+                copyOfAreaString.erase(offset, count);
+            }
+        }
+        std::string expectedOutput = "[35.9525532,-83.9323663,35.9489312,-83.9280133,35.9488247,-83.9281486,35.9524467,-83.9325016,]";
+        CHECK(copyOfAreaString == expectedOutput);
+
         CHECK_THROWS(phss->to_area(0.0, 10));
         CHECK_THROWS(phss->to_area(-1.0, 10));
         CHECK_NOTHROW(phss->to_area(10.0, 5));

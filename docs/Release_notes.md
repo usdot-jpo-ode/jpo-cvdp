@@ -1,6 +1,21 @@
 Jpo-cvdp Release Notes
 ----------------------------
 
+Version 1.3.0, released February 2024
+
+### **Summary**
+The changes for the jpo-cvdp 1.3.0 release involve the optimization of dockerfiles, addition of dockerhub image documentation & some QoL changes to the `do_kafka_test.sh` script.
+
+Enhancements in this release:
+- CDOT PR 32: Optimized dockerfiles for smaller & faster deployments by switching over to using alpine as the base image.
+- CDOT PR 37: Added dockerhub image documentation
+- CDOT PR 38: Updated `do_kafka_test.sh` script to set DOCKER_HOST_IP automatically
+- CDOT PR 39: Updated `do_kafka_test.sh` script to resolve the KAFKA_CONTAINER_NAME env var dynamically
+
+Known Issues:
+- No known issues at this time.
+
+
 Version 1.2.0, released November 2023
 ----------------------------------------
 
