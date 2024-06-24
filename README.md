@@ -39,6 +39,9 @@ certain speed restrictions.** Do not assume this strategy will work in general.
 There are alternative strategies that must be employed to handle cases where
 loitering locations can aid in learning the identity of the driver.
 
+## Supported Message Types
+- Basic Safety Message (BSM)
+
 ## Table of Contents
 
 1. [Release Notes](#release-notes)
