@@ -1309,10 +1309,6 @@ TEST_CASE( "BSMHandler JSON Id Redaction Only", "[ppm][filtering][idonly]" ) {
     REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1351,9 +1347,6 @@ TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]"
     REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.id.json", json_test_cases ) );
     REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.all.good.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.inside.geofence.tims.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.outside.geofence.tims.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "success" );
@@ -1362,7 +1355,6 @@ TEST_CASE( "BSMHandler JSON Speed Only Filtering", "[ppm][filtering][speedonly]"
     // get rid of previous cases.
     json_test_cases.clear();
     REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.json", json_test_cases ) );
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.bad.speed.tims.json", json_test_cases ) );
     for ( auto& test_case : json_test_cases ) {
         CHECK_FALSE( handler.process( test_case ) );
         CHECK( handler.get_result_string() == "speed" );

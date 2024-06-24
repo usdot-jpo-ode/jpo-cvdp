@@ -7,9 +7,8 @@
 # directory. If the OFFSET argument is provided, it is used as the offset in the topic that
 # will be consumed and displayed in the output. If not, the default value of 0 is used.
 
-# The script then produces the test data by executing either do_bsm_test.sh or do_tim_test.sh
-# depending on the type argument, passing in the OFFSET value as an argument. The PPM container
-# is then stopped, and the script ends.
+# The script then produces the test data by executing do_bsm_test.sh, passing in the OFFSET
+# value as an argument. The PPM container is then stopped, and the script ends.
 
 # This script should only be used for testing or demo purposes, as it may hang if the offsets are wrong. It also
 # checks if the required configuration and test data files exist before proceeding with the test.
@@ -64,7 +63,7 @@ stopPPMContainer() {
     docker rm -f $PPM_CONTAINER_NAME > /dev/null
 }
 
-USAGE="standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [BSM | TIM] [OFFSET]"
+USAGE="standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [OFFSET]"
 
 if [ -z $1 ] || [ ! -f $1 ]; then
     echo "Map file: "$1" not found!"
@@ -85,15 +84,9 @@ if [ -z $3 ] || [ ! -f $3 ]; then
 fi
 
 if [ -z $4 ]; then
-    echo "Must include type (BSM or TIM)!"
-    echo $USAGE
-    exit 1
-fi
-
-if [ -z $5 ]; then
     OFFSET=0
 else
-    OFFSET=$5
+    OFFSET=$4
 fi
 
 mkdir -p /tmp/docker-test/data
@@ -105,26 +98,15 @@ cp $1 /tmp/docker-test/data/road_file.csv
 # TODO replace map file line: sed -i '/TEXT_TO_BE_REPLACED/c\This line is removed by the admin.' /tmp/foo
 cp $2 /tmp/docker-test/data/config.properties
 
-# Copy the data.
-if [ $4 = "BSM" ]; then
-    cp $3 /tmp/docker-test/data/bsm_test.json
-elif [ $4 = "TIM" ]; then
-    cp $3 /tmp/docker-test/data/tim_test.json
-else
-    echo "Type must be BSM or TIM!"
-fi
+cp $3 /tmp/docker-test/data/bsm_test.json
 
 echo "**************************"
-echo "Running standalone test in $PPM_CONTAINER_NAME container with "$1 $2 $3 $4
+echo "Running standalone test in $PPM_CONTAINER_NAME container with "$1 $2 $3
 echo "**************************"
 
 startPPMContainer
 
 # Produce the test data.
-if [ $4 = "BSM" ]; then
-    docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_bsm_test.sh $OFFSET
-elif [ $4 = "TIM" ]; then
-    docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_tim_test.sh $OFFSET
-fi
+docker exec $PPM_CONTAINER_NAME /cvdi-stream/docker-test/do_bsm_test.sh $OFFSET
 
 stopPPMContainer

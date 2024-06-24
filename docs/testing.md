@@ -9,7 +9,7 @@ There are several ways to test the capabilities of the PPM.
 ## Test Files
 
 Several example JSON message test files are in the [jpo-cvdp/data](../data) directory.  These files can be edited to generate
-your own test cases. Each line in the file should be a well-formed BSM or TIM JSON
+your own test cases. Each line in the file should be a well-formed BSM JSON
 object. **Each message should be on a separate line in the file.** **If a JSON object cannot be parsed it is suppressed.**
 
 ## Docker Testing
