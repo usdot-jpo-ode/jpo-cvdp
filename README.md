@@ -165,8 +165,8 @@ The unit tests are also built when the solution is compiled. For information on 
 ## Standalone Cluster
 The docker-compose.yml file is meant for local testing/troubleshooting.
 
-To utilize this, pass the -f flag to the docker-compose command as follows:
-> docker-compose -f docker-compose.yml up
+To utilize this, run the following command in the root directory of the project:
+> docker compose up
 
 Sometimes kafka will fail to start up properly. If this happens, spin down the containers and try again.
 
@@ -195,7 +195,7 @@ This script should be run outside of the dev container in an environment where D
 It should be noted that this script needs to use the LF end-of-line sequence.
 
 ## Kafka Test Script
-The [do_kafka_test.sh](./do_kafka_test.sh) script is designed to perform integration tests on a Kafka instance. To execute the tests, this script relies on the following scripts: standalone.sh and do_bsm_test.sh.
+The [do_kafka_test.sh](./do_kafka_test.sh) script is designed to perform integration tests on a Kafka instance. To execute the tests, this script relies on the `standalone.sh` and `do_bsm_test.sh` scripts.
 
 To ensure proper execution, it is recommended to run this script outside of the dev container where docker is available. This is because the script will spin up a standalone kafka instance and will not be able to access the docker daemon from within the dev container.
 
