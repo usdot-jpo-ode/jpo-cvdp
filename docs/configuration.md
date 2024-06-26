@@ -11,7 +11,7 @@
 
 ## PPM Operation
 
-The messages suppressed and sanitized by the PPM are documented [here](https://github.com/usdot-jpo-ode/jpo-ode/blob/develop/docs/metadata_standards.md).
+The messages suppressed and sanitized by the PPM are documented [here](../README.md#supported-message-types).
 
 The PPM suppresses BSMs and TIMs message and redacts BSM ID fields based on several conditions. These conditions are determined by a set of configuration parameters. The following conditions will result in a message being suppressed, or deleted, from the stream.
 
