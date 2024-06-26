@@ -74,7 +74,8 @@ don’t have an account, a dialog will be presented to you to create one at no c
 Code documentation can be generated using [Doxygen](https://www.doxygen.org) by following the commands below:
 
 ```bash
-$ sudo apt install doxygen
+$ sudo apt-get update
+$ sudo apt-get install doxygen
 $ cd <install root>/jpo-cvdp
 $ doxygen
 ```
