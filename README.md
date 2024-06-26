@@ -1,5 +1,3 @@
-Master: [![Build Status](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp.svg?branch=master)](https://travis-ci.org/usdot-jpo-ode/jpo-cvdp) [![Quality Gate](https://sonarqube.com/api/badges/gate?key=jpo-cvdp-key)](https://sonarqube.com/dashboard?id=jpo-cvdp-key)
-
 # jpo-cvdp
 
 The United States Department of Transportation Joint Program Office (JPO)
