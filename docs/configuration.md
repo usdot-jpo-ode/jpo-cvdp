@@ -18,7 +18,7 @@ The PPM suppresses BSMs and redacts BSM ID fields based on several conditions. T
 1. Message JSON record cannot be parsed.
 2. Message speed is outside of prescribed limits.
 3. Message location is outside of a prescribed geofence.
-4. BSM TemporaryID can be redacted (rendered indistinct).
+4. BSM TemporaryID cannot be redacted (rendered indistinct).
 
 ### PPM Command Line Options
 
