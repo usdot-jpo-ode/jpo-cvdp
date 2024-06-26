@@ -1,15 +1,24 @@
 # Installation and Setup
+## Table of Contents
+1. [Docker Installation](#docker-installation)
+1. [Manual Installation](#manual-installation)
+1. [Integrating with the ODE](#integrating-with-the-ode)
+1. [CDOT Integration with K8s](#cdot-integration-with-k8s)
 
+## Docker Installation
+(TBD)
+
+## Manual Installation
 The following instructions represent the "hard" way to install and test the PPM. A docker image can be built to make
 this easier: [Using the Docker Container](#using-the-docker-container). *The directions that follow were developed for a clean installation of Ubuntu.*
 
-## 1. Install [Git](https://git-scm.com/)
+### 1. Install [Git](https://git-scm.com/)
 
 ```bash
 $ sudo apt install git
 ```
 
-## 2. Install Oracle’s Java
+### 2. Install Oracle’s Java
 
 ```bash
 $ sudo add-apt-repository -y ppa:webupd8team/java
@@ -18,13 +27,13 @@ $ sudo apt install oracle-java8-installer -y
 $ sudo java -version
 ```
 
-## 3. Install [CMake](https://cmake.org) to build the PPM
+### 3. Install [CMake](https://cmake.org) to build the PPM
 
 ```bash
 $ sudo apt install cmake
 ```
 
-## 4. Install [Docker](https://www.docker.com)
+### 4. Install [Docker](https://www.docker.com)
 
 - When following the website instructions, setup the Docker repos and follow the Linux post-install instructions.
 - The CE version seems to work fine.
@@ -49,30 +58,30 @@ $ sudo apt install cmake
 ```
 - NOTE: The DNS IP addresses are ORNL specific.
 
-## 5. Restart the docker daemon to consume the new configuration file.
+### 5. Restart the docker daemon to consume the new configuration file.
 
 ```bash
 $ service docker stop
 $ service docker start
 ```
 
-## 6. Check the configuration using the command below to confirm the updates above are taken if needed:
+### 6. Check the configuration using the command below to confirm the updates above are taken if needed:
 
 ```bash
 $ docker info
 ```
 
-## 7. Install Docker Compose
+### 7. Install Docker Compose
 - Comprehensive instructions can be found on this [website](https://www.digitalocean.com/community/tutorials/how-to-install-docker-compose-on-ubuntu-16-04)
 - Follow steps 1 and 2.
 
-## 8. Create a base directory from which to install all the necessary components to test the PPM.
+### 8. Create a base directory from which to install all the necessary components to test the PPM.
 
 ```bash
 $ export BASE_PPM_DIR=~/some/dir/you/want/to/put/this/stuff
 ```
 
-## 9. Install [`kafka-docker`](https://github.com/wurstmeister/kafka-docker) so kafka and zookeeper can run in a separate container.
+### 9. Install [`kafka-docker`](https://github.com/wurstmeister/kafka-docker) so kafka and zookeeper can run in a separate container.
 
 - Get your host IP address. The address is usually listed under an ethernet adapter, e.g., `en<number>`.
 
@@ -102,7 +111,7 @@ $ cd $BASE_PPM_DIR/kafka-docker
 $ docker-compose down
 ```
 
-## 10. Download and install the Kafka **binary**.
+### 10. Download and install the Kafka **binary**.
 
 -  The Kafka binary provides a producer and consumer tool that can act as surrogates for the ODE (among other items).
 -  [Kafka Binary](https://kafka.apache.org/downloads)
@@ -116,7 +125,7 @@ $ tar -xzf kafka_2.12-0.10.2.1.tgz			               // the kafka version may be 
 $ mv kafka_2.12-0.10.2.1 kafka
 ```
 
-## 11. Download and install [`librdkafka`](https://github.com/edenhill/librdkafka), the C++ Kafka library we use to build the PPM.
+### 11. Download and install [`librdkafka`](https://github.com/edenhill/librdkafka), the C++ Kafka library we use to build the PPM.
 
 ```bash
 $ cd $BASE_PPM_DIR
@@ -130,7 +139,7 @@ $ sudo make install
 - **NOTE**: The header files for `librdkafka` should be located in `/usr/local/include/librdkafka` and the libraries
   (static and dynamic) should be located in `/usr/local/lib`. If you put them in another location the PPM may not build.
 
-## 12. Download, Build, and Install the Privacy Protection Module (PPM)
+### 12. Download, Build, and Install the Privacy Protection Module (PPM)
 
 ```bash
 $ cd $BASE_PPM_DIR
@@ -141,15 +150,15 @@ $ cmake ..
 $ make
 ```
 
-## Additional information
+### Additional information
 
 - The PPM uses [RapidJSON](https://github.com/miloyip/rapidjson), but it is a header-only library included in the repository.
 - The PPM uses [spdlog](https://github.com/gabime/spdlog) for logging; it is a header-only library and the headers are included in the repository.
 - The PPM uses [Catch](https://github.com/philsquared/Catch) for unit testing, but it is a header-only library included in the repository.
 
-# Integrating with the ODE
+## Integrating with the ODE
 
-## Using the Docker Container
+### Using the Docker Container
 
 This will run the PPM module in separate container. First set the required environmental variables. You need to tell the PPM container where the Kafka Docker container is running with the `DOCKER_HOST_IP` variable. Also tell the PPM container where to find the [map file](configuration.md#map-file) and [PPM Configuration file](configuration.md) by setting the `DOCKER_SHARED_VOLUME`:
 
@@ -175,15 +184,15 @@ Add the following service to the end of the `docker-compose.yml` file in the `jp
 Start the ODE containers as normal. Note that the topics for raw BSMs must be created ahead of time.
 
 
-# CDOT Integration with K8s
+## CDOT Integration with K8s
 
-## Overview
+### Overview
 The Colorado Department of Transportation (CDOT) is deploying the various ODE services within a Kubernetes (K8s) environment. Details of this deployment can be found in the main ODE repository [documentation pages](https://github.com/usdot-jpo-ode/jpo-ode/docs). In general, each submodule image is built as a Docker image and then pushed to the CDOT registry. The images are pulled into containers running within the K8s environment, and additional containers are spun up as load requires.
 
-## CDOT PPM Module Build
+### CDOT PPM Module Build
 Several additional files have been added to this project to facilitate the CDOT integration. These files are:
 - cdot-scripts/build_cdot.sh
 - docker-test/ppm_no_map.sh
 
-### Shell Scripts
+#### Shell Scripts
 Two additional scripts have been added to facilitate the CDOT integration. The first, [`ppm_no_map.sh`](../docker-test/ppm_no_map.sh), is modeled after the existing [`ppm.sh`](../docker-test/ppm.sh) script and performs a similar function. This script is used to start the PPM module, but leaves out the hard-coded mapfile name in favor of the properties file configuration. The second script, [`build_cdot.sh`](../cdot-scripts/build_cdot.sh), is used to build the CDOT PPM Docker image, tag the image with a user provided tag, and push that image to a remote repository. This is a simple automation script used to help reduce complexity in the CDOT pipeline.
