@@ -101,7 +101,7 @@ This diagram displays how the different classes in the project are used. If one 
 
 You will need Git to obtain the code and documents in this repository.
 Furthermore, we recommend using Docker to build the necessary containers to
-build, test, and experiment with the PPM. The [Docker](#docker) instructions can be found in that section.
+build, test, and experiment with the PPM.
 
 - [Git](https://git-scm.com/)
 - [Docker](https://www.docker.com)
@@ -208,8 +208,8 @@ export DOCKER_HOST_IP=$(ifconfig | zgrep -m 1 -oP '(?<=inet\s)\d+(\.\d+){3}')
 WSL will sometimes hang while the script waits for kafka to create topics. The script should exit after a number of attempts, but if it does not, running `wsl --shutdown` in a windows command prompt and restarting the docker services is recommended.
 
 ### Some Notes
-- The tests for this project can be run after compilation by running the "ppm_tests" executable.
-- When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be resolved by utilizing the provided dev environment.
+- The tests for this project can be run after compilation by running the "ppm_tests" executable. An easy way to do this is to run the `build_and_exec.sh` script and then run the executable from within the container, which should be located in the /cvdi-stream-build directory.
+- When manually compiling with WSL, librdkafka will sometimes not be recognized. This can be avoided by utilizing the provided dev environment.
 
 ## General Redaction
 General redaction refers to redaction functionality in the BSMHandler that utilizes the 'fieldsToRedact.txt' file to redact specified fields from BSM messages.
