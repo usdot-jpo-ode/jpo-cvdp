@@ -179,7 +179,7 @@ control vehicle size redaction.
 ### Geofencing
 
 Messages can be suppressed based on latitude and longitude attributes. If this 
-capability is turned one through the configuration file, each edge defined in the 
+capability is turned on through the configuration file, each edge defined in the 
 map file is used to infer a *component* geofence that surrounds that segment of the
 road. The image below illustrates how a *rectange* is drawn to form the segment's 
 geofence.  The aforementioned edge attributes and PPM configuration parameters 
@@ -228,7 +228,7 @@ instead of having to modify the mapfile.
   themselves with a consumer group name, and each record published to a topic is
   delivered to one consumer instance within each subscribing consumer group.
   Consumer instances can be in separate processes or on separate machines.  **Due to the way the kafka library 
-  internally updates its topic offsets, the group ID must be unique for each the topic.**
+  internally updates its topic offsets, the group ID must be unique for each topic.**
 
 - `privacy.kafka.partition` : The partition(s) that this PPM will consume records from. A Kafka topic can be divided,
   or partitioned, into several "parallel" streams. A topic may have many partitions so it can handle an arbitrary
