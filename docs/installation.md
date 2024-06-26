@@ -6,7 +6,67 @@
 1. [CDOT Integration with K8s](#cdot-integration-with-k8s)
 
 ## Docker Installation
-(TBD)
+### 1. Install [Docker](https://www.docker.com)
+
+- When following the website instructions, setup the Docker repos and follow the Linux post-install instructions.
+- The CE version seems to work fine.
+- [Docker installation instructions](https://docs.docker.com/engine/installation/linux/ubuntu/#install-using-the-repository)
+
+#### ORNL Specific Docker Configuration
+- *ORNL specific, but may apply to others with organizational security*
+    - Correct for internal Google DNS blocking
+    - As root (`$ sudo su`), create a `daemon.json` file in the `/etc/docker` directory that contains the following information:
+```bash
+          {
+              "debug": true,
+              "default-runtime": "runc",
+              "dns": ["160.91.126.23","160.91.126.28"],
+              "icc": true,
+              "insecure-registries": [],
+              "ip": "0.0.0.0",
+              "log-driver": "json-file",
+              "log-level": "info",
+              "max-concurrent-downloads": 3,
+              "max-concurrent-uploads": 5,
+              "oom-score-adjust": -500
+          }
+```
+- NOTE: The DNS IP addresses are ORNL specific.
+
+Be sure to restart the docker daemon to consume the new configuration file.
+
+```bash
+$ service docker stop
+$ service docker start
+```
+
+Check the configuration using the command below to confirm the updates above are taken if needed:
+
+```bash
+$ docker info
+```
+
+### 2. Configure environment variables
+Configure the environment variables for the PPM to communicate with the Kafka instance. Copy or rename the `sample.env` file to `.env`.
+
+```bash
+$ cp sample.env .env
+```
+
+Edit the `.env` file to include the necessary information.
+
+```bash
+$ vi .env
+```
+
+For more information on the environment variables, see the 'Environment Variables' section in the [configuration.md](configuration.md) file.
+
+### 3. Spin up Kafka & the PPM in Docker
+To spin up the PPM and Kafka in Docker, use the following commands:
+
+```bash
+docker compose up --build
+```
 
 ## Manual Installation
 The following instructions represent the "hard" way to install and test the PPM. A docker image can be built to make
