@@ -8,6 +8,7 @@
 6. [PPM Logging](#ppm-logging)
 7. [PPM Configuration](#ppm-configuration)
 8. [Map Files](#map-files)
+9. [Environment Variables](#environment-variables)
 
 ## PPM Operation
 
@@ -267,3 +268,19 @@ For the WYDOT use case, WYDOT provided a set of edge definitions for I-80 that w
 
 ### See Also: Data & Config Files
 More information on config files can be found in the [Data & Config Files](../README.md#data--config-files) section of the README.
+
+## Environment Variables
+The following table lists the environment variables that can be used to configure the PPM:
+| Variable | Description |
+|----------|-------------|
+| `DOCKER_HOST_IP` | The IP address of the Docker host. |
+| `DOCKER_SHARED_VOLUME` | The path to the shared volume where the map file and configuration file are located. |
+| `PPM_CONFIG_FILE` | The path to the PPM configuration file. |
+| `REDACTION_PROPERTIES_PATH` | The path to the redaction properties file. |
+| `PPM_LOG_TO_FILE` | The path to the log file. |
+| `PPM_LOG_TO_CONSOLE` | The path to the console log file. |
+| `PPM_LOG_LEVEL` | The log level. |
+| `RPM_DEBUG` | When set to true, the Redaction Properties Manager will print debug messages to a file. |
+| `KAFKA_TYPE` | The type of Kafka broker. If not set, a local Kafka broker will be used. |
+| `CONFLUENT_KEY` | The Confluent key. Only used if `KAFKA_TYPE` is set to `CONFLUENT`. |
+| `CONFLUENT_SECRET` | The Confluent secret. Only used if `KAFKA_TYPE` is set to `CONFLUENT`. |
