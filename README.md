@@ -95,13 +95,6 @@ This diagram displays how the different classes in the project are used. If one 
 - https://github.com/usdot-jpo-ode/jpo-cvdp
 - `git@github.com:usdot-jpo-ode/jpo-cvdp.git`
 
-### Agile Project Management - Jira
-https://usdotjpoode.atlassian.net/secure/Dashboard.jspa
-
-### Continuous Integration and Delivery
-
-The PPM is tested using [Travis Continuous Integration](https://travis-ci.org).
-
 ## Getting Started
 
 ### Prerequisites
