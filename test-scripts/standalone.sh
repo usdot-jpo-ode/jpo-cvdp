@@ -2,8 +2,7 @@
 
 # This script sets up and runs a standalone test for a PPM container. The 
 # PPM is started in a Docker container using a specified image and waits for it to become
-# ready. The script takes in three input files: ROAD_FILE, CONFIG, TEST_DATA, and a type
-# argument (BSM or TIM). It checks if the input files exist and copies them to a test data
+# ready. The script takes in three input files: ROAD_FILE, CONFIG, & TEST_DATA. It checks if the input files exist and copies them to a test data
 # directory. If the OFFSET argument is provided, it is used as the offset in the topic that
 # will be consumed and displayed in the output. If not, the default value of 0 is used.
 
