@@ -2,3 +2,5 @@ build
 docs/html
 
 /.env
+
+ppm_data/*
