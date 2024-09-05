@@ -1,180 +1,67 @@
 # Testing the PPM
+This document describes how to test the PPM module. The PPM can be tested using unit tests, standalone tests, and Kafka integration tests.
 
-There are several ways to test the capabilities of the PPM.
-
-- Testing as an individual application within [Docker](#docker-testing)
-- Testing as an individual application on the [native client](#testing-on-the-native-client)
+## Table of Contents
 - [Unit Testing](#unit-testing)
+- [Standalone Testing](#standalone-testing)
+- [Kafka Integration Testing](#kafka-integration-testing)
+- [Test Files](#test-files)
+- [See Also: Testing/Troubleshooting](#see-also-testingtroubleshooting)
 
-## Test Files
+## Unit Testing
+### Testing On Local Machine
+The build_and_run_unit_test.sh script provides an easy method to build and run the PPM's unit tests. It should be noted that this script needs to have the LF end-of-line sequence for it to work.
 
-Several example JSON message test files are in the [jpo-cvdp/data](../data) directory.  These files can be edited to generate
-your own test cases. Each line in the file should be a well-formed BSM JSON
-object. **Each message should be on a separate line in the file.** **If a JSON object cannot be parsed it is suppressed.**
+#### Steps
+1. Pull the project into VSCode
+1. Reopen the project in a dev container
+1. Open the terminal.
+1. Type "sudo su" to run commands as root
+1. Type ./build_and_run_unit_tests.sh to run the script
 
-## Docker Testing
-
-To run a series of configuration tests:
-
-    $ ./do_test.sh
-
-**Running this command for the first time can take awhile, as the dependencies need to be built for the PPM image.**
-To run the standalone PPM test using Docker containers, from the jpo-cvdp root directory:
-
-    $ ./start_kafka.sh
-
-This will build and start the required kafka containers, including the PPM image.
-Next run:
-
-    $ ./test-scripts/standalone.sh [MAP_FILE] [CONFIG] [TEST_FILE] [OFFSET]
-
-Where MAP_FILE is a [map file](configuration.md#map-file), CONFIG is [PPM Configuration file](configuration.md) and TEST_FILE is a [JSON message test file](#test-files). Offset refers to the offset in the filtered message topic; this is where the consumer will look for new output. The default offset is zero (the beginning of the topic), which should for the first time running the test. This will start the PPM Kafka container and use the supplied files to test the BSM filtering. For example, running:
-
-    $ ./test-scripts/standalone.sh data/I_80.edges config/test/I_80_vel_filter.properties data/I_80_test.json
-
-yields:
-
-```
-**************************
-Running standalone test with data/I_80.edges config/test/I_80_vel_filter.properties data/I_80_test.json
-**************************
-**************************
-Producing Raw BSMs...
-**************************
-Producing BSM with ID=BEA10000, speed=7.02, position=41.738136, -106.587029
-Producing BSM with ID=BEA10000, speed=7.12, position=41.608656, -109.226824
-Producing BSM with ID=BEA10000, speed=7.16, position=41.311097, -110.512927
-Producing BSM with ID=BEA10000, speed=7.44, position=41.246647, -111.027436
-Producing BSM with ID=BEA10000, speed=7.44, position=41.600371, -106.22341
-Producing BSM with ID=BEA10000, speed=1.78, position=42.29789, -83.72035
-Producing BSM with ID=BEA10000, speed=0.7, position=42.29789, -83.72034
-Producing BSM with ID=BEA10000, speed=6.86, position=42.24576, -83.62337
-Producing BSM with ID=BEA10000, speed=6.84, position=42.24576, -83.62337
-Producing BSM with ID=BEA10000, speed=6.74, position=42.24576, -83.62338
-**************************
-Consuming Filtered BSMs at offset 0 ...
-**************************
-Consuming BSM with ID=BEA10000, speed=7.02, position=41.738136, -106.587029
-Consuming BSM with ID=BEA10000, speed=7.12, position=41.608656, -109.226824
-Consuming BSM with ID=BEA10000, speed=7.16, position=41.311097, -110.512927
-Consuming BSM with ID=BEA10000, speed=7.44, position=41.246647, -111.027436
-Consuming BSM with ID=BEA10000, speed=7.44, position=41.600371, -106.22341
-Consuming BSM with ID=BEA10000, speed=6.86, position=42.24576, -83.62337
-Consuming BSM with ID=BEA10000, speed=6.84, position=42.24576, -83.62337
-Consuming BSM with ID=BEA10000, speed=6.74, position=42.24576, -83.62338
-```
-
-## Testing on the Native Client
-
-The PPM can be tested as a component of the ODE, and it can be tested using a basic Kafka installation on the native
-client.
-
-### ODE Integration Testing
-
-The PPM is meant to be a module that supports the ODE.  The following instructions outline how to perform integration
-testing on a single linux installation:
-
-1. Follow the [ODE installation instructions](https://github.com/usdot-jpo-ode/jpo-ode#documentation)
-1. Start a terminal for launching the ODE containers.
-1. Set the following environment variables:
+### Testing Using Docker
+1. Start by building the Docker image:
 
 ```bash
-$ export DOCKER_HOST_IP=<your.host.ip>
-$ export DOCKER_SHARED_VOLUME=<your.shared.directory>
+$ docker build -t ppm .
 ```
 
-1. Follow the Deploying ODE Application on a Docker Host directions
+2. Then run unit tests inside the container with the following command:
 
 ```bash
-$ docker-compose up --no-recreate -d
+$ docker run -it -e PPM_LOG_TO_CONSOLE=true --name ppm ppm /cvdi-stream-build/ppm_tests
 ```
 
-1. Start a terminal for launching the PPM.
+3. Remove the container:
 
 ```bash
-$ cd $BASE_PPM_DIR/jpo-cvdp/build
-$ ./ppm -c ../config/<testconfig>.properties
-```
-1. Open a web browser, and enter the url: `localhost:8080`
-1. Click on the **Connect** button.
-1. Click on the **Browse** button, find a JSON test file with BSMs (one per line).
-1. Click the **Upload** button.
-
-The BSMs from the file should be listed in the web browser: the BSMs section
-lists all the BSMs; the Filtered BSMs section contains the BSMs that were
-processed by the PPM and returned back to the ODE.
-
-### Testing without the ODE
-
-These instructions describe how to run a collection of BSM test JSON objects through the PPM and examine its operation.
-Using *GNU screen* for this work is really handy; you will need several shells.
-
-Startup `kafka-docker` in its own shell:
-
-```bash
-$ cd $BASE_PPM_DIR/kafka-docker
-$ docker-compose up --no-recreate -d                    // to startup kafka and zookeeper containers
-$ docker-compose ps                                     // to check that they are running.
+$ docker rm ppm
 ```
 
-In another shell, create the simulated ODE produced topic (`j2735BsmRawJson`) and PPM produced topic (`j2735BsmFilteredJson`)
-
-```bash
-$ cd $BASE_PPM_DIR/kafka
-$ bin/kafka-topic.sh --create --zookeeper <HOST IP>:2181 --replication-factor 1 --partitions 1 --topic j2735BsmRawJson
-$ bin/kafka-topic.sh --create --zookeeper <HOST IP>:2181 --replication-factor 1 --partitions 1 --topic j2735BsmFilteredJson
+## Standalone Testing
+1. Spin up Kafka & the PPM
+```
+$ docker compose up -d --build
 ```
 
-Startup the simulated ODE consumer in the same shell you used to create the topics.
-
-```bash
-$ cd $BASE_PPM_DIR/kafka                                
-$ bin/kafka-console-consumer.sh --bootstrap-server <HOST IP>:9092 --topic j2735BsmFilteredJson
+2. View logs of PPM
+```
+$ docker compose logs -f ppm
 ```
 
-- This process should just wait for input from the PPM module.
-
-In another shell, startup the PPM
-
-```bash
-$ cd $BASE_PPM_DIR/jpo-cvdp/build
-$ ./ppm -c ../config/<testconfig>.properties
+3. Listen to the output topic
+```
+$ kafkacat -b localhost:9092 -t topic.OdeBsmJson -C
 ```
 
-- At this point the PPM will wait for streaming messages from the simulated ODE
-  producer.  When a message is received output will be generated describing how
-  the PPM handled the BSM.
-
-In another shell, send test JSON-encoded BSMs to the PPM.
-
-```bash
-$ cd $BASE_PPM_DIR/kafka                                
-$ cat $BASE_PPM_DIR/jpo-cvdp/data/<testfile> | bin/kafka-console-producer.sh --broker-list <HOST IP>:9092 --topic j2735BsmRawJson
+4. Send a message to the PPM using kafkacat
+```
+$ kafkacat -b localhost:9092 -t topic.OdeBsmJson -P
 ```
 
-- After the messages are written to the `j2735BsmRawJson` topic the shell process should return.
+You can now paste a JSON message into the terminal and hit enter. The PPM should log the message and send it to the output topic if it is not suppressed.
 
-You can confirm PPM operations in two ways:
-
-- Open the information log file in an editor and inspect the output. The `[datetimestamp] [info] BSM` messages should describe the actions the PPM is taking based on the input.
-- Return to the simulated ODE consumer shell and examine the output JSON; this is more difficult because the JSON does not render well on the screen.
-
-## Testing All Capabilities
-
-- To execute the following tests, you will stop the PPM module, if running, with `<CTRL>-C` and then start it up with one of the following `<testconfig>.properties` files.
-    - `test.allon.properties`
-    - `test.geofenceonly.properties`
-    - `test.idredactonly.properties`
-    - `test.spdonly.properties`
-- After starting the PPM module, you will use the shell you created above to send the [testfile](../data/bsm.wy.test.json) to the Kafka producer:
-
-```bash
-$ cat $BASE_PPM_DIR/jpo-cvdp/data/bsm.wy.test.json | bin/kafka-console-producer.sh --broker-list <HOST IP>:9092 --topic j2735BsmRawJson
-```
-
-- Open the information log file in an editor and inspect the `info BSM` message (an example of these messages is shown below). The message immediately
-to the right of `BSM` indicates whether the message was RETAINED, or passed on to a filtered stream, or SUPPRESSED with the cause. The information in
-parenthesis is the TemporaryID, secMark, lat, lon, and speed information in the message; this can be used to test and troubleshoot your configuration.
+The message immediately to the right of `BSM` indicates whether the message was RETAINED, or passed on to a filtered stream, or SUPPRESSED with the cause. The information in parenthesis is the TemporaryID, secMark, lat, lon, and speed information in the message; this can be used to test and troubleshoot your configuration.
 
 ```bash
 [170613 12:30:47.057503] [info] BSM [RETAINED]: (ON-VG---,36710,41.116496,-104.888494,5.000000)
@@ -197,25 +84,22 @@ parenthesis is the TemporaryID, secMark, lat, lon, and speed information in the 
 [170613 12:30:47.064940] [info] BSM [RETAINED]: (OFFVG---,36727,43.313653,-111.799675,9.000000)
 ```
 
-- The above output will vary depending on which configuration file you use.
-
-## Unit Testing
-
-Unit tests are built when the PPM is compiled during installation. Those tests can be run using the following command:
-
-```bash
-$ ./ppm_tests
+5. To stop the PPM and Kafka, run the following command:
+```
+$ docker compose down
 ```
 
-### Utilizing the build_and_run_unit_tests.sh script
-The build_and_run_unit_test.sh script provides an easy method to build and run the PPM's unit tests. It should be noted that this script needs to have the LF end-of-line sequence for it to work.
+## Kafka Integration Testing
+To run kafka integration tests, run the following command:
+```bash
+$ ./do_kafka_test.sh
+```
 
-#### Steps
-1. Pull the project into VSCode
-1. Reopen the project in a dev container
-1. Open the terminal.
-1. Type "sudo su" to run commands as root
-1. Type ./build_and_run_unit_tests.sh to run the script
+## Test Files
+
+Several example JSON message test files are in the [jpo-cvdp/data](../data) directory.  These files can be edited to generate
+your own test cases. Each line in the file should be a well-formed BSM JSON
+object. **Each message should be on a separate line in the file.** **If a JSON object cannot be parsed it is suppressed.**
 
 # See Also: Testing/Troubleshooting
-More information on testing can be found in the [Testing/Troubleshooting](../README.md#Testing/Troubleshooting) section of the README.
+More information on testing can be found in the [Testing/Troubleshooting](../README.md#testingtroubleshooting) section of the README.
