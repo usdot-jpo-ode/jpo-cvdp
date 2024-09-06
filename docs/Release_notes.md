@@ -1,8 +1,19 @@
 Jpo-cvdp Release Notes
 ----------------------------
 
-Version 1.3.0, released February 2024
+Version 1.4.0, released September 2024
+----------------------------------------
+### **Summary**
+The changes for the jpo-cvdp 1.4.0 release involve the addition of a 'Supported Message Types' section to the README, the removal of TIM support since TIMs do not contain personally-identifiable information, and revisions to the documentation for accuracy & clarity.
 
+Enhancements in this release:
+- CDOT PR 44: Added 'Supported Message Types' section to README
+- CDOT PR 45: Removed TIM support since TIMs do not contain personally-identifiable information
+- CDOT PR 46: Revised documentation for accuracy & clarity
+
+
+Version 1.3.0, released February 2024
+----------------------------------------
 ### **Summary**
 The changes for the jpo-cvdp 1.3.0 release involve the optimization of dockerfiles, addition of dockerhub image documentation & some QoL changes to the `do_kafka_test.sh` script.
 
