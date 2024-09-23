@@ -129,11 +129,10 @@ if the message is published. The `metadata:sanitized` element is changed to `tru
 all messages published by the PPM should have a `metadata:sanitized` value of `true`.
 
 The `payload` component of the BSM has a `data` object containing the `coreData` object that is analyzed by the PPM 
-for features that may cause it to be suppressed. The same analysis is done on the `receivedDetails:loction` object in the TIMS
-`metadata` component. Note that the `payload` for TIMS is not inspected.
+for features that may cause it to be suppressed.
 
 The JSON format published by the PPM follows the format received. It may be completely suppressed or certain fields may
-be modifed as described in this second and the sections that follow.
+be modified as described in this second and the sections that follow.
 
 ### Velocity Filtering
 
@@ -141,10 +140,10 @@ be modifed as described in this second and the sections that follow.
     - `ON` : enables message filtering.
     - Any other value : disables message filtering.
 
-- `privacy.filter.velocity.min` : *When velocity fitering is enabled*, messages having velocities below this value will be
+- `privacy.filter.velocity.min` : *When velocity filtering is enabled*, messages having velocities below this value will be
   suppressed. The units are in meters per second.
 
-- `privacy.filter.velocity.max` : *When velocity fitering is enabled*, messages having velocities above this value will be
+- `privacy.filter.velocity.max` : *When velocity filtering is enabled*, messages having velocities above this value will be
   suppressed. The units are in meters per second.
 
 ### BSM Identifier Redaction
@@ -182,9 +181,9 @@ control vehicle size redaction.
 Messages can be suppressed based on latitude and longitude attributes. If this 
 capability is turned on through the configuration file, each edge defined in the 
 map file is used to infer a *component* geofence that surrounds that segment of the
-road. The image below illustrates how a *rectange* is drawn to form the segment's 
+road. The image below illustrates how a *rectangle* is drawn to form the segment's 
 geofence.  The aforementioned edge attributes and PPM configuration parameters 
-determine the size of the rectange.
+determine the size of the rectangle.
 
 ![Road Segment Geofence Dimensions](graphics/geofence-dimensions.png)
 
