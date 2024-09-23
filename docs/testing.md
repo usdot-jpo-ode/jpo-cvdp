@@ -39,55 +39,70 @@ $ docker rm ppm
 ```
 
 ## Standalone Testing
+1. Rename `sample.env` to `.env` 
+
+1. Set `DOCKER_HOST_IP` in the `.env` file to the IP address of your Docker host. This is the IP address of the machine running Docker.
+
+1. Create a temporary directory called 'ppm_data' in the root of the project directory.
+
+1. Set `DOCKER_SHARED_VOLUME` in the `.env` file to the full path of the 'ppm_data' directory.
+
+1. Ensure that the following files are present in the 'ppm_data' directory:
+    - [fieldsToRedact.txt](../config/fieldsToRedact.txt)
+    - [ppmBsm.properties](../config/fieldsToSuppress.txt)
+    - [I_80.edges](../data/I_80.edges)
+
 1. Spin up Kafka & the PPM
-```
-$ docker compose up -d --build
-```
+    ```
+    $ docker compose up -d --build
+    ```
 
-2. View logs of PPM
-```
-$ docker compose logs -f ppm
-```
+1. View logs of PPM
+    ```
+    $ docker compose logs -f ppm
+    ```
 
-3. Listen to the output topic
-```
-$ kafkacat -b localhost:9092 -t topic.OdeBsmJson -C
-```
+1. Listen to the output topic
+    ```
+    $ kafkacat -b localhost:9092 -t topic.OdeBsmJson -C
+    ```
 
-4. Send a message to the PPM using kafkacat
-```
-$ kafkacat -b localhost:9092 -t topic.OdeBsmJson -P
-```
+1. Send a message to the PPM using kafkacat
+    ```
+    $ kafkacat -b localhost:9092 -t topic.OdeBsmJson -P
+    ```
 
-You can now paste a JSON message into the terminal and hit enter. The PPM should log the message and send it to the output topic if it is not suppressed.
+    You can now paste a JSON message into the terminal and hit enter. The PPM should log the message and send it to the output topic if it is not suppressed.
 
-The message immediately to the right of `BSM` indicates whether the message was RETAINED, or passed on to a filtered stream, or SUPPRESSED with the cause. The information in parenthesis is the TemporaryID, secMark, lat, lon, and speed information in the message; this can be used to test and troubleshoot your configuration.
+    The message immediately to the right of `BSM` indicates whether the message was RETAINED, or passed on to a filtered stream, or SUPPRESSED with the cause. The information in parenthesis is the TemporaryID, secMark, lat, lon, and speed information in the message; this can be used to test and troubleshoot your configuration.
 
-```bash
-[170613 12:30:47.057503] [info] BSM [RETAINED]: (ON-VG---,36710,41.116496,-104.888494,5.000000)
-[170613 12:30:47.057566] [info] BSM [RETAINED]: (ON-VG-99,36711,41.116496,-104.888494,5.000000)
-[170613 12:30:47.057584] [info] BSM [SUPPRESSED-speed]: (ON-VBL--,36712,41.116496,-104.888494,1.000000)
-[170613 12:30:47.057593] [info] BSM [SUPPRESSED-speed]: (ON-VBH--,36713,41.116496,-104.888494,100.000000)
-[170613 12:30:47.057623] [info] BSM [RETAINED]: (OFFVG---,36714,41.118110,-104.889282,5.000000)
-[170613 12:30:47.057639] [info] BSM [SUPPRESSED-speed]: (OFFVBH--,36715,41.118110,-104.889282,99.000000)
-[170613 12:30:47.057670] [info] BSM [RETAINED]: (OFFVGMID,36716,41.141742,-105.361760,9.000000)
-[170613 12:30:47.057705] [info] BSM [RETAINED]: (ON-VGTOP,36717,41.143138,-105.361470,9.000000)
-[170613 12:30:47.058086] [info] BSM [SUPPRESSED-speed]: (ON-VBTOP,36718,41.143138,-105.361470,1.000000)
-[170613 12:30:47.058126] [info] BSM [RETAINED]: (ON-VGBOT,36719,41.140537,-105.362255,9.000000)
-[170613 12:30:47.058147] [info] BSM [SUPPRESSED-speed]: (ON-VBBOT,36720,41.140537,-105.362255,50.000000)
-[170613 12:30:47.058178] [info] BSM [RETAINED]: (ON-VG---,36721,41.411728,-110.137350,9.000000)
-[170613 12:30:47.058213] [info] BSM [RETAINED]: (ON-VG-99,36722,41.411728,-110.137350,9.000000)
-[170613 12:30:47.058293] [info] BSM [RETAINED]: (OFFVG---,36723,41.628687,-109.089771,9.000000)
-[170613 12:30:47.058451] [info] BSM [RETAINED]: (OFFVG---,36724,41.627758,-109.091004,9.000000)
-[170613 12:30:47.058494] [info] BSM [RETAINED]: (O??VG---,36725,41.627672,-109.089390,9.000000)
-[170613 12:30:47.064880] [info] BSM [RETAINED]: (ON-VG---,36726,41.627467,-109.089251,9.000000)
-[170613 12:30:47.064940] [info] BSM [RETAINED]: (OFFVG---,36727,43.313653,-111.799675,9.000000)
-```
+    ```bash
+    [170613 12:30:47.057503] [info] BSM [RETAINED]: (ON-VG---,36710,41.116496,-104.888494,5.000000)
+    [170613 12:30:47.057566] [info] BSM [RETAINED]: (ON-VG-99,36711,41.116496,-104.888494,5.000000)
+    [170613 12:30:47.057584] [info] BSM [SUPPRESSED-speed]: (ON-VBL--,36712,41.116496,-104.888494,1.000000)
+    [170613 12:30:47.057593] [info] BSM [SUPPRESSED-speed]: (ON-VBH--,36713,41.116496,-104.888494,100.000000)
+    [170613 12:30:47.057623] [info] BSM [RETAINED]: (OFFVG---,36714,41.118110,-104.889282,5.000000)
+    [170613 12:30:47.057639] [info] BSM [SUPPRESSED-speed]: (OFFVBH--,36715,41.118110,-104.889282,99.000000)
+    [170613 12:30:47.057670] [info] BSM [RETAINED]: (OFFVGMID,36716,41.141742,-105.361760,9.000000)
+    [170613 12:30:47.057705] [info] BSM [RETAINED]: (ON-VGTOP,36717,41.143138,-105.361470,9.000000)
+    [170613 12:30:47.058086] [info] BSM [SUPPRESSED-speed]: (ON-VBTOP,36718,41.143138,-105.361470,1.000000)
+    [170613 12:30:47.058126] [info] BSM [RETAINED]: (ON-VGBOT,36719,41.140537,-105.362255,9.000000)
+    [170613 12:30:47.058147] [info] BSM [SUPPRESSED-speed]: (ON-VBBOT,36720,41.140537,-105.362255,50.000000)
+    [170613 12:30:47.058178] [info] BSM [RETAINED]: (ON-VG---,36721,41.411728,-110.137350,9.000000)
+    [170613 12:30:47.058213] [info] BSM [RETAINED]: (ON-VG-99,36722,41.411728,-110.137350,9.000000)
+    [170613 12:30:47.058293] [info] BSM [RETAINED]: (OFFVG---,36723,41.628687,-109.089771,9.000000)
+    [170613 12:30:47.058451] [info] BSM [RETAINED]: (OFFVG---,36724,41.627758,-109.091004,9.000000)
+    [170613 12:30:47.058494] [info] BSM [RETAINED]: (O??VG---,36725,41.627672,-109.089390,9.000000)
+    [170613 12:30:47.064880] [info] BSM [RETAINED]: (ON-VG---,36726,41.627467,-109.089251,9.000000)
+    [170613 12:30:47.064940] [info] BSM [RETAINED]: (OFFVG---,36727,43.313653,-111.799675,9.000000)
+    ```
 
-5. To stop the PPM and Kafka, run the following command:
-```
-$ docker compose down
-```
+
+1. To stop the PPM and Kafka, run the following command:
+
+    ```
+    $ docker compose down
+    ```
 
 ## Kafka Integration Testing
 To run kafka integration tests, run the following command:
