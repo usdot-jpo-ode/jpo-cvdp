@@ -1,4 +1,3 @@
-version: '2'
 services:
   zookeeper:
     image: wurstmeister/zookeeper
@@ -11,6 +10,6 @@ services:
     environment:
       KAFKA_ADVERTISED_HOST_NAME: ${DOCKER_HOST_IP}
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "topic.OdeBsmJson:1:1,topic.FilteredOdeBsmJson:1:1,topic.OdeTimJson:1:1,topic.FilteredOdeTimJson:1:1"
+      KAFKA_CREATE_TOPICS: "topic.OdeBsmJson:1:1,topic.FilteredOdeBsmJson:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

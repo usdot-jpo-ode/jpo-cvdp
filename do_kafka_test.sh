@@ -15,7 +15,6 @@ NC='\033[0m' # No Color
 
 MAP_FILE=data/I_80.edges
 BSM_DATA_FILE=data/I_80_test.json
-TIM_DATA_FILE=data/I_80_test_TIMS.json
 PPM_CONTAINER_NAME=test_ppm_instance
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
@@ -38,7 +37,6 @@ setup() {
     echo "KAFKA_CONTAINER_NAME is resolved dynamically"
     echo "MAP_FILE: $MAP_FILE"
     echo "BSM_DATA_FILE: $BSM_DATA_FILE"
-    echo "TIM_DATA_FILE: $TIM_DATA_FILE"
     echo "PPM_CONTAINER_NAME: $PPM_CONTAINER_NAME"
     echo "PPM_IMAGE_TAG: $PPM_IMAGE_TAG"
     echo "PPM_IMAGE_NAME: $PPM_IMAGE_NAME"
@@ -63,11 +61,7 @@ waitForKafkaToCreateTopics() {
         allTopicsCreated=true
         if [ $(echo $ltopics | grep "topic.FilteredOdeBsmJson" | wc -l) == "0" ]; then
             allTopicsCreated=false
-        elif [ $(echo $ltopics | grep "topic.FilteredOdeTimJson" | wc -l) == "0" ]; then
-            allTopicsCreated=false
         elif [ $(echo $ltopics | grep "topic.OdeBsmJson" | wc -l) == "0" ]; then
-            allTopicsCreated=false
-        elif [ $(echo $ltopics | grep "topic.OdeTimJson" | wc -l) == "0" ]; then
             allTopicsCreated=false
         fi
         
@@ -94,57 +88,38 @@ run_tests() {
     echo "--- File Being Used ---"
     echo $MAP_FILE
     echo $BSM_DATA_FILE
-    echo $TIM_DATA_FILE
     echo "-----------------"
 
-    numberOfTests=10
+    numberOfTests=6
     echo -e $YELLOW"Test 1/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c1.properties $BSM_DATA_FILE BSM 0
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c1.properties $BSM_DATA_FILE 0
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 2/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c2.properties $BSM_DATA_FILE BSM 10
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c2.properties $BSM_DATA_FILE 10
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 3/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c3.properties $BSM_DATA_FILE BSM 18
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c3.properties $BSM_DATA_FILE 18
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 4/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c4.properties $BSM_DATA_FILE BSM 23
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c4.properties $BSM_DATA_FILE 23
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 5/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c5.properties $BSM_DATA_FILE BSM 33
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c5.properties $BSM_DATA_FILE 33
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 6/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c6.properties $BSM_DATA_FILE BSM 43
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c6.properties $BSM_DATA_FILE 43
     echo ""
     echo ""
-
-    echo -e $YELLOW"Test 7/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/tim-test/c1.properties $TIM_DATA_FILE TIM 0
-    echo ""
-    echo ""
-
-    echo -e $YELLOW"Test 8/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/tim-test/c2.properties $TIM_DATA_FILE TIM 10
-    echo ""
-    echo ""
-
-    echo -e $YELLOW"Test 9/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/tim-test/c3.properties $TIM_DATA_FILE TIM 18
-    echo ""
-    echo ""
-
-    echo -e $YELLOW"Test 10/$numberOfTests (2 tests in one)"$NC
-    ./test-scripts/standalone_multi.sh $MAP_FILE config/bsm-test/c6.properties config/tim-test/c3.properties $BSM_DATA_FILE $TIM_DATA_FILE 48 23
 }
 
 cleanup() {

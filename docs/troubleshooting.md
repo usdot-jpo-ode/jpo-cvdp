@@ -32,4 +32,4 @@ This error occurs when the PPM is unable to connect to the local broker. This ca
 - The PPM is targeting the wrong IP address
 
 # See Also: Testing/Troubleshooting
-More information on troubleshooting can be found in the [Testing/Troubleshooting](../README.md#Testing/Troubleshooting) section of the README.
+More information on troubleshooting can be found in the [Testing/Troubleshooting](../README.md#testingtroubleshooting) section of the README.
