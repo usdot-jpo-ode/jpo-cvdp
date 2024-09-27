@@ -136,7 +136,7 @@ bool BSMHandler::isWithinEntity(BSM &bsm) const {
     return false;
 }
 
-bool BSMHandler::process( const std::string& bsm_json ) {
+bool BSMHandler::process( const std::string& message_json ) {
     double speed = 0.0;
     double latitude = 0.0;
     double longitude = 0.0;
@@ -150,7 +150,7 @@ bool BSMHandler::process( const std::string& bsm_json ) {
     
     // create the DOM
     // check for errors
-    if (document.Parse(bsm_json.c_str()).HasParseError()) {
+    if (document.Parse(message_json.c_str()).HasParseError()) {
         result_ = ResultStatus::PARSE;
 
         return false;
@@ -318,54 +318,9 @@ bool BSMHandler::process( const std::string& bsm_json ) {
 
         handleGeneralRedaction(document); // uses fieldsToRedact.txt
     }
-    else if (payload_type_str == "us.dot.its.jpo.ode.model.OdeTimPayload") {
-        if (!metadata.HasMember("receivedMessageDetails")) {
-            result_ = ResultStatus::MISSING;
-
-            return false;
-        } 
-
-        rapidjson::Value& received_details = metadata["receivedMessageDetails"];
-    
-        if (!received_details.HasMember("locationData")) {
-            result_ = ResultStatus::MISSING;
-
-            return false;
-        }
-
-        rapidjson::Value& location = received_details["locationData"];
-
-        if (!location.HasMember("latitude") || !location.HasMember("longitude") || !location.HasMember("speed")) {
-            result_ = ResultStatus::MISSING;
-
-            return false;
-        }
-
-        if (!location["latitude"].IsDouble() || !location["longitude"].IsDouble() || !location["speed"].IsDouble()) {
-            result_ = ResultStatus::OTHER;
-
-            return false;
-        }
-        
-        latitude = location["latitude"].GetDouble();
-        longitude = location["longitude"].GetDouble();
-        speed = location["speed"].GetDouble();
-
-        bsm_.set_latitude(latitude); 
-        bsm_.set_longitude(longitude); 
-        bsm_.set_velocity(speed); 
-
-        if (is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_)) {
-            result_ = ResultStatus::GEOPOSITION;
-        }
-
-        if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
-            result_ = ResultStatus::SPEED;
-        }
-    }
     else {
+        // Unsupported payload type
         result_ = ResultStatus::MISSING;
-
         return false;
     }
 

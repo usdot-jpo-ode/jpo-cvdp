@@ -18,9 +18,14 @@ jobs:
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}        
+          
+      - name: Replace Docker tag
+        id: set_tag
+        run: echo "TAG=$(echo ${GITHUB_REF##*/} | sed 's/\//-/g')" >> $GITHUB_ENV
+      
       - name: Build
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: usdotjpoode/jpo-cvdp:${{ github.ref_name }}
+          tags: usdotjpoode/jpo-cvdp:${{ env.TAG }}  
