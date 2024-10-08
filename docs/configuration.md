@@ -1,15 +1,27 @@
-# PPM Operation
+# Configuration
+## Table of Contents
+1. [PPM Operation](#ppm-operation)
+2. [PPM Command Line Options](#ppm-command-line-options)
+3. [PPM Deployment](#ppm-deployment)
+4. [PPM Kafka Limitations](#ppm-kafka-limitations)
+5. [Multiple PPM Instances with Different Configurations](#multiple-ppm-instances-with-different-configurations)
+6. [PPM Logging](#ppm-logging)
+7. [PPM Configuration](#ppm-configuration)
+8. [Map Files](#map-files)
+9. [Environment Variables](#environment-variables)
 
-The messages suppressed and sanitized by the PPM are documented [here](https://github.com/usdot-jpo-ode/jpo-ode/blob/develop/docs/metadata_standards.md).
+## PPM Operation
 
-The PPM suppresses BSMs and TIMs message and redacts BSM ID fields based on several conditions. These conditions are determined by a set of configuration parameters. The following conditions will result in a message being suppressed, or deleted, from the stream.
+The messages suppressed and sanitized by the PPM are documented [here](../README.md#supported-message-types).
+
+The PPM suppresses BSMs and redacts BSM ID fields based on several conditions. These conditions are determined by a set of configuration parameters. The following conditions will result in a message being suppressed, or deleted, from the stream.
 
 1. Message JSON record cannot be parsed.
 2. Message speed is outside of prescribed limits.
 3. Message location is outside of a prescribed geofence.
-4. BSM TemporaryID can be redacted (rendered indistinct).
+4. BSM TemporaryID cannot be redacted (rendered indistinct).
 
-## PPM Command Line Options
+### PPM Command Line Options
 
 The PPM can be started by specifying only the configuration file. Command line options are also available. **Command
 line options override parameters specified in the configuration file.** The following command line options are available:
@@ -19,7 +31,6 @@ line options override parameters specified in the configuration file.** The foll
 -i | --log : Log file name.
 -R | --log-rm : Remove specified/default log files if they exist.
 -D | --log-dir : Directory for the log files.
--v | --log-level : The info log level [trace,debug,info,warning,error,critical,off]
 -t | --produce-topic : the name of the topic where filtered messages are published.
 -p | --partition : the partition from which to consume raw messages.
 -C | --config-check : Check whether the configuration will work and output all the settings.
@@ -32,7 +43,7 @@ line options override parameters specified in the configuration file.** The foll
 -m | --mapfile : The path to the map file to use to build the geofence.
 ```
 
-# PPM Deployment
+## PPM Deployment
 
 Once the PPM is [installed and configured](installation.md) it operates as a background service.  The PPM can be started
 before or after other services. If started before the other services, it may produce some error messages while it waits
@@ -44,7 +55,7 @@ $ ./ppm -c <configuration file>
 
 We recommend reviewing the [testing documentation](testing.md) for more details on running the PPM.
 
-# PPM Kafka Limitations
+## PPM Kafka Limitations
 
 With regard to the Apache Kafka architecture, each PPM process does **not** provide a way to take advantage of Kafka's scalable
 architecture. In other words, each PPM process will consume data from a single Kafka topic and a single partition within
@@ -52,13 +63,13 @@ that topic. One way to consume topics with multiple partitions is to launch one 
 configuration file will allow you to designate the partition. In the future, the PPM may be updated to automatically
 handle multiple partitions within a single topic.
 
-# Multiple PPM Instances with Different Configurations
+## Multiple PPM Instances with Different Configurations
 
 Nothing prevents a users from launching multiple PPM instances where each uses a different configuration file. This
 strategy would allow various degrees of privacy protection. It would also allow a user to publish various versions of
 the data to different "filtered" topics.
 
-# PPM Logging
+## PPM Logging
 
 PPM operations are optionally logged to the console or a file.  The file is a rotating log file, i.e., a set number of log files will
 be used to record the PPM's information. By default, the file is in a `logs` directory from where the ACM is launched and the file is
@@ -85,7 +96,7 @@ with a date and time stamp and the level of the log message.
 [170613 12:25:47.443150] [info] BSM [SUPPRESSED-speed]: (ON-VBL--,36712,41.116496,-104.888494,1.000000)
 ```
 
-# PPM Configuration
+## PPM Configuration
 
 The PPM configuration file is a text file with a specific format. It can be used to configure Kafka as well as the PPM.
 Comments can be added to the configuration file by starting a line with the '#' character. Configuration lines consist
@@ -104,7 +115,7 @@ Example configuration files can be found in the [jpo-cvdp/config](../config) dir
 
 The details of the settings and how they affect the function of the PPM follow:
 
-## Sanitization Flag
+### Sanitization Flag
 
 The current JSON data object sent to the PPM and published by the PPM contains the following three named components:
 parts:
@@ -118,25 +129,24 @@ if the message is published. The `metadata:sanitized` element is changed to `tru
 all messages published by the PPM should have a `metadata:sanitized` value of `true`.
 
 The `payload` component of the BSM has a `data` object containing the `coreData` object that is analyzed by the PPM 
-for features that may cause it to be suppressed. The same analysis is done on the `receivedDetails:loction` object in the TIMS
-`metadata` component. Note that the `payload` for TIMS is not inspected.
+for features that may cause it to be suppressed.
 
 The JSON format published by the PPM follows the format received. It may be completely suppressed or certain fields may
-be modifed as described in this second and the sections that follow.
+be modified as described in this second and the sections that follow.
 
-## Velocity Filtering
+### Velocity Filtering
 
 - `privacy.filter.velocity` : enables or disables message filtering based on the speed within the message.
     - `ON` : enables message filtering.
     - Any other value : disables message filtering.
 
-- `privacy.filter.velocity.min` : *When velocity fitering is enabled*, messages having velocities below this value will be
+- `privacy.filter.velocity.min` : *When velocity filtering is enabled*, messages having velocities below this value will be
   suppressed. The units are in meters per second.
 
-- `privacy.filter.velocity.max` : *When velocity fitering is enabled*, messages having velocities above this value will be
+- `privacy.filter.velocity.max` : *When velocity filtering is enabled*, messages having velocities above this value will be
   suppressed. The units are in meters per second.
 
-## BSM Identifier Redaction
+### BSM Identifier Redaction
 
 If required, the `TemporaryID` field in the BSM can be redacted and replaced with a randomly chosen identifier. The following configuration parameters
 control identifier redaction.
@@ -157,7 +167,7 @@ control identifier redaction.
     - Similar to the `privacy.redaction.id.value`, these are 4 hexadecimal-encoded bytes.
     - More than one id can be specified by separating them by commas.
 
-## BSM Vehicle Size Redaction
+### BSM Vehicle Size Redaction
 
 If required, the `VehicleLength` and `VehicleWidth` fields in the BSM can be redacted and replaced with a **0** value. The following configuration parameters
 control vehicle size redaction.
@@ -166,14 +176,14 @@ control vehicle size redaction.
     - `ON` : enables redaction
     - Any other value : disables redaction.
 
-## Geofencing
+### Geofencing
 
 Messages can be suppressed based on latitude and longitude attributes. If this 
-capability is turned one through the configuration file, each edge defined in the 
+capability is turned on through the configuration file, each edge defined in the 
 map file is used to infer a *component* geofence that surrounds that segment of the
-road. The image below illustrates how a *rectange* is drawn to form the segment's 
+road. The image below illustrates how a *rectangle* is drawn to form the segment's 
 geofence.  The aforementioned edge attributes and PPM configuration parameters 
-determine the size of the rectange.
+determine the size of the rectangle.
 
 ![Road Segment Geofence Dimensions](graphics/geofence-dimensions.png)
 
@@ -188,7 +198,7 @@ determine the size of the rectange.
   of the controls that determines the size of the component geofences that
   surround road segments. See the [Map Files](#geofencing) section.
 
-### Geofence Region Boundaries
+#### Geofence Region Boundaries
 
 Geofence Boundary Configuration Parameters: The geofence is stored in a geographically-defined data structured called
 a quadtree. The following bounding box coordinates define the quadtree's region. The data that is stored in this data
@@ -203,7 +213,7 @@ instead of having to modify the mapfile.
 - `privacy.filter.geofence.ne.lat` : The latitude of the upper-right corner of the quadtree region.
 - `privacy.filter.geofence.ne.lon` : The longitude of the upper-right corner of the quadtree region.
 
-## ODE Kafka Interface
+### ODE Kafka Interface
 
 - `privacy.topic.producer` : The Kafka topic name where the PPM will write the filtered messages. **The name is case
   sensitive.**
@@ -218,7 +228,7 @@ instead of having to modify the mapfile.
   themselves with a consumer group name, and each record published to a topic is
   delivered to one consumer instance within each subscribing consumer group.
   Consumer instances can be in separate processes or on separate machines.  **Due to the way the kafka library 
-  internally updates its topic offsets, the group ID must be unique for each the topic.**
+  internally updates its topic offsets, the group ID must be unique for each topic.**
 
 - `privacy.kafka.partition` : The partition(s) that this PPM will consume records from. A Kafka topic can be divided,
   or partitioned, into several "parallel" streams. A topic may have many partitions so it can handle an arbitrary
@@ -228,7 +238,7 @@ instead of having to modify the mapfile.
 
 - `compression.type` : The type of compression to use for writing to Kafka topics. Currently, this should be set to none.
 
-# Map Files
+## Map Files
 
 The map file is used to define the geofence. It defines a set of shapes, one
 per line. For road geofence use, the edge shape is used. The map file for the
@@ -255,5 +265,21 @@ This file has four comma-separated elements:
 
 For the WYDOT use case, WYDOT provided a set of edge definitions for I-80 that were converted into the above format.
 
-## See Also: Data & Config Files
+### See Also: Data & Config Files
 More information on config files can be found in the [Data & Config Files](../README.md#data--config-files) section of the README.
+
+## Environment Variables
+The following table lists the environment variables that can be used to configure the PPM:
+| Variable | Description |
+|----------|-------------|
+| `DOCKER_HOST_IP` | The IP address of the Docker host. |
+| `DOCKER_SHARED_VOLUME` | The path to the shared volume where the map file and configuration file are located. |
+| `PPM_CONFIG_FILE` | The path to the PPM configuration file. |
+| `REDACTION_PROPERTIES_PATH` | The path to the redaction properties file. |
+| `PPM_LOG_TO_FILE` | The path to the log file. |
+| `PPM_LOG_TO_CONSOLE` | The path to the console log file. |
+| `PPM_LOG_LEVEL` | The log level. |
+| `RPM_DEBUG` | When set to true, the Redaction Properties Manager will print debug messages to a file. |
+| `KAFKA_TYPE` | The type of Kafka broker. If not set, a local Kafka broker will be used. |
+| `CONFLUENT_KEY` | The Confluent key. Only used if `KAFKA_TYPE` is set to `CONFLUENT`. |
+| `CONFLUENT_SECRET` | The Confluent secret. Only used if `KAFKA_TYPE` is set to `CONFLUENT`. |

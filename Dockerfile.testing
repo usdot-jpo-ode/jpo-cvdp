@@ -10,6 +10,7 @@ RUN apk update
 # add runtime dependencies
 RUN apk add --upgrade --no-cache \
     bash \
+    python3 \
     librdkafka \
     librdkafka-dev
 
@@ -36,7 +37,7 @@ ADD ./kafka-test /cvdi-stream/kafka-test
 ADD ./unit-test-data /cvdi-stream/unit-test-data
 ADD ./config /cvdi-stream/config
 
-# do the build
+# Do the build.
 RUN export LD_LIBRARY_PATH=/usr/local/lib && mkdir /cvdi-stream-build && cd /cvdi-stream-build && cmake /cvdi-stream && make
 
 # === RUNTIME IMAGE ===

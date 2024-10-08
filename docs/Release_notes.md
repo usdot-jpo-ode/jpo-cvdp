@@ -1,6 +1,54 @@
 Jpo-cvdp Release Notes
 ----------------------------
 
+Version 1.4.0, released September 2024
+----------------------------------------
+### **Summary**
+The changes for the jpo-cvdp 1.4.0 release involve the addition of a 'Supported Message Types' section to the README, the removal of TIM support since TIMs do not contain personally-identifiable information, and revisions to the documentation for accuracy & clarity.
+
+Enhancements in this release:
+- CDOT PR 44: Added 'Supported Message Types' section to README
+- CDOT PR 45: Removed TIM support since TIMs do not contain personally-identifiable information
+- CDOT PR 46: Revised documentation for accuracy & clarity
+
+
+Version 1.3.0, released February 2024
+----------------------------------------
+### **Summary**
+The changes for the jpo-cvdp 1.3.0 release involve the optimization of dockerfiles, addition of dockerhub image documentation & some QoL changes to the `do_kafka_test.sh` script.
+
+Enhancements in this release:
+- CDOT PR 32: Optimized dockerfiles for smaller & faster deployments by switching over to using alpine as the base image.
+- CDOT PR 37: Added dockerhub image documentation
+- CDOT PR 38: Updated `do_kafka_test.sh` script to set DOCKER_HOST_IP automatically
+- CDOT PR 39: Updated `do_kafka_test.sh` script to resolve the KAFKA_CONTAINER_NAME env var dynamically
+
+Known Issues:
+- No known issues at this time.
+
+
+Version 1.2.0, released November 2023
+----------------------------------------
+
+### **Summary**
+The changes for the jpo-cvdp 1.2.0 release involve the addition of CI/CD configuration, a new build.sh script, an updated catch dependency, modified sonar properties, adjusted unit tests for accuracy, standardized logging level strings to uppercase and fixes for the `do_kafka_test.sh` script.
+- Added CI/CD configuration
+- Added `build.sh` script
+- Updated catch dependency
+- Modified sonar properties.
+- Modified a unit test to use reasonable accuracy.
+- Standardized logging level strings to uppercase.
+- Fixed the `do_kafka_test.sh` script
+- Changed default logging level to ‘ERROR’ instead of ‘TRACE’
+- Directly accessed PPM_LOG_LEVEL in PpmLogger class instead of using ‘v’ opt string.
+- Set PPM_LOG_LEVEL to DEBUG in `standalone.sh` and `standalone_multi.sh` scripts
+- Removed `docker-from-docker` feature from .devcontainer spec
+- Replaced instances of `chmod 7777` in dockerfiles with `chmod 777`
+
+Known Issues:
+-	No known issues at this time.
+
+
 Version 1.1.0, released July 5th 2023
 ----------------------------------------
 
