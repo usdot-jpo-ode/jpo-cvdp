@@ -1,6 +1,19 @@
 Jpo-cvdp Release Notes
 ----------------------------
 
+Version 1.5.0, released January 2025
+----------------------------------------
+### **Summary**
+The jpo-cvdp 1.5.0 release includes an enhancement to redact the "asn1" field from BSM messages, ensuring that filtered BSM messages no longer contain the field. Additionally, it updates GitHub Actions workflows with the latest versions of third-party actions from external repositories to eliminate Node.js and other deprecation warnings.
+
+Enhancements in this release:
+- [CDOT PR 54](https://github.com/CDOT-CV/jpo-cvdp/pull/54): BSM "asn1" Field Redaction
+- [USDOT PR 45](https://github.com/usdot-jpo-ode/jpo-cvdp/pull/45): Update GitHub Actions Third-Party Action Versions
+
+Known Issues:
+- No known issues at this time.
+
+
 Version 1.4.0, released September 2024
 ----------------------------------------
 ### **Summary**

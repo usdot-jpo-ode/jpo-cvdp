@@ -184,6 +184,10 @@ bool BSMHandler::process( const std::string& message_json ) {
     }
 
     metadata["sanitized"] = true;
+    
+    if (metadata.HasMember("asn1")) {
+        metadata["asn1"].SetString("", document.GetAllocator());
+    }
 
     // get the payload type
     if (!metadata.HasMember("payloadType")) {

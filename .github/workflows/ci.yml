@@ -13,7 +13,7 @@ jobs:
      options: "--user root"
    steps:
      - name: checkout code
-       uses: actions/checkout@v2 # This action to checkout the code
+       uses: actions/checkout@v4 # This action to checkout the code
      - name: Install Deps
        run: |
          apt update
@@ -26,7 +26,7 @@ jobs:
          sudo apt-get -y update
          sudo apt-get -y install docker-ce   
      - name: set up Cmake
-       uses: jwlawson/actions-setup-cmake@v1.13  # this action is used to setup and install Cmake with required versions
+       uses: jwlawson/actions-setup-cmake@v2  # this action is used to setup and install Cmake with required versions
        with:
          cmake-version: '3.16'  
      - name: install g++
@@ -43,7 +43,7 @@ jobs:
          cmake --build _cmake_build
          cmake --build _cmake_build --target install  
      - name: Install sonar-scanner and build-wrapper
-       uses: sonarsource/sonarcloud-github-c-cpp@v2  # This Action Installs sonar cloud and build wrapper to run sonar scan analysis  
+       uses: sonarsource/sonarcloud-github-c-cpp@v3  # This Action Installs sonar cloud and build wrapper to run sonar scan analysis  
      - name: Build and Generate test coverage
        run: |
          cd $GITHUB_WORKSPACE
@@ -57,15 +57,15 @@ jobs:
          gcov $GITHUB_WORKSPACE/cv-lib/src/*.cpp --object-directory /__w/jpo-cvdp/jpo-cvdp/build/cv-lib/CMakeFiles/CVLib.dir/src/
          gcov $GITHUB_WORKSPACE/src/*.cpp --object-directory /__w/jpo-cvdp/jpo-cvdp/build/CMakeFiles/ppm_tests.dir/src/              
      - name: Archive code coverage results
-       uses: actions/upload-artifact@v3 # This action is used to capture the test artifacts and exits if no files are found
+       uses: actions/upload-artifact@v4 # This action is used to capture the test artifacts and exits if no files are found
        with:
-         name: jpo-cvdp
+         name: jpo-cvdp-code-coverage
          path: /__w/jpo-cvdp/jpo-cvdp/coverage/
          if-no-files-found: error              
      - name: Archive buildwrapper output
-       uses: actions/upload-artifact@v3  # This action is used to capture the builwrapper output files used by sonarscan.
+       uses: actions/upload-artifact@v4  # This action is used to capture the builwrapper output files used by sonarscan.
        with: 
-         name: jpo-cvdp
+         name: jpo-cvdp-buildwrapper-output
          path: /home/runner/work/jpo-cvdp/jpo-cvdp/bw-output       
      - name: Setup SonarScanner
        uses: warchant/setup-sonar-scanner@v7 # This action is used to setup sonar scanner with required versions.
