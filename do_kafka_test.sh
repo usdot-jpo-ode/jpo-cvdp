@@ -13,8 +13,8 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 
-MAP_FILE=data/I_80.edges
-BSM_DATA_FILE=data/I_80_test.json
+MAP_FILE=data/CO-Motorways.edges
+BSM_DATA_FILE=data/CO-Motorways_test.json
 PPM_CONTAINER_NAME=test_ppm_instance
 PPM_IMAGE_TAG=do-kafka-test-ppm-image
 PPM_IMAGE_NAME=jpo-cvdp_ppm
@@ -97,27 +97,27 @@ run_tests() {
     echo ""
 
     echo -e $YELLOW"Test 2/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c2.properties $BSM_DATA_FILE 10
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c2.properties $BSM_DATA_FILE 6
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 3/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c3.properties $BSM_DATA_FILE 18
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c3.properties $BSM_DATA_FILE 11
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 4/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c4.properties $BSM_DATA_FILE 23
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c4.properties $BSM_DATA_FILE 14
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 5/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c5.properties $BSM_DATA_FILE 33
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c5.properties $BSM_DATA_FILE 20
     echo ""
     echo ""
 
     echo -e $YELLOW"Test 6/$numberOfTests"$NC
-    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c6.properties $BSM_DATA_FILE 43
+    ./test-scripts/standalone.sh $MAP_FILE config/bsm-test/c6.properties $BSM_DATA_FILE 26
     echo ""
     echo ""
 }
