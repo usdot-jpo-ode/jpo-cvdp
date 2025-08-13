@@ -26,39 +26,9 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
                 // if the next path element is an object or array, recurse
                 auto &nextValue = value[nextPathElement.c_str()];
 
-                // bitstring handling
-                if (isBitstring(nextValue)) {
-
-                    // wheelBrakes bitstring handling
-                    if (nextPathElement == "wheelBrakes") {
-                        if (target == "unavailable") {
-                            nextValue["unavailable"] = true;
-                        }
-                        if (target == "leftFront") {
-                            nextValue["leftFront"] = false;
-                        }
-                        else if (target == "rightFront") {
-                            nextValue["rightFront"] = false;
-                        }
-                        else if (target == "leftRear") {
-                            nextValue["leftRear"] = false;
-                        }
-                        else if (target == "rightRear") {
-                            nextValue["rightRear"] = false;
-                        }
-                        else {
-                            return false;
-                        }
-                        return true;
-                    }
-
-                    value.RemoveMember(nextPathElement.c_str());
-                    return true;
-                }
-
-                // weatherProbe, status & speedProfile object handling
+                // doNotUse2, status & speedProfile object handling
                 if (type == "Object") {
-                    if (nextPathElement == "weatherProbe" || nextPathElement == "status" || nextPathElement == "speedProfile") {
+                    if (nextPathElement == "doNotUse2" || nextPathElement == "status" || nextPathElement == "doNotUse4") {
                         value.RemoveMember(nextPathElement.c_str());
                         return true;
                     }
@@ -77,7 +47,12 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
                         return true;
                     }
                     else if (type == "String" && target == "transmission") {
-                        value["transmission"] = "UNAVAILABLE";
+                        value["transmission"] = "unavailable";
+                        return true;
+                    }
+                    else if (type == "String" && target == "wheelBrakes") {
+                        // Hex value representation for unavailable for J2735 wheelBrakes
+                        value["wheelBrakes"] = "80";
                         return true;
                     }
                     else if (type == "String" && target == "traction") {
@@ -112,15 +87,16 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
         }
     }
     else if (value.IsArray()) {
+        bool result = false;
         for (auto &m : value.GetArray()) {
             std::string type = kTypeNames[m.GetType()];
             if (type == "Object" || type == "Array") {
-                bool result = redactMemberByPath(m, path);
-                if (result) {
-                    return true;
+                if (redactMemberByPath(m, path)) {
+                    result = true;
                 }
             }
         }
+        return result;
     }
     return false;
 }
@@ -244,18 +220,4 @@ std::string RapidjsonRedactor::getBottomLevelFromPath(std::string &path) {
         return path.substr(lastDot + 1);
     }
     return path;
-}
-
-bool RapidjsonRedactor::isBitstring(rapidjson::Value &value) {
-    // check if the value is an object consisting only of booleans
-    if (!value.IsObject()) {
-        return false;
-    }
-    for (auto &m : value.GetObject()) {
-        std::string type = kTypeNames[m.value.GetType()];
-        if (type != "True" && type != "False") {
-            return false;
-        }
-    }
-    return true;
 }
