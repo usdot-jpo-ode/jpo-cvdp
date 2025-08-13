@@ -8,6 +8,7 @@ on:
 
 jobs:
   publish:
+    if: github.event.pull_request.base.repo.owner.login == 'usdot-jpo-ode'
     uses: usdot-jpo-ode/actions/.github/workflows/dockerhub.yml@main
     with:
       image: usdotjpoode/jpo-cvdp
