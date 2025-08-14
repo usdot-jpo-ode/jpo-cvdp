@@ -92,6 +92,7 @@ jobs:
           sonar.sourceEncoding=UTF-8
           EOF
       - name: Run SonarScanner
+        if: github.event.pull_request.base.repo.owner.login == 'usdot-jpo-ode'
         uses: usdot-fhwa-stol/actions/sonar-scanner@main # This action runs the analysis using generated sonar gcov files and publish reports to respective sonarcloud project.
         with:
           sonar-properties-path: /tmp/sonar-scanner.properties
