@@ -255,32 +255,8 @@ bool BSMHandler::process( const std::string& message_json ) {
 
             return false;
         }
-        
+
         if (!core_data["speed"].IsInt()) {
-            result_ = ResultStatus::OTHER;
-
-            return false;
-        }
-
-        if (!core_data.HasMember("lat") || !core_data.HasMember("long")) {
-            result_ = ResultStatus::MISSING;
-
-            return false;
-        }
-
-        if (!core_data["lat"].IsInt() || !core_data["long"].IsInt()) {
-            result_ = ResultStatus::OTHER;
-
-            return false;
-        }
-
-        if (!core_data.HasMember("id")) {
-            result_ = ResultStatus::MISSING;
-
-            return false;
-        }
-
-        if (!core_data["id"].IsString()) {
             result_ = ResultStatus::OTHER;
 
             return false;
@@ -298,20 +274,31 @@ bool BSMHandler::process( const std::string& message_json ) {
             return false;
         }
 
-        bsm_.set_velocity(speed);
-        bsm_.set_latitude(latitude);
-        bsm_.set_longitude(longitude);
+        // Check if position data is available
+        if (!core_data.HasMember("lat") || !core_data.HasMember("long")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        if (!core_data["lat"].IsInt() || !core_data["long"].IsInt()) {
+            result_ = ResultStatus::OTHER;
+
+            return false;
+        }
 
         // Only set latitude if it's not the J2735 "unavailable" value
         if (core_data["lat"].GetInt() != J2735_LATITUDE_UNAVAILABLE) {
             // J2735 defined INTEGER (-900000000..900000000) --  Units of 1/10 microdegree
             latitude = core_data["lat"].GetInt() * 1e-7;
+            bsm_.set_latitude(latitude);
         }
 
         // Only set longitude if it's not the J2735 "unavailable" value
         if (core_data["long"].GetInt() != J2735_LONGITUDE_UNAVAILABLE) {
             // J2735 defined INTEGER (-1799999999..1800000000) --  Units of 1/10 microdegree
             longitude = core_data["long"].GetInt() * 1e-7;
+            bsm_.set_longitude(longitude);
         }
 
         if (is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_)) {
@@ -320,7 +307,20 @@ bool BSMHandler::process( const std::string& message_json ) {
             return false;
         }
 
+        if (!core_data.HasMember("id")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        if (!core_data["id"].IsString()) {
+            result_ = ResultStatus::OTHER;
+
+            return false;
+        }
+
         id = core_data["id"].GetString();
+        
 
         if (is_active<kIdRedactFlag>()) {
             bsm_.set_original_id(id);
@@ -330,6 +330,7 @@ bool BSMHandler::process( const std::string& message_json ) {
         }
 
         bsm_.set_id(id);
+        bsm_.set_velocity(speed);
 
         // Check for BSM size.  
         // Size is a special case; if it's not included, then we do 
