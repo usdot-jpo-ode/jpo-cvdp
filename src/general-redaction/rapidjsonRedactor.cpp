@@ -26,9 +26,13 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
                 // if the next path element is an object or array, recurse
                 auto &nextValue = value[nextPathElement.c_str()];
 
-                // doNotUse2, status & speedProfile object handling
+                // Handle whole object redaction for known fields that are optional
                 if (type == "Object") {
-                    if (nextPathElement == "doNotUse2" || nextPathElement == "status" || nextPathElement == "doNotUse4") {
+                    if (nextPathElement == "doNotUse2" || 
+                        nextPathElement == "status" || 
+                        nextPathElement == "doNotUse4" || 
+                        nextPathElement == "events" || 
+                        nextPathElement == "lights") {
                         value.RemoveMember(nextPathElement.c_str());
                         return true;
                     }
