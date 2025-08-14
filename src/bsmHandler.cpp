@@ -367,7 +367,6 @@ bool BSMHandler::process( const std::string& message_json ) {
 void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
     if (is_active<kGeneralRedactFlag>()) {
         for (std::string memberPath : rpm.getFields()) {
-            logger_->debug("Attempting redaction for path: '" + memberPath + "'");
             bool memberRedacted = rapidjsonRedactor.redactMemberByPath(document, memberPath.c_str());
             if (!memberRedacted) {
                 logger_->info("Member not found while handling general redaction! Path: '" + memberPath + "'");
