@@ -25,6 +25,7 @@ jobs:
           chmod +x /usr/local/bin/docker-compose
           sudo apt-get -y update
           sudo apt-get -y install docker-ce   
+          sudo apt-get install -y libcurl4-openssl-dev
       - name: set up Cmake
         uses: jwlawson/actions-setup-cmake@v2  # this action is used to setup and install Cmake with required versions
         with:
