@@ -1452,20 +1452,20 @@ TEST_CASE( "BSMHandler JSON Error Checking", "[ppm][filtering][error]" ) {
 TEST_CASE( "RapidjsonRedactor Search For Member By Name - Member Present", "[ppm][redaction][rapidjsonredactor][searchformemberbyname]") {
     RapidjsonRedactor rapidjsonRedactor;
 
-    const char* jsonString = "{\"metadata\":{\"latency\":1,\"logFileName\":\"wsmpforward.coer\",\"payloadType\":\"us.dot.its.jpo.ode.model.OdeBsmPayload\",\"receivedAt\":\"2017-08-02T19:56:45.822Z[UTC]\",\"sanitized\":false,\"schemaVersion\":1,\"serialId\":{\"bundleId\":4,\"bundleSize\":1,\"recordId\":2,\"serialNumber\":0,\"streamId\":\"0bfda39b-0bf1-4e2e-a1f1-b858426f7408\"},\"validSignature\":false},\"payload\":{\"data\":{\"coreData\":{\"accelSet\":{\"accelYaw\":0},\"accuracy\":{\"semiMajor\":12.7,\"semiMinor\":12.7},\"brakes\":{\"abs\":\"unavailable\",\"auxBrakes\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"scs\":\"unavailable\",\"traction\":\"unavailable\",\"wheelBrakes\":{\"leftFront\":false,\"leftRear\":false,\"rightFront\":false,\"rightRear\":false,\"unavailable\":true}},\"heading\":321.0125,\"id\":\"G1\",\"msgCnt\":1,\"position\":{\"elevation\":154.7,\"latitude\":35.94911,\"longitude\":-83.928343},\"secMark\":36799,\"size\":{\"length\":250,\"width\":150},\"speed\":22.1},\"partII\":[{\"id\":\"VEHICLESAFETYEXT\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":-19.8,\"latOffset\":7.55e-5,\"lonOffset\":0.0002609,\"timeOffset\":32.2},{\"elevationOffset\":-25.8,\"latOffset\":7.32e-5,\"lonOffset\":0.0003135,\"timeOffset\":34},{\"elevationOffset\":-34.5,\"latOffset\":0.0001027,\"lonOffset\":0.0004479,\"timeOffset\":37.2},{\"elevationOffset\":-128.2,\"latOffset\":0.000232,\"lonOffset\":0.0011832,\"timeOffset\":73.44}]},\"pathPrediction\":{\"confidence\":50,\"radiusOfCurve\":0}}},{\"id\":\"SUPPLEMENTALVEHICLEEXT\",\"value\":{\"classDetails\":{\"fuelType\":\"UNKNOWNFUEL\",\"hpmsType\":\"NONE\",\"keyType\":0,\"regional\":[],\"role\":\"BASICVEHICLE\"},\"regional\":[],\"vehicleData\":{\"bumpers\":{\"front\":0.5,\"rear\":0.6},\"height\":1.9},\"weatherProbe\":{},\"accelLong\":\"test\",\"accelLat\":\"test\",\"accelVert\":\"test\",\"yawRate\":\"test\",\"steeringWheelAngle\":\"test\",\"leftTurnSignalOn\":\"test\",\"rightTurnSignalOn\":\"test\",\"hazardSignalOn\":\"test\",\"fogLightOn\":\"test\",\"lowBeamHeadlightsOn\":\"test\",\"highBeamHeadlightsOn\":\"test\",\"automaticLightControlOn\":\"test\",\"daytimeRunningLightsOn\":\"test\",\"parkingLightsOn\":\"test\",\"wiperStatusFront\":\"test\",\"wiperStatusRear\":\"test\",\"wiperRateFront\":\"test\",\"wiperRateRear\":\"test\",\"eventAirBagDeployment\":\"test\",\"sunSensor\":\"test\",\"coefficientOfFriction\":\"test\",\"ambientAirTemperature\":\"test\",\"ambientAirPressure\":\"test\",\"transmissionState\":\"test\",\"vehicleSpeed\":\"test\",\"antiLockBrakeStatus\":\"test\",\"stabilityControlStatus\":\"test\",\"tractionControlStatus\":\"test\",\"brakeBoostApplied\":\"test\",\"brakeAppliedStatus\":\"test\",\"auxiliaryBrakeStatus\":\"test\",\"tirePressure\":\"test\",\"acceleratorPedalPosition\":\"test\",\"brakePedalPosition\":\"test\",\"disabledVehicle\":\"test\",\"stalledVehicle\":\"test\",\"airBagDeployment\":\"test\"}}]},\"dataType\":\"us.dot.its.jpo.ode.plugin.j2735.J2735Bsm\",\"schemaVersion\":1},\"schemaVersion\":1}";
+    const char* jsonString = "{\"metadata\":{\"logFileName\":\"\",\"recordType\":\"bsmTx\",\"securityResultCode\":\"success\",\"receivedMessageDetails\":{\"locationData\":{\"latitude\":\"unavailable\",\"longitude\":\"unavailable\",\"elevation\":\"unavailable\",\"speed\":\"unavailable\",\"heading\":\"unavailable\"},\"rxSource\":\"RSU\"},\"payloadType\":\"us.dot.its.jpo.ode.model.OdeMessageFramePayload\",\"serialId\":{\"streamId\":\"401f42ef-9b65-4b56-99db-45c0bd049b57\",\"bundleSize\":1,\"bundleId\":0,\"recordId\":0,\"serialNumber\":0},\"odeReceivedAt\":\"2025-08-13T08:56:24.285Z\",\"schemaVersion\":9,\"maxDurationTime\":0,\"recordGeneratedAt\":\"\",\"recordGeneratedBy\":\"OBU\",\"sanitized\":false,\"odePacketID\":\"\",\"odeTimStartDateTime\":\"\",\"asn1\":\"00147A5F93D0D5116EE8A6AD7139165E9182A70581E6772631B3461EDC56B89DB8AEFD2208000000014DC10037FFF2B86414E7F9925EB4A3C08281CDE9E67DCCEC75DFF153F9922C850EA042702EEA2F72F4F751394C54B0488322BA2BA4051BA5E702510E8024DDF9171DE8EE3FFAACC4B3F724FD3F6EED2DEB566AF0\",\"source\":\"EV\",\"originIp\":\"172.18.0.1\",\"isCertPresent\":false},\"payload\":{\"data\":{\"messageId\":20,\"value\":{\"BasicSafetyMessage\":{\"coreData\":{\"msgCnt\":126,\"id\":\"4F435445\",\"secMark\":48034,\"lat\":359491100,\"long\":-839283430,\"elev\":15883,\"accuracy\":{\"semiMajor\":3,\"semiMinor\":204,\"orientation\":61004},\"transmission\":\"reverseGears\",\"speed\":870,\"heading\":17950,\"angle\":94,\"accelSet\":{\"long\":-613,\"lat\":205,\"vert\":57,\"yaw\":12030},\"brakes\":{\"wheelBrakes\":\"20\",\"traction\":\"off\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"off\",\"auxBrakes\":\"unavailable\"},\"size\":{\"width\":0,\"length\":0}},\"partII\":[{\"partII-Id\":0,\"partII-Value\":{\"VehicleSafetyExtensions\":{\"events\":{\"value\":\"1000\",\"length\":13},\"pathHistory\":{\"initialPosition\":{\"utcTime\":{\"year\":696,\"month\":6,\"day\":8,\"hour\":5,\"minute\":14,\"second\":32665,\"offset\":-537},\"long\":-284684734,\"lat\":-355561095,\"elevation\":36723,\"heading\":7566,\"speed\":{\"transmisson\":\"reserved2\",\"speed\":7166},\"posAccuracy\":{\"semiMajor\":42,\"semiMinor\":127,\"orientation\":12869},\"timeConfidence\":\"time-000-000-000-000-1\",\"posConfidence\":{\"pos\":\"a200m\",\"elevation\":\"elev-002-00\"},\"speedConfidence\":{\"heading\":\"prec01deg\",\"speed\":\"prec0-1ms\",\"throttle\":\"prec10percent\"}},\"currGNSSstatus\":\"02\",\"crumbData\":[{\"latOffset\":-128070,\"lonOffset\":12146,\"elevationOffset\":1871,\"timeOffset\":29972,\"speed\":4760,\"posAccuracy\":{\"semiMajor\":169,\"semiMinor\":96,\"orientation\":37126},\"heading\":69},{\"latOffset\":-59950,\"lonOffset\":-128457,\"elevationOffset\":-836,\"timeOffset\":57419,\"speed\":1082,\"posAccuracy\":{\"semiMajor\":0,\"semiMinor\":147,\"orientation\":30692},\"heading\":92},{\"latOffset\":-5906,\"lonOffset\":-65558,\"elevationOffset\":817,\"timeOffset\":11518,\"speed\":6439,\"posAccuracy\":{\"semiMajor\":233,\"semiMinor\":251,\"orientation\":30569},\"heading\":111}]},\"pathPrediction\":{\"radiusOfCurve\":13671,\"confidence\":175}}}}]}}},\"dataType\":\"us.dot.its.jpo.asn.j2735.r2024.BasicSafetyMessage.BasicSafetyMessageMessageFrame\"}}";
 
     rapidjson::Document document;
     document.Parse( jsonString );
 
-    // check that accelLong that is present is properly identified as present
-    bool accelLongPresent = rapidjsonRedactor.searchForMemberByName( document, "accelLong" );
-    CHECK( accelLongPresent == true );
+    // check that heading is properly identified as present
+    bool headingPresent = rapidjsonRedactor.searchForMemberByName( document, "heading" );
+    CHECK( headingPresent == true );
 }
 
 TEST_CASE( "RapidjsonRedactor Search For Member By Name - Member Not Present", "[ppm][redaction][rapidjsonredactor][searchformemberbyname]") {
     RapidjsonRedactor rapidjsonRedactor;
 
-    const char* jsonString = "{\"metadata\":{\"latency\":1,\"logFileName\":\"wsmpforward.coer\",\"payloadType\":\"us.dot.its.jpo.ode.model.OdeBsmPayload\",\"receivedAt\":\"2017-08-02T19:56:45.822Z[UTC]\",\"sanitized\":false,\"schemaVersion\":1,\"serialId\":{\"bundleId\":4,\"bundleSize\":1,\"recordId\":2,\"serialNumber\":0,\"streamId\":\"0bfda39b-0bf1-4e2e-a1f1-b858426f7408\"},\"validSignature\":false},\"payload\":{\"data\":{\"coreData\":{\"accelSet\":{\"accelYaw\":0},\"accuracy\":{\"semiMajor\":12.7,\"semiMinor\":12.7},\"brakes\":{\"abs\":\"unavailable\",\"auxBrakes\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"scs\":\"unavailable\",\"traction\":\"unavailable\",\"wheelBrakes\":{\"leftFront\":false,\"leftRear\":false,\"rightFront\":false,\"rightRear\":false,\"unavailable\":true}},\"heading\":321.0125,\"id\":\"G1\",\"msgCnt\":1,\"position\":{\"elevation\":154.7,\"latitude\":35.94911,\"longitude\":-83.928343},\"secMark\":36799,\"size\":{\"length\":250,\"width\":150},\"speed\":22.1},\"partII\":[{\"id\":\"VEHICLESAFETYEXT\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":-19.8,\"latOffset\":7.55e-5,\"lonOffset\":0.0002609,\"timeOffset\":32.2},{\"elevationOffset\":-25.8,\"latOffset\":7.32e-5,\"lonOffset\":0.0003135,\"timeOffset\":34},{\"elevationOffset\":-34.5,\"latOffset\":0.0001027,\"lonOffset\":0.0004479,\"timeOffset\":37.2},{\"elevationOffset\":-128.2,\"latOffset\":0.000232,\"lonOffset\":0.0011832,\"timeOffset\":73.44}]},\"pathPrediction\":{\"confidence\":50,\"radiusOfCurve\":0}}},{\"id\":\"SUPPLEMENTALVEHICLEEXT\",\"value\":{\"classDetails\":{\"fuelType\":\"UNKNOWNFUEL\",\"hpmsType\":\"NONE\",\"keyType\":0,\"regional\":[],\"role\":\"BASICVEHICLE\"},\"regional\":[],\"vehicleData\":{\"bumpers\":{\"front\":0.5,\"rear\":0.6},\"height\":1.9},\"weatherProbe\":{},\"accelLong\":\"test\",\"accelLat\":\"test\",\"accelVert\":\"test\",\"yawRate\":\"test\",\"steeringWheelAngle\":\"test\",\"leftTurnSignalOn\":\"test\",\"rightTurnSignalOn\":\"test\",\"hazardSignalOn\":\"test\",\"fogLightOn\":\"test\",\"lowBeamHeadlightsOn\":\"test\",\"highBeamHeadlightsOn\":\"test\",\"automaticLightControlOn\":\"test\",\"daytimeRunningLightsOn\":\"test\",\"parkingLightsOn\":\"test\",\"wiperStatusFront\":\"test\",\"wiperStatusRear\":\"test\",\"wiperRateFront\":\"test\",\"wiperRateRear\":\"test\",\"eventAirBagDeployment\":\"test\",\"sunSensor\":\"test\",\"coefficientOfFriction\":\"test\",\"ambientAirTemperature\":\"test\",\"ambientAirPressure\":\"test\",\"transmissionState\":\"test\",\"vehicleSpeed\":\"test\",\"antiLockBrakeStatus\":\"test\",\"stabilityControlStatus\":\"test\",\"tractionControlStatus\":\"test\",\"brakeBoostApplied\":\"test\",\"brakeAppliedStatus\":\"test\",\"auxiliaryBrakeStatus\":\"test\",\"tirePressure\":\"test\",\"acceleratorPedalPosition\":\"test\",\"brakePedalPosition\":\"test\",\"disabledVehicle\":\"test\",\"stalledVehicle\":\"test\",\"airBagDeployment\":\"test\"}}]},\"dataType\":\"us.dot.its.jpo.ode.plugin.j2735.J2735Bsm\",\"schemaVersion\":1},\"schemaVersion\":1}";
+    const char* jsonString = "{\"metadata\":{\"logFileName\":\"\",\"recordType\":\"bsmTx\",\"securityResultCode\":\"success\",\"receivedMessageDetails\":{\"locationData\":{\"latitude\":\"unavailable\",\"longitude\":\"unavailable\",\"elevation\":\"unavailable\",\"speed\":\"unavailable\",\"heading\":\"unavailable\"},\"rxSource\":\"RSU\"},\"payloadType\":\"us.dot.its.jpo.ode.model.OdeMessageFramePayload\",\"serialId\":{\"streamId\":\"401f42ef-9b65-4b56-99db-45c0bd049b57\",\"bundleSize\":1,\"bundleId\":0,\"recordId\":0,\"serialNumber\":0},\"odeReceivedAt\":\"2025-08-13T08:56:24.285Z\",\"schemaVersion\":9,\"maxDurationTime\":0,\"recordGeneratedAt\":\"\",\"recordGeneratedBy\":\"OBU\",\"sanitized\":false,\"odePacketID\":\"\",\"odeTimStartDateTime\":\"\",\"asn1\":\"00147A5F93D0D5116EE8A6AD7139165E9182A70581E6772631B3461EDC56B89DB8AEFD2208000000014DC10037FFF2B86414E7F9925EB4A3C08281CDE9E67DCCEC75DFF153F9922C850EA042702EEA2F72F4F751394C54B0488322BA2BA4051BA5E702510E8024DDF9171DE8EE3FFAACC4B3F724FD3F6EED2DEB566AF0\",\"source\":\"EV\",\"originIp\":\"172.18.0.1\",\"isCertPresent\":false},\"payload\":{\"data\":{\"messageId\":20,\"value\":{\"BasicSafetyMessage\":{\"coreData\":{\"msgCnt\":126,\"id\":\"4F435445\",\"secMark\":48034,\"lat\":359491100,\"long\":-839283430,\"elev\":15883,\"accuracy\":{\"semiMajor\":3,\"semiMinor\":204,\"orientation\":61004},\"transmission\":\"reverseGears\",\"speed\":870,\"heading\":17950,\"angle\":94,\"accelSet\":{\"long\":-613,\"lat\":205,\"vert\":57,\"yaw\":12030},\"brakes\":{\"wheelBrakes\":\"20\",\"traction\":\"off\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"off\",\"auxBrakes\":\"unavailable\"},\"size\":{\"width\":0,\"length\":0}},\"partII\":[{\"partII-Id\":0,\"partII-Value\":{\"VehicleSafetyExtensions\":{\"events\":{\"value\":\"1000\",\"length\":13},\"pathHistory\":{\"initialPosition\":{\"utcTime\":{\"year\":696,\"month\":6,\"day\":8,\"hour\":5,\"minute\":14,\"second\":32665,\"offset\":-537},\"long\":-284684734,\"lat\":-355561095,\"elevation\":36723,\"heading\":7566,\"speed\":{\"transmisson\":\"reserved2\",\"speed\":7166},\"posAccuracy\":{\"semiMajor\":42,\"semiMinor\":127,\"orientation\":12869},\"timeConfidence\":\"time-000-000-000-000-1\",\"posConfidence\":{\"pos\":\"a200m\",\"elevation\":\"elev-002-00\"},\"speedConfidence\":{\"heading\":\"prec01deg\",\"speed\":\"prec0-1ms\",\"throttle\":\"prec10percent\"}},\"currGNSSstatus\":\"02\",\"crumbData\":[{\"latOffset\":-128070,\"lonOffset\":12146,\"elevationOffset\":1871,\"timeOffset\":29972,\"speed\":4760,\"posAccuracy\":{\"semiMajor\":169,\"semiMinor\":96,\"orientation\":37126},\"heading\":69},{\"latOffset\":-59950,\"lonOffset\":-128457,\"elevationOffset\":-836,\"timeOffset\":57419,\"speed\":1082,\"posAccuracy\":{\"semiMajor\":0,\"semiMinor\":147,\"orientation\":30692},\"heading\":92},{\"latOffset\":-5906,\"lonOffset\":-65558,\"elevationOffset\":817,\"timeOffset\":11518,\"speed\":6439,\"posAccuracy\":{\"semiMajor\":233,\"semiMinor\":251,\"orientation\":30569},\"heading\":111}]},\"pathPrediction\":{\"radiusOfCurve\":13671,\"confidence\":175}}}}]}}},\"dataType\":\"us.dot.its.jpo.asn.j2735.r2024.BasicSafetyMessage.BasicSafetyMessageMessageFrame\"}}";
 
     rapidjson::Document document;
     document.Parse( jsonString );
@@ -1475,36 +1475,10 @@ TEST_CASE( "RapidjsonRedactor Search For Member By Name - Member Not Present", "
     CHECK( nonsenseMemberPresent == false );
 }
 
-TEST_CASE( "RapidjsonRedactor Search For Member By Path - Member Present", "[ppm][redaction][rapidjsonredactor][searchformemberbypath]") {
-    RapidjsonRedactor rapidjsonRedactor;
-
-    const char* jsonString = "{\"metadata\":{\"latency\":1,\"logFileName\":\"wsmpforward.coer\",\"payloadType\":\"us.dot.its.jpo.ode.model.OdeBsmPayload\",\"receivedAt\":\"2017-08-02T19:56:45.822Z[UTC]\",\"sanitized\":false,\"schemaVersion\":1,\"serialId\":{\"bundleId\":4,\"bundleSize\":1,\"recordId\":2,\"serialNumber\":0,\"streamId\":\"0bfda39b-0bf1-4e2e-a1f1-b858426f7408\"},\"validSignature\":false},\"payload\":{\"data\":{\"coreData\":{\"accelSet\":{\"accelYaw\":0},\"accuracy\":{\"semiMajor\":12.7,\"semiMinor\":12.7},\"brakes\":{\"abs\":\"unavailable\",\"auxBrakes\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"scs\":\"unavailable\",\"traction\":\"unavailable\",\"wheelBrakes\":{\"leftFront\":false,\"leftRear\":false,\"rightFront\":false,\"rightRear\":false,\"unavailable\":true}},\"heading\":321.0125,\"id\":\"G1\",\"msgCnt\":1,\"position\":{\"elevation\":154.7,\"latitude\":35.94911,\"longitude\":-83.928343},\"secMark\":36799,\"size\":{\"length\":250,\"width\":150},\"speed\":22.1},\"partII\":[{\"id\":\"VEHICLESAFETYEXT\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":-19.8,\"latOffset\":7.55e-5,\"lonOffset\":0.0002609,\"timeOffset\":32.2},{\"elevationOffset\":-25.8,\"latOffset\":7.32e-5,\"lonOffset\":0.0003135,\"timeOffset\":34},{\"elevationOffset\":-34.5,\"latOffset\":0.0001027,\"lonOffset\":0.0004479,\"timeOffset\":37.2},{\"elevationOffset\":-128.2,\"latOffset\":0.000232,\"lonOffset\":0.0011832,\"timeOffset\":73.44}]},\"pathPrediction\":{\"confidence\":50,\"radiusOfCurve\":0}}},{\"id\":\"SUPPLEMENTALVEHICLEEXT\",\"value\":{\"classDetails\":{\"fuelType\":\"UNKNOWNFUEL\",\"hpmsType\":\"NONE\",\"keyType\":0,\"regional\":[],\"role\":\"BASICVEHICLE\"},\"regional\":[],\"vehicleData\":{\"bumpers\":{\"front\":0.5,\"rear\":0.6},\"height\":1.9},\"weatherProbe\":{},\"accelLong\":\"test\",\"accelLat\":\"test\",\"accelVert\":\"test\",\"yawRate\":\"test\",\"steeringWheelAngle\":\"test\",\"leftTurnSignalOn\":\"test\",\"rightTurnSignalOn\":\"test\",\"hazardSignalOn\":\"test\",\"fogLightOn\":\"test\",\"lowBeamHeadlightsOn\":\"test\",\"highBeamHeadlightsOn\":\"test\",\"automaticLightControlOn\":\"test\",\"daytimeRunningLightsOn\":\"test\",\"parkingLightsOn\":\"test\",\"wiperStatusFront\":\"test\",\"wiperStatusRear\":\"test\",\"wiperRateFront\":\"test\",\"wiperRateRear\":\"test\",\"eventAirBagDeployment\":\"test\",\"sunSensor\":\"test\",\"coefficientOfFriction\":\"test\",\"ambientAirTemperature\":\"test\",\"ambientAirPressure\":\"test\",\"transmissionState\":\"test\",\"vehicleSpeed\":\"test\",\"antiLockBrakeStatus\":\"test\",\"stabilityControlStatus\":\"test\",\"tractionControlStatus\":\"test\",\"brakeBoostApplied\":\"test\",\"brakeAppliedStatus\":\"test\",\"auxiliaryBrakeStatus\":\"test\",\"tirePressure\":\"test\",\"acceleratorPedalPosition\":\"test\",\"brakePedalPosition\":\"test\",\"disabledVehicle\":\"test\",\"stalledVehicle\":\"test\",\"airBagDeployment\":\"test\"}}]},\"dataType\":\"us.dot.its.jpo.ode.plugin.j2735.J2735Bsm\",\"schemaVersion\":1},\"schemaVersion\":1}";
-
-    rapidjson::Document document;
-    document.Parse( jsonString );
-
-    // check that accelLong that is present is properly identified as present
-    bool accelLongPresent = rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.value.accelLong" );
-    CHECK( accelLongPresent == true );
-}
-
-TEST_CASE( "RapidjsonRedactor Search For Member By Path - Member Not Present", "[ppm][redaction][rapidjsonredactor][searchformemberbypath]") {
-    RapidjsonRedactor rapidjsonRedactor;
-
-    const char* jsonString = "{\"metadata\":{\"latency\":1,\"logFileName\":\"wsmpforward.coer\",\"payloadType\":\"us.dot.its.jpo.ode.model.OdeBsmPayload\",\"receivedAt\":\"2017-08-02T19:56:45.822Z[UTC]\",\"sanitized\":false,\"schemaVersion\":1,\"serialId\":{\"bundleId\":4,\"bundleSize\":1,\"recordId\":2,\"serialNumber\":0,\"streamId\":\"0bfda39b-0bf1-4e2e-a1f1-b858426f7408\"},\"validSignature\":false},\"payload\":{\"data\":{\"coreData\":{\"accelSet\":{\"accelYaw\":0},\"accuracy\":{\"semiMajor\":12.7,\"semiMinor\":12.7},\"brakes\":{\"abs\":\"unavailable\",\"auxBrakes\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"scs\":\"unavailable\",\"traction\":\"unavailable\",\"wheelBrakes\":{\"leftFront\":false,\"leftRear\":false,\"rightFront\":false,\"rightRear\":false,\"unavailable\":true}},\"heading\":321.0125,\"id\":\"G1\",\"msgCnt\":1,\"position\":{\"elevation\":154.7,\"latitude\":35.94911,\"longitude\":-83.928343},\"secMark\":36799,\"size\":{\"length\":250,\"width\":150},\"speed\":22.1},\"partII\":[{\"id\":\"VEHICLESAFETYEXT\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":-19.8,\"latOffset\":7.55e-5,\"lonOffset\":0.0002609,\"timeOffset\":32.2},{\"elevationOffset\":-25.8,\"latOffset\":7.32e-5,\"lonOffset\":0.0003135,\"timeOffset\":34},{\"elevationOffset\":-34.5,\"latOffset\":0.0001027,\"lonOffset\":0.0004479,\"timeOffset\":37.2},{\"elevationOffset\":-128.2,\"latOffset\":0.000232,\"lonOffset\":0.0011832,\"timeOffset\":73.44}]},\"pathPrediction\":{\"confidence\":50,\"radiusOfCurve\":0}}},{\"id\":\"SUPPLEMENTALVEHICLEEXT\",\"value\":{\"classDetails\":{\"fuelType\":\"UNKNOWNFUEL\",\"hpmsType\":\"NONE\",\"keyType\":0,\"regional\":[],\"role\":\"BASICVEHICLE\"},\"regional\":[],\"vehicleData\":{\"bumpers\":{\"front\":0.5,\"rear\":0.6},\"height\":1.9},\"weatherProbe\":{},\"accelLong\":\"test\",\"accelLat\":\"test\",\"accelVert\":\"test\",\"yawRate\":\"test\",\"steeringWheelAngle\":\"test\",\"leftTurnSignalOn\":\"test\",\"rightTurnSignalOn\":\"test\",\"hazardSignalOn\":\"test\",\"fogLightOn\":\"test\",\"lowBeamHeadlightsOn\":\"test\",\"highBeamHeadlightsOn\":\"test\",\"automaticLightControlOn\":\"test\",\"daytimeRunningLightsOn\":\"test\",\"parkingLightsOn\":\"test\",\"wiperStatusFront\":\"test\",\"wiperStatusRear\":\"test\",\"wiperRateFront\":\"test\",\"wiperRateRear\":\"test\",\"eventAirBagDeployment\":\"test\",\"sunSensor\":\"test\",\"coefficientOfFriction\":\"test\",\"ambientAirTemperature\":\"test\",\"ambientAirPressure\":\"test\",\"transmissionState\":\"test\",\"vehicleSpeed\":\"test\",\"antiLockBrakeStatus\":\"test\",\"stabilityControlStatus\":\"test\",\"tractionControlStatus\":\"test\",\"brakeBoostApplied\":\"test\",\"brakeAppliedStatus\":\"test\",\"auxiliaryBrakeStatus\":\"test\",\"tirePressure\":\"test\",\"acceleratorPedalPosition\":\"test\",\"brakePedalPosition\":\"test\",\"disabledVehicle\":\"test\",\"stalledVehicle\":\"test\",\"airBagDeployment\":\"test\"}}]},\"dataType\":\"us.dot.its.jpo.ode.plugin.j2735.J2735Bsm\",\"schemaVersion\":1},\"schemaVersion\":1}";
-
-    rapidjson::Document document;
-    document.Parse( jsonString );
-
-    // check that a nonsense member is properly identified as not present
-    bool nonsenseMemberPresent = rapidjsonRedactor.searchForMemberByPath( document, "payload.data.partII.value.aoiwehfiowafh" );
-    CHECK( nonsenseMemberPresent == false );
-}
-
 TEST_CASE( "RapidjsonRedactor Search For Member By Path - Wrong Path", "[ppm][redaction][rapidjsonredactor][searchformemberbypath]") {
     RapidjsonRedactor rapidjsonRedactor;
 
-    const char* jsonString = "{\"metadata\":{\"latency\":1,\"logFileName\":\"wsmpforward.coer\",\"payloadType\":\"us.dot.its.jpo.ode.model.OdeBsmPayload\",\"receivedAt\":\"2017-08-02T19:56:45.822Z[UTC]\",\"sanitized\":false,\"schemaVersion\":1,\"serialId\":{\"bundleId\":4,\"bundleSize\":1,\"recordId\":2,\"serialNumber\":0,\"streamId\":\"0bfda39b-0bf1-4e2e-a1f1-b858426f7408\"},\"validSignature\":false},\"payload\":{\"data\":{\"coreData\":{\"accelSet\":{\"accelYaw\":0},\"accuracy\":{\"semiMajor\":12.7,\"semiMinor\":12.7},\"brakes\":{\"abs\":\"unavailable\",\"auxBrakes\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"scs\":\"unavailable\",\"traction\":\"unavailable\",\"wheelBrakes\":{\"leftFront\":false,\"leftRear\":false,\"rightFront\":false,\"rightRear\":false,\"unavailable\":true}},\"heading\":321.0125,\"id\":\"G1\",\"msgCnt\":1,\"position\":{\"elevation\":154.7,\"latitude\":35.94911,\"longitude\":-83.928343},\"secMark\":36799,\"size\":{\"length\":250,\"width\":150},\"speed\":22.1},\"partII\":[{\"id\":\"VEHICLESAFETYEXT\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":-19.8,\"latOffset\":7.55e-5,\"lonOffset\":0.0002609,\"timeOffset\":32.2},{\"elevationOffset\":-25.8,\"latOffset\":7.32e-5,\"lonOffset\":0.0003135,\"timeOffset\":34},{\"elevationOffset\":-34.5,\"latOffset\":0.0001027,\"lonOffset\":0.0004479,\"timeOffset\":37.2},{\"elevationOffset\":-128.2,\"latOffset\":0.000232,\"lonOffset\":0.0011832,\"timeOffset\":73.44}]},\"pathPrediction\":{\"confidence\":50,\"radiusOfCurve\":0}}},{\"id\":\"SUPPLEMENTALVEHICLEEXT\",\"value\":{\"classDetails\":{\"fuelType\":\"UNKNOWNFUEL\",\"hpmsType\":\"NONE\",\"keyType\":0,\"regional\":[],\"role\":\"BASICVEHICLE\"},\"regional\":[],\"vehicleData\":{\"bumpers\":{\"front\":0.5,\"rear\":0.6},\"height\":1.9},\"weatherProbe\":{},\"accelLong\":\"test\",\"accelLat\":\"test\",\"accelVert\":\"test\",\"yawRate\":\"test\",\"steeringWheelAngle\":\"test\",\"leftTurnSignalOn\":\"test\",\"rightTurnSignalOn\":\"test\",\"hazardSignalOn\":\"test\",\"fogLightOn\":\"test\",\"lowBeamHeadlightsOn\":\"test\",\"highBeamHeadlightsOn\":\"test\",\"automaticLightControlOn\":\"test\",\"daytimeRunningLightsOn\":\"test\",\"parkingLightsOn\":\"test\",\"wiperStatusFront\":\"test\",\"wiperStatusRear\":\"test\",\"wiperRateFront\":\"test\",\"wiperRateRear\":\"test\",\"eventAirBagDeployment\":\"test\",\"sunSensor\":\"test\",\"coefficientOfFriction\":\"test\",\"ambientAirTemperature\":\"test\",\"ambientAirPressure\":\"test\",\"transmissionState\":\"test\",\"vehicleSpeed\":\"test\",\"antiLockBrakeStatus\":\"test\",\"stabilityControlStatus\":\"test\",\"tractionControlStatus\":\"test\",\"brakeBoostApplied\":\"test\",\"brakeAppliedStatus\":\"test\",\"auxiliaryBrakeStatus\":\"test\",\"tirePressure\":\"test\",\"acceleratorPedalPosition\":\"test\",\"brakePedalPosition\":\"test\",\"disabledVehicle\":\"test\",\"stalledVehicle\":\"test\",\"airBagDeployment\":\"test\"}}]},\"dataType\":\"us.dot.its.jpo.ode.plugin.j2735.J2735Bsm\",\"schemaVersion\":1},\"schemaVersion\":1}";
+    const char* jsonString = "{\"metadata\":{\"logFileName\":\"\",\"recordType\":\"bsmTx\",\"securityResultCode\":\"success\",\"receivedMessageDetails\":{\"locationData\":{\"latitude\":\"unavailable\",\"longitude\":\"unavailable\",\"elevation\":\"unavailable\",\"speed\":\"unavailable\",\"heading\":\"unavailable\"},\"rxSource\":\"RSU\"},\"payloadType\":\"us.dot.its.jpo.ode.model.OdeMessageFramePayload\",\"serialId\":{\"streamId\":\"401f42ef-9b65-4b56-99db-45c0bd049b57\",\"bundleSize\":1,\"bundleId\":0,\"recordId\":0,\"serialNumber\":0},\"odeReceivedAt\":\"2025-08-13T08:56:24.285Z\",\"schemaVersion\":9,\"maxDurationTime\":0,\"recordGeneratedAt\":\"\",\"recordGeneratedBy\":\"OBU\",\"sanitized\":false,\"odePacketID\":\"\",\"odeTimStartDateTime\":\"\",\"asn1\":\"00147A5F93D0D5116EE8A6AD7139165E9182A70581E6772631B3461EDC56B89DB8AEFD2208000000014DC10037FFF2B86414E7F9925EB4A3C08281CDE9E67DCCEC75DFF153F9922C850EA042702EEA2F72F4F751394C54B0488322BA2BA4051BA5E702510E8024DDF9171DE8EE3FFAACC4B3F724FD3F6EED2DEB566AF0\",\"source\":\"EV\",\"originIp\":\"172.18.0.1\",\"isCertPresent\":false},\"payload\":{\"data\":{\"messageId\":20,\"value\":{\"BasicSafetyMessage\":{\"coreData\":{\"msgCnt\":126,\"id\":\"4F435445\",\"secMark\":48034,\"lat\":359491100,\"long\":-839283430,\"elev\":15883,\"accuracy\":{\"semiMajor\":3,\"semiMinor\":204,\"orientation\":61004},\"transmission\":\"reverseGears\",\"speed\":870,\"heading\":17950,\"angle\":94,\"accelSet\":{\"long\":-613,\"lat\":205,\"vert\":57,\"yaw\":12030},\"brakes\":{\"wheelBrakes\":\"20\",\"traction\":\"off\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"off\",\"auxBrakes\":\"unavailable\"},\"size\":{\"width\":0,\"length\":0}},\"partII\":[{\"partII-Id\":0,\"partII-Value\":{\"VehicleSafetyExtensions\":{\"events\":{\"value\":\"1000\",\"length\":13},\"pathHistory\":{\"initialPosition\":{\"utcTime\":{\"year\":696,\"month\":6,\"day\":8,\"hour\":5,\"minute\":14,\"second\":32665,\"offset\":-537},\"long\":-284684734,\"lat\":-355561095,\"elevation\":36723,\"heading\":7566,\"speed\":{\"transmisson\":\"reserved2\",\"speed\":7166},\"posAccuracy\":{\"semiMajor\":42,\"semiMinor\":127,\"orientation\":12869},\"timeConfidence\":\"time-000-000-000-000-1\",\"posConfidence\":{\"pos\":\"a200m\",\"elevation\":\"elev-002-00\"},\"speedConfidence\":{\"heading\":\"prec01deg\",\"speed\":\"prec0-1ms\",\"throttle\":\"prec10percent\"}},\"currGNSSstatus\":\"02\",\"crumbData\":[{\"latOffset\":-128070,\"lonOffset\":12146,\"elevationOffset\":1871,\"timeOffset\":29972,\"speed\":4760,\"posAccuracy\":{\"semiMajor\":169,\"semiMinor\":96,\"orientation\":37126},\"heading\":69},{\"latOffset\":-59950,\"lonOffset\":-128457,\"elevationOffset\":-836,\"timeOffset\":57419,\"speed\":1082,\"posAccuracy\":{\"semiMajor\":0,\"semiMinor\":147,\"orientation\":30692},\"heading\":92},{\"latOffset\":-5906,\"lonOffset\":-65558,\"elevationOffset\":817,\"timeOffset\":11518,\"speed\":6439,\"posAccuracy\":{\"semiMajor\":233,\"semiMinor\":251,\"orientation\":30569},\"heading\":111}]},\"pathPrediction\":{\"radiusOfCurve\":13671,\"confidence\":175}}}}]}}},\"dataType\":\"us.dot.its.jpo.asn.j2735.r2024.BasicSafetyMessage.BasicSafetyMessageMessageFrame\"}}";
 
     rapidjson::Document document;
     document.Parse( jsonString );
@@ -1517,7 +1491,7 @@ TEST_CASE( "RapidjsonRedactor Search For Member By Path - Wrong Path", "[ppm][re
 TEST_CASE( "RapidjsonRedactor Search For Member By Path - Path With Wrong Top Level Member", "[ppm][redaction][rapidjsonredactor][searchformemberbypath]") {
     RapidjsonRedactor rapidjsonRedactor;
 
-    const char* jsonString = "{\"metadata\":{\"latency\":1,\"logFileName\":\"wsmpforward.coer\",\"payloadType\":\"us.dot.its.jpo.ode.model.OdeBsmPayload\",\"receivedAt\":\"2017-08-02T19:56:45.822Z[UTC]\",\"sanitized\":false,\"schemaVersion\":1,\"serialId\":{\"bundleId\":4,\"bundleSize\":1,\"recordId\":2,\"serialNumber\":0,\"streamId\":\"0bfda39b-0bf1-4e2e-a1f1-b858426f7408\"},\"validSignature\":false},\"payload\":{\"data\":{\"coreData\":{\"accelSet\":{\"accelYaw\":0},\"accuracy\":{\"semiMajor\":12.7,\"semiMinor\":12.7},\"brakes\":{\"abs\":\"unavailable\",\"auxBrakes\":\"unavailable\",\"brakeBoost\":\"unavailable\",\"scs\":\"unavailable\",\"traction\":\"unavailable\",\"wheelBrakes\":{\"leftFront\":false,\"leftRear\":false,\"rightFront\":false,\"rightRear\":false,\"unavailable\":true}},\"heading\":321.0125,\"id\":\"G1\",\"msgCnt\":1,\"position\":{\"elevation\":154.7,\"latitude\":35.94911,\"longitude\":-83.928343},\"secMark\":36799,\"size\":{\"length\":250,\"width\":150},\"speed\":22.1},\"partII\":[{\"id\":\"VEHICLESAFETYEXT\",\"value\":{\"pathHistory\":{\"crumbData\":[{\"elevationOffset\":-19.8,\"latOffset\":7.55e-5,\"lonOffset\":0.0002609,\"timeOffset\":32.2},{\"elevationOffset\":-25.8,\"latOffset\":7.32e-5,\"lonOffset\":0.0003135,\"timeOffset\":34},{\"elevationOffset\":-34.5,\"latOffset\":0.0001027,\"lonOffset\":0.0004479,\"timeOffset\":37.2},{\"elevationOffset\":-128.2,\"latOffset\":0.000232,\"lonOffset\":0.0011832,\"timeOffset\":73.44}]},\"pathPrediction\":{\"confidence\":50,\"radiusOfCurve\":0}}},{\"id\":\"SUPPLEMENTALVEHICLEEXT\",\"value\":{\"classDetails\":{\"fuelType\":\"UNKNOWNFUEL\",\"hpmsType\":\"NONE\",\"keyType\":0,\"regional\":[],\"role\":\"BASICVEHICLE\"},\"regional\":[],\"vehicleData\":{\"bumpers\":{\"front\":0.5,\"rear\":0.6},\"height\":1.9},\"weatherProbe\":{},\"accelLong\":\"test\",\"accelLat\":\"test\",\"accelVert\":\"test\",\"yawRate\":\"test\",\"steeringWheelAngle\":\"test\",\"leftTurnSignalOn\":\"test\",\"rightTurnSignalOn\":\"test\",\"hazardSignalOn\":\"test\",\"fogLightOn\":\"test\",\"lowBeamHeadlightsOn\":\"test\",\"highBeamHeadlightsOn\":\"test\",\"automaticLightControlOn\":\"test\",\"daytimeRunningLightsOn\":\"test\",\"parkingLightsOn\":\"test\",\"wiperStatusFront\":\"test\",\"wiperStatusRear\":\"test\",\"wiperRateFront\":\"test\",\"wiperRateRear\":\"test\",\"eventAirBagDeployment\":\"test\",\"sunSensor\":\"test\",\"coefficientOfFriction\":\"test\",\"ambientAirTemperature\":\"test\",\"ambientAirPressure\":\"test\",\"transmissionState\":\"test\",\"vehicleSpeed\":\"test\",\"antiLockBrakeStatus\":\"test\",\"stabilityControlStatus\":\"test\",\"tractionControlStatus\":\"test\",\"brakeBoostApplied\":\"test\",\"brakeAppliedStatus\":\"test\",\"auxiliaryBrakeStatus\":\"test\",\"tirePressure\":\"test\",\"acceleratorPedalPosition\":\"test\",\"brakePedalPosition\":\"test\",\"disabledVehicle\":\"test\",\"stalledVehicle\":\"test\",\"airBagDeployment\":\"test\"}}]},\"dataType\":\"us.dot.its.jpo.ode.plugin.j2735.J2735Bsm\",\"schemaVersion\":1},\"schemaVersion\":1}";
+    const char* jsonString = "{\"metadata\":{\"logFileName\":\"\",\"recordType\":\"bsmTx\",\"securityResultCode\":\"success\",\"receivedMessageDetails\":{\"locationData\":{\"latitude\":\"unavailable\",\"longitude\":\"unavailable\",\"elevation\":\"unavailable\",\"speed\":\"unavailable\",\"heading\":\"unavailable\"},\"rxSource\":\"RSU\"},\"payloadType\":\"us.dot.its.jpo.ode.model.OdeMessageFramePayload\",\"serialId\":{\"streamId\":\"401f42ef-9b65-4b56-99db-45c0bd049b57\",\"bundleSize\":1,\"bundleId\":0,\"recordId\":0,\"serialNumber\":0},\"odeReceivedAt\":\"2025-08-13T08:56:24.285Z\",\"schemaVersion\":9,\"maxDurationTime\":0,\"recordGeneratedAt\":\"\",\"recordGeneratedBy\":\"OBU\",\"sanitized\":false,\"odePacketID\":\"\",\"odeTimStartDateTime\":\"\",\"asn1\":\"00147A5F93D0D5116EE8A6AD7139165E9182A70581E6772631B3461EDC56B89DB8AEFD2208000000014DC10037FFF2B86414E7F9925EB4A3C08281CDE9E67DCCEC75DFF153F9922C850EA042702EEA2F72F4F751394C54B0488322BA2BA4051BA5E702510E8024DDF9171DE8EE3FFAACC4B3F724FD3F6EED2DEB566AF0\",\"source\":\"EV\",\"originIp\":\"172.18.0.1\",\"isCertPresent\":false},\"payload\":{\"data\":{\"messageId\":20,\"value\":{\"BasicSafetyMessage\":{\"coreData\":{\"msgCnt\":126,\"id\":\"4F435445\",\"secMark\":48034,\"lat\":359491100,\"long\":-839283430,\"elev\":15883,\"accuracy\":{\"semiMajor\":3,\"semiMinor\":204,\"orientation\":61004},\"transmission\":\"reverseGears\",\"speed\":870,\"heading\":17950,\"angle\":94,\"accelSet\":{\"long\":-613,\"lat\":205,\"vert\":57,\"yaw\":12030},\"brakes\":{\"wheelBrakes\":\"20\",\"traction\":\"off\",\"abs\":\"unavailable\",\"scs\":\"unavailable\",\"brakeBoost\":\"off\",\"auxBrakes\":\"unavailable\"},\"size\":{\"width\":0,\"length\":0}},\"partII\":[{\"partII-Id\":0,\"partII-Value\":{\"VehicleSafetyExtensions\":{\"events\":{\"value\":\"1000\",\"length\":13},\"pathHistory\":{\"initialPosition\":{\"utcTime\":{\"year\":696,\"month\":6,\"day\":8,\"hour\":5,\"minute\":14,\"second\":32665,\"offset\":-537},\"long\":-284684734,\"lat\":-355561095,\"elevation\":36723,\"heading\":7566,\"speed\":{\"transmisson\":\"reserved2\",\"speed\":7166},\"posAccuracy\":{\"semiMajor\":42,\"semiMinor\":127,\"orientation\":12869},\"timeConfidence\":\"time-000-000-000-000-1\",\"posConfidence\":{\"pos\":\"a200m\",\"elevation\":\"elev-002-00\"},\"speedConfidence\":{\"heading\":\"prec01deg\",\"speed\":\"prec0-1ms\",\"throttle\":\"prec10percent\"}},\"currGNSSstatus\":\"02\",\"crumbData\":[{\"latOffset\":-128070,\"lonOffset\":12146,\"elevationOffset\":1871,\"timeOffset\":29972,\"speed\":4760,\"posAccuracy\":{\"semiMajor\":169,\"semiMinor\":96,\"orientation\":37126},\"heading\":69},{\"latOffset\":-59950,\"lonOffset\":-128457,\"elevationOffset\":-836,\"timeOffset\":57419,\"speed\":1082,\"posAccuracy\":{\"semiMajor\":0,\"semiMinor\":147,\"orientation\":30692},\"heading\":92},{\"latOffset\":-5906,\"lonOffset\":-65558,\"elevationOffset\":817,\"timeOffset\":11518,\"speed\":6439,\"posAccuracy\":{\"semiMajor\":233,\"semiMinor\":251,\"orientation\":30569},\"heading\":111}]},\"pathPrediction\":{\"radiusOfCurve\":13671,\"confidence\":175}}}}]}}},\"dataType\":\"us.dot.its.jpo.asn.j2735.r2024.BasicSafetyMessage.BasicSafetyMessageMessageFrame\"}}";
 
     rapidjson::Document document;
     document.Parse( jsonString );
@@ -1527,7 +1501,7 @@ TEST_CASE( "RapidjsonRedactor Search For Member By Path - Path With Wrong Top Le
     CHECK( accelLongWrongTopLevelMemberPresent == false );
 }
 
-TEST_CASE( "RapidjsonRedactor Redact Member By Path (With Bitstrings)", "[ppm][redaction][rapidjsonredactor][redactbypath][nobitstrings]" ) {
+TEST_CASE( "RapidjsonRedactor Redact Member By Path", "[ppm][redaction][rapidjsonredactor][redactbypath][nobitstrings]" ) {
     RapidjsonRedactor rapidjsonRedactor;
 
     // load in test cases
@@ -1537,35 +1511,24 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (With Bitstrings)", "[ppm][r
         rapidjson::Document document = rapidjsonRedactor.getDocumentFromString(jsonString);
 
         std::string memberPaths[] = {
-            "payload.data.partII.value.lights.leftTurnSignalOn", // part of bitstring
-            "payload.data.partII.value.lights.rightTurnSignalOn", // part of bitstring
-            "payload.data.partII.value.lights.hazardSignalOn", // part of bitstring
-            "payload.data.partII.value.lights.fogLightOn", // part of bitstring
-            "payload.data.partII.value.lights.lowBeamHeadlightsOn", // part of bitstring
-            "payload.data.partII.value.lights.highBeamHeadlightsOn", // part of bitstring
-            "payload.data.partII.value.lights.automaticLightControlOn", // part of bitstring
-            "payload.data.partII.value.lights.daytimeRunningLightsOn", // part of bitstring
-            "payload.data.partII.value.lights.parkingLightsOn", // part of bitstring
-            "payload.data.partII.value.weatherProbe.rainRates.statusFront", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherProbe.rainRates.statusRear", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherProbe.rainRates.rateFront", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherProbe.rainRates.rateRear", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherReport.solarRadiation",
-            "payload.data.partII.value.weatherReport.roadFriction",
-            "payload.data.partII.value.weatherReport.friction",
-            "payload.data.partII.value.weatherReport.airTemp",
-            "payload.data.partII.value.weatherReport.airPressure",
-            "payload.data.coreData.transmission", // transmission redaction is overridden (required)
-            "payload.data.coreData.brakes.abs",
-            "payload.data.coreData.brakes.scs",
-            "payload.data.coreData.brakes.traction",
-            "payload.data.coreData.brakes.brakeBoost",
-            "payload.data.coreData.brakes.wheelBrakes.leftFront", // part of bitstring (required)
-            "payload.data.coreData.brakes.wheelBrakes.rightFront", // part of bitstring (required)
-            "payload.data.coreData.brakes.wheelBrakes.unavailable", // part of bitstring (required)
-            "payload.data.coreData.brakes.wheelBrakes.leftRear", // part of bitstring (required)
-            "payload.data.coreData.brakes.wheelBrakes.rightRear", // part of bitstring (required)
-            "payload.data.coreData.brakes.auxBrakes"
+            "payload.data.value.BasicSafetyMessage.coreData.transmission", // transmission redaction is overridden (required)
+            "payload.data.value.BasicSafetyMessage.coreData.brakes.abs",
+            "payload.data.value.BasicSafetyMessage.coreData.brakes.scs",
+            "payload.data.value.BasicSafetyMessage.coreData.brakes.traction",
+            "payload.data.value.BasicSafetyMessage.coreData.brakes.brakeBoost",
+            "payload.data.value.BasicSafetyMessage.coreData.brakes.wheelBrakes",
+            "payload.data.value.BasicSafetyMessage.coreData.brakes.auxBrakes",
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.VehicleSafetyExtensions.events.value", // events redaction overridden (remove entire object)
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.VehicleSafetyExtensions.lights.value", // lights redaction overridden (remove entire object)
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse1.solarRadiation",
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse1.roadFriction",
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse1.friction",
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.airTemp",
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.airPressure",
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.statusFront", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.statusRear", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.rateFront", // weatherProbe redaction overridden (remove entire object)
+            "payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.rateRear" // weatherProbe redaction overridden (remove entire object)
         };
 
         // get num members present before redaction
@@ -1600,81 +1563,13 @@ TEST_CASE( "RapidjsonRedactor Redact Member By Path (With Bitstrings)", "[ppm][r
             numMembersPresentAfterRedaction += success;
         }
         int transmissionMembers = 1; // transmission redaction is overridden (required)
-        int wheelBrakesMembers = 5; // wheelBrakes redaction is overridden (required)
+        int wheelBrakesMembers = 1; // wheelBrakes redaction is overridden (required)
         int tractionMember = 1;
         int absMember = 1;
         int scsMember = 1;
         int brakeBoost = 1;
         int auxBrakes = 1;
         REQUIRE(numMembersPresentAfterRedaction == (transmissionMembers + wheelBrakesMembers + tractionMember + absMember + scsMember + brakeBoost + auxBrakes));
-    }
-}
-
-TEST_CASE( "RapidjsonRedactor Redact Member By Path (Without Bitstrings)", "[ppm][redaction][rapidjsonredactor][redactbypath][withbitstrings]" ) {
-    RapidjsonRedactor rapidjsonRedactor;
-
-    // load in test cases
-    std::vector<std::string> json_test_cases;
-    REQUIRE ( loadTestCases( "unit-test-data/test-case.redaction.general.nobitstrings.json", json_test_cases ) );
-    for (auto& jsonString : json_test_cases) {
-        rapidjson::Document document = rapidjsonRedactor.getDocumentFromString(jsonString);
-
-        std::string memberPaths[] = {
-            "payload.data.partII.value.weatherProbe.rainRates.statusFront", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherProbe.rainRates.statusRear", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherProbe.rainRates.rateFront", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherProbe.rainRates.rateRear", // weatherProbe redaction overridden (remove entire object)
-            "payload.data.partII.value.weatherReport.solarRadiation",
-            "payload.data.partII.value.weatherReport.roadFriction",
-            "payload.data.partII.value.weatherReport.friction",
-            "payload.data.partII.value.weatherReport.airTemp",
-            "payload.data.partII.value.weatherReport.airPressure",
-            "payload.data.coreData.transmission", // transmission redaction is overridden (required)
-            "payload.data.coreData.brakes.abs",
-            "payload.data.coreData.brakes.scs",
-            "payload.data.coreData.brakes.traction",
-            "payload.data.coreData.brakes.brakeBoost",
-            "payload.data.coreData.brakes.auxBrakes"
-        };
-
-        // get num members present before redaction
-        int numMembersPresentBeforeRedaction = 0;
-        for (int i = 0 ; i < sizeof(memberPaths)/sizeof(memberPaths[0]); i++) {
-            std::string memberPath = memberPaths[i];
-
-            bool success = rapidjsonRedactor.searchForMemberByPath(document, memberPath);
-
-            numMembersPresentBeforeRedaction += success;
-        }
-        REQUIRE(numMembersPresentBeforeRedaction == sizeof(memberPaths)/sizeof(memberPaths[0]));
-
-        // redact members
-        int numMembersRedacted = 0;
-        for (int i = 0 ; i < sizeof(memberPaths)/sizeof(memberPaths[0]); i++) {
-            std::string memberPath = memberPaths[i];
-
-            bool success = rapidjsonRedactor.redactMemberByPath(document, memberPath);
-
-            numMembersRedacted += success;
-        }
-        REQUIRE(numMembersRedacted > 0);
-
-        // get num members present after redaction
-        int numMembersPresentAfterRedaction = 0;
-        for (int i = 0 ; i < sizeof(memberPaths)/sizeof(memberPaths[0]); i++) {
-            std::string memberPath = memberPaths[i];
-
-            bool success = rapidjsonRedactor.searchForMemberByPath(document, memberPath);
-
-            numMembersPresentAfterRedaction += success;
-        }
-        int transmissionMember = 1;
-        int tractionMember = 1;
-        int absMember = 1;
-        int scsMember = 1;
-        int brakeBoost = 1;
-        int auxBrakes = 1;
-        REQUIRE(numMembersPresentAfterRedaction == transmissionMember + tractionMember + absMember + scsMember + brakeBoost + auxBrakes);
     }
 }
 
