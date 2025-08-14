@@ -3,7 +3,7 @@
 /**
  * Values with overridden redaction behavior:
  * - angle          (required integer, set to 127)
- * - transmission   (required string, set to "UNAVAILABLE")
+ * - transmission   (required string, set to "unavailable")
  * - wheelBrakes    (required bitstring, set first bit to 1 and all others to 0)
  * - weatherProbe   (optional object, remove if present)
  * - status         (optional object, remove if present)
