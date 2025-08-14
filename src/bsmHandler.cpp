@@ -264,6 +264,7 @@ bool BSMHandler::process( const std::string& message_json ) {
 
         // Only set speed if it's not the J2735 "unavailable" value
         if (core_data["speed"].GetInt() != J2735_SPEED_UNAVAILABLE) {
+            // J2735 defined INTEGER (0..8190) -- Units of 0.02 m/s
             speed = core_data["speed"].GetInt() * 0.02;
             bsm_.set_velocity(speed);
         }
@@ -287,12 +288,14 @@ bool BSMHandler::process( const std::string& message_json ) {
 
         // Only set latitude if it's not the J2735 "unavailable" value
         if (core_data["lat"].GetInt() != J2735_LATITUDE_UNAVAILABLE) {
+            // J2735 defined INTEGER (-900000000..900000000) --  Units of 1/10 microdegree
             latitude = core_data["lat"].GetInt() * 1e-7;
             bsm_.set_latitude(latitude);
         }
 
         // Only set longitude if it's not the J2735 "unavailable" value
         if (core_data["long"].GetInt() != J2735_LONGITUDE_UNAVAILABLE) {
+            // J2735 defined INTEGER (-1799999999..1800000000) --  Units of 1/10 microdegree
             longitude = core_data["long"].GetInt() * 1e-7;
             bsm_.set_longitude(longitude);
         }

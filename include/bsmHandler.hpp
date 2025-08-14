@@ -124,6 +124,8 @@ class BSMHandler {
         static constexpr uint32_t kIdRedactFlag       = 0x1 << 2;
         static constexpr uint32_t kSizeRedactFlag     = 0x1 << 4;
         static constexpr uint32_t kGeneralRedactFlag  = 0x1 << 8;
+
+        // J2735 values indicating "unavailable" for various BSM fields
         static constexpr int J2735_SPEED_UNAVAILABLE = 8191;
         static constexpr int J2735_LATITUDE_UNAVAILABLE = 900000001;
         static constexpr int J2735_LONGITUDE_UNAVAILABLE = 1800000001;

@@ -47,10 +47,12 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
 
                     // required leaf member handling
                     if (type == "Number" && target == "angle") {
+                        // Set to 127 for J2735 angle which is indicative of the value being unavailable
                         value["angle"] = 127;
                         return true;
                     }
                     else if (type == "String" && target == "transmission") {
+                        // Set to "unavailable" for J2735 transmission which is defined as lowercase
                         value["transmission"] = "unavailable";
                         return true;
                     }
@@ -60,22 +62,27 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
                         return true;
                     }
                     else if (type == "String" && target == "traction") {
+                        // Set to "unavailable" for J2735 traction which is defined as lowercase
                         value["traction"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "abs") {
+                        // Set to "unavailable" for J2735 abs which is defined as lowercase
                         value["abs"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "scs") {
+                        // Set to "unavailable" for J2735 scs which is defined as lowercase
                         value["scs"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "brakeBoost") {
+                        // Set to "unavailable" for J2735 brakeBoost which is defined as lowercase
                         value["brakeBoost"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "auxBrakes") {
+                        // Set to "unavailable" for J2735 auxBrakes which is defined as lowercase
                         value["auxBrakes"] = "unavailable";
                         return true;
                     }
