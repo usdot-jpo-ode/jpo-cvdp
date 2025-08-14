@@ -271,6 +271,8 @@ bool BSMHandler::process( const std::string& message_json ) {
 
         if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
             result_ = ResultStatus::SPEED;
+
+            return false;
         }
 
         // Check if position data is available
