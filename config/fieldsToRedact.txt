@@ -12,11 +12,6 @@ payload.data.value.BasicSafetyMessage.partII.partII-Value.VehicleSafetyExtension
 payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse1.solarRadiation
 payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse1.roadFriction
 payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse1.friction
-payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.statusFront
-payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.statusRear
-payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.rateFront
-payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.rainRates.rateRear
-payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.airTemp
-payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2.airPressure
-payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse4.speedReports
+payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse2
+payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.doNotUse4
 payload.data.value.BasicSafetyMessage.partII.partII-Value.SupplementalVehicleExtensions.status.statusDetails
