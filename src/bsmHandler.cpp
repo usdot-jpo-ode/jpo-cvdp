@@ -184,6 +184,10 @@ bool BSMHandler::process( const std::string& message_json ) {
     }
 
     metadata["sanitized"] = true;
+
+    if (metadata.HasMember("originIp")) {
+        metadata["originIp"].SetString("", document.GetAllocator());
+    }
     
     if (metadata.HasMember("asn1")) {
         metadata["asn1"].SetString("", document.GetAllocator());
@@ -204,7 +208,7 @@ bool BSMHandler::process( const std::string& message_json ) {
 
     std::string payload_type_str = metadata["payloadType"].GetString();
 
-    if (payload_type_str == "us.dot.its.jpo.ode.model.OdeBsmPayload") {
+    if (payload_type_str == "us.dot.its.jpo.ode.model.OdeMessageFramePayload") {
         if (!document.HasMember("payload")) {
             result_ = ResultStatus::MISSING;
 
@@ -222,61 +226,85 @@ bool BSMHandler::process( const std::string& message_json ) {
 
         rapidjson::Value& data = payload["data"];
 
-        if (!data.HasMember("coreData")) {
+        if (!data.HasMember("value")) {
             result_ = ResultStatus::MISSING;
 
             return false;
         }
 
-        rapidjson::Value& core_data = data["coreData"];
+        rapidjson::Value& value = data["value"];
+
+        if (!value.HasMember("BasicSafetyMessage")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        rapidjson::Value& basicSafetyMessage = value["BasicSafetyMessage"];
+
+        if (!basicSafetyMessage.HasMember("coreData")) {
+            result_ = ResultStatus::MISSING;
+
+            return false;
+        }
+
+        rapidjson::Value& core_data = basicSafetyMessage["coreData"];
 
         if (!core_data.HasMember("speed")) {
             result_ = ResultStatus::MISSING;
 
             return false;
         }
-        
-        if (!core_data["speed"].IsDouble()) {
+
+        if (!core_data["speed"].IsInt()) {
             result_ = ResultStatus::OTHER;
 
             return false;
         }
 
-        speed = core_data["speed"].GetDouble();
-        bsm_.set_velocity(speed);
+        // Only set speed if it's not the J2735 "unavailable" value
+        if (core_data["speed"].GetInt() != J2735_SPEED_UNAVAILABLE) {
+            // J2735 defined INTEGER (0..8190) -- Units of 0.02 m/s
+            speed = core_data["speed"].GetInt() * 0.02;
+        }
 
         if (is_active<kVelocityFilterFlag>() && vf_.suppress(speed)) {
             result_ = ResultStatus::SPEED;
+
+            return false;
         }
 
-        if (!core_data.HasMember("position")) {
+        // Check if position data is available
+        if (!core_data.HasMember("lat") || !core_data.HasMember("long")) {
             result_ = ResultStatus::MISSING;
 
             return false;
         }
 
-        rapidjson::Value& position = core_data["position"];
-
-        if (!position.HasMember("latitude") || !position.HasMember("longitude")) {
-            result_ = ResultStatus::MISSING;
-
-            return false;
-        }
-
-        if (!position["latitude"].IsDouble() || !position["longitude"].IsDouble()) {
+        if (!core_data["lat"].IsInt() || !core_data["long"].IsInt()) {
             result_ = ResultStatus::OTHER;
 
             return false;
         }
-        
-        latitude = position["latitude"].GetDouble();
-        longitude = position["longitude"].GetDouble();
 
-        bsm_.set_latitude(latitude); 
-        bsm_.set_longitude(longitude); 
+        // Only set latitude if it's not the J2735 "unavailable" value
+        if (core_data["lat"].GetInt() != J2735_LATITUDE_UNAVAILABLE) {
+            // J2735 defined INTEGER (-900000000..900000000) --  Units of 1/10 microdegree
+            latitude = core_data["lat"].GetInt() * 1e-7;
+            bsm_.set_latitude(latitude);
+        }
+
+        // Only set longitude if it's not the J2735 "unavailable" value
+        if (core_data["long"].GetInt() != J2735_LONGITUDE_UNAVAILABLE) {
+            // J2735 defined INTEGER (-1799999999..1800000000) --  Units of 1/10 microdegree
+            longitude = core_data["long"].GetInt() * 1e-7;
+            bsm_.set_longitude(longitude);
+        }
 
         if (is_active<kGeofenceFilterFlag>() && !isWithinEntity(bsm_)) {
             result_ = ResultStatus::GEOPOSITION;
+
+            return false;
         }
 
         if (!core_data.HasMember("id")) {
@@ -292,6 +320,7 @@ bool BSMHandler::process( const std::string& message_json ) {
         }
 
         id = core_data["id"].GetString();
+        
 
         if (is_active<kIdRedactFlag>()) {
             bsm_.set_original_id(id);
@@ -301,6 +330,7 @@ bool BSMHandler::process( const std::string& message_json ) {
         }
 
         bsm_.set_id(id);
+        bsm_.set_velocity(speed);
 
         // Check for BSM size.  
         // Size is a special case; if it's not included, then we do 
@@ -352,13 +382,13 @@ void BSMHandler::handleGeneralRedaction(rapidjson::Document& document) {
         }
 
         // attempt to store the redacted coreData and partII in the BSM object
-        if (document["payload"]["data"].HasMember("coreData")) {
-            std::string coreDataString = rapidjsonRedactor.stringifyValue(document["payload"]["data"]["coreData"]);
+        if (document["payload"]["data"]["value"]["BasicSafetyMessage"].HasMember("coreData")) {
+            std::string coreDataString = rapidjsonRedactor.stringifyValue(document["payload"]["data"]["value"]["BasicSafetyMessage"]["coreData"]);
             bsm_.set_coreData(coreDataString);
         }
 
-        if (document["payload"]["data"].HasMember("partII")) {
-            std::string partIIString = rapidjsonRedactor.stringifyValue(document["payload"]["data"]["partII"]);
+        if (document["payload"]["data"]["value"]["BasicSafetyMessage"].HasMember("partII")) {
+            std::string partIIString = rapidjsonRedactor.stringifyValue(document["payload"]["data"]["value"]["BasicSafetyMessage"]["partII"]);
             bsm_.set_partII(partIIString);
         }
     }
