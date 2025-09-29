@@ -15,6 +15,12 @@ Testing was performed through updated unit tests, integration tests using the `d
 Enhancements in this release:
 - [CDOT PR 58](https://github.com/CDOT-CV/jpo-cvdp/pull/58): Set up CI with Azure Pipelines
 - [CDOT PR 59](https://github.com/CDOT-CV/jpo-cvdp/pull/59): JPO-ODE 5.0.2 Support
+- [USDOT PR 50](https://github.com/usdot-jpo-ode/jpo-cvdp/pull/50): Add Workflow for External Issues Notification
+- [USDOT PR 51](https://github.com/usdot-jpo-ode/jpo-cvdp/pull/51): Migrate to Reusable Docker Workflows
+
+Known Issues:
+- No known issues at this time.
+
 
 Version 1.5.0, released January 2025
 ----------------------------------------
