@@ -1,6 +1,27 @@
 Jpo-cvdp Release Notes
 ----------------------------
 
+Version 1.6.0, released October 2025
+----------------------------------------
+### **Summary**
+This release adds support for **jpo-ode version 5.0.2**, which introduces breaking changes to the output of the `OdeBsmJson` topic to conform with the J2735 standard. The PPM has been updated to correctly handle the new format, apply redactions consistently, and align test data and configurations with the latest requirements.
+
+Key updates include revising the PPM logic to traverse BSM messages based on the new `OdeBsmJson` structure, adding `metadata.originIp` to the always redacted fields, and fixing a redaction bug that previously only affected the first element of arrays. Bitstring-specific logic and related tests have been removed since they are no longer relevant. Legacy WYDOT test BSM data has also been removed, while a new CO-Roadways edge file (not tied to a specific use case, but included to demonstrate functionality with the available dataset) and example `OdeBsmJson` JSON have been added. The `fieldsToRedact.txt` and `ppmBsm.properties` files were updated to match these changes, and integration testing scripts as well as unit tests have been revised accordingly.
+
+Minor updates include syncing the branch with the latest upstream changes to resolve inconsistencies, restricting the CI pipeline so SonarScanner only runs in the USDOT repository, and small adjustments to CI/DockerHub job formatting.
+
+Testing was performed through updated unit tests, integration tests using the `do_kafka_test.sh` script with Docker, and standalone PPM testing alongside jpo-ode 5.0.2 to validate end-to-end behavior and confirm correct redactions in the `FilteredOdeBsmJson` topic.
+
+Enhancements in this release:
+- [CDOT PR 58](https://github.com/CDOT-CV/jpo-cvdp/pull/58): Set up CI with Azure Pipelines
+- [CDOT PR 59](https://github.com/CDOT-CV/jpo-cvdp/pull/59): JPO-ODE 5.0.2 Support
+- [USDOT PR 50](https://github.com/usdot-jpo-ode/jpo-cvdp/pull/50): Add Workflow for External Issues Notification
+- [USDOT PR 51](https://github.com/usdot-jpo-ode/jpo-cvdp/pull/51): Migrate to Reusable Docker Workflows
+
+Known Issues:
+- No known issues at this time.
+
+
 Version 1.5.0, released January 2025
 ----------------------------------------
 ### **Summary**
