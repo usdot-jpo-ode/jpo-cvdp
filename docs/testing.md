@@ -50,7 +50,7 @@ $ docker rm ppm
 1. Ensure that the following files are present in the 'ppm_data' directory:
     - [fieldsToRedact.txt](../config/fieldsToRedact.txt)
     - [ppmBsm.properties](../config/fieldsToSuppress.txt)
-    - [I_80.edges](../data/I_80.edges)
+    - [CO-Motorways.edges](../data/CO-Motorways.edges)
 
 1. Spin up Kafka & the PPM
     ```
