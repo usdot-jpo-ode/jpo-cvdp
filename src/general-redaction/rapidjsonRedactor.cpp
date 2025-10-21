@@ -3,7 +3,7 @@
 /**
  * Values with overridden redaction behavior:
  * - angle          (required integer, set to 127)
- * - transmission   (required string, set to "UNAVAILABLE")
+ * - transmission   (required string, set to "unavailable")
  * - wheelBrakes    (required bitstring, set first bit to 1 and all others to 0)
  * - weatherProbe   (optional object, remove if present)
  * - status         (optional object, remove if present)
@@ -26,39 +26,13 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
                 // if the next path element is an object or array, recurse
                 auto &nextValue = value[nextPathElement.c_str()];
 
-                // bitstring handling
-                if (isBitstring(nextValue)) {
-
-                    // wheelBrakes bitstring handling
-                    if (nextPathElement == "wheelBrakes") {
-                        if (target == "unavailable") {
-                            nextValue["unavailable"] = true;
-                        }
-                        if (target == "leftFront") {
-                            nextValue["leftFront"] = false;
-                        }
-                        else if (target == "rightFront") {
-                            nextValue["rightFront"] = false;
-                        }
-                        else if (target == "leftRear") {
-                            nextValue["leftRear"] = false;
-                        }
-                        else if (target == "rightRear") {
-                            nextValue["rightRear"] = false;
-                        }
-                        else {
-                            return false;
-                        }
-                        return true;
-                    }
-
-                    value.RemoveMember(nextPathElement.c_str());
-                    return true;
-                }
-
-                // weatherProbe, status & speedProfile object handling
+                // Handle whole object redaction for known fields that are optional
                 if (type == "Object") {
-                    if (nextPathElement == "weatherProbe" || nextPathElement == "status" || nextPathElement == "speedProfile") {
+                    if (nextPathElement == "doNotUse2" || 
+                        nextPathElement == "status" || 
+                        nextPathElement == "doNotUse4" || 
+                        nextPathElement == "events" || 
+                        nextPathElement == "lights") {
                         value.RemoveMember(nextPathElement.c_str());
                         return true;
                     }
@@ -73,30 +47,42 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
 
                     // required leaf member handling
                     if (type == "Number" && target == "angle") {
+                        // Set to 127 for J2735 angle which is indicative of the value being unavailable
                         value["angle"] = 127;
                         return true;
                     }
                     else if (type == "String" && target == "transmission") {
-                        value["transmission"] = "UNAVAILABLE";
+                        // Set to "unavailable" for J2735 transmission which is defined as lowercase
+                        value["transmission"] = "unavailable";
+                        return true;
+                    }
+                    else if (type == "String" && target == "wheelBrakes") {
+                        // Hex value representation for unavailable for J2735 wheelBrakes
+                        value["wheelBrakes"] = "80";
                         return true;
                     }
                     else if (type == "String" && target == "traction") {
+                        // Set to "unavailable" for J2735 traction which is defined as lowercase
                         value["traction"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "abs") {
+                        // Set to "unavailable" for J2735 abs which is defined as lowercase
                         value["abs"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "scs") {
+                        // Set to "unavailable" for J2735 scs which is defined as lowercase
                         value["scs"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "brakeBoost") {
+                        // Set to "unavailable" for J2735 brakeBoost which is defined as lowercase
                         value["brakeBoost"] = "unavailable";
                         return true;
                     }
                     else if (type == "String" && target == "auxBrakes") {
+                        // Set to "unavailable" for J2735 auxBrakes which is defined as lowercase
                         value["auxBrakes"] = "unavailable";
                         return true;
                     }
@@ -112,15 +98,16 @@ bool RapidjsonRedactor::redactMemberByPath(rapidjson::Value &value, std::string 
         }
     }
     else if (value.IsArray()) {
+        bool result = false;
         for (auto &m : value.GetArray()) {
             std::string type = kTypeNames[m.GetType()];
             if (type == "Object" || type == "Array") {
-                bool result = redactMemberByPath(m, path);
-                if (result) {
-                    return true;
+                if (redactMemberByPath(m, path)) {
+                    result = true;
                 }
             }
         }
+        return result;
     }
     return false;
 }
@@ -244,18 +231,4 @@ std::string RapidjsonRedactor::getBottomLevelFromPath(std::string &path) {
         return path.substr(lastDot + 1);
     }
     return path;
-}
-
-bool RapidjsonRedactor::isBitstring(rapidjson::Value &value) {
-    // check if the value is an object consisting only of booleans
-    if (!value.IsObject()) {
-        return false;
-    }
-    for (auto &m : value.GetObject()) {
-        std::string type = kTypeNames[m.value.GetType()];
-        if (type != "True" && type != "False") {
-            return false;
-        }
-    }
-    return true;
 }

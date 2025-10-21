@@ -6,12 +6,12 @@ from json import loads
 import sys
 
 def print_bsm_data(d):
-    id_ = d['payload']['data']['coreData']['id']
-    speed = d['payload']['data']['coreData']['speed']
-    lat = d['payload']['data']['coreData']['position']['latitude']
-    lng = d['payload']['data']['coreData']['position']['longitude']
+    id_ = d['payload']['data']['value']['BasicSafetyMessage']['coreData']['id']
+    speed = d['payload']['data']['value']['BasicSafetyMessage']['coreData']['speed'] * 0.02
+    lat = d['payload']['data']['value']['BasicSafetyMessage']['coreData']['lat'] * 1e-7
+    lng = d['payload']['data']['value']['BasicSafetyMessage']['coreData']['long'] * 1e-7
 
-    if not d['payload']['data']['coreData']['size']: 
+    if not d['payload']['data']['value']['BasicSafetyMessage']['coreData']['size']: 
         print('Consuming BSM with ID={}, speed={}, position={}, {}'.format(id_, speed, lat, lng))
 
         return
@@ -19,11 +19,11 @@ def print_bsm_data(d):
     length = 0
     width = 0
 
-    if d['payload']['data']['coreData']['size']['length']:
-        length = d['payload']['data']['coreData']['size']['length']
+    if d['payload']['data']['value']['BasicSafetyMessage']['coreData']['size']['length']:
+        length = d['payload']['data']['value']['BasicSafetyMessage']['coreData']['size']['length']
 
-    if d['payload']['data']['coreData']['size']['width']:
-        width = d['payload']['data']['coreData']['size']['width']
+    if d['payload']['data']['value']['BasicSafetyMessage']['coreData']['size']['width']:
+        width = d['payload']['data']['value']['BasicSafetyMessage']['coreData']['size']['width']
 
     print('Producing BSM with ID={}, speed={}, position={}, {}, size=l:{}, w:{}'.format(id_, speed, lat, lng, length, width), file=sys.stderr)
 
